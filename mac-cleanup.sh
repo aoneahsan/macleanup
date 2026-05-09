@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.3.0"
+SCRIPT_VERSION="4.3.1"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
@@ -94,8 +94,41 @@ LARGE_FILE_SIZE_GB_DEFAULT=1
 # the developer hasn't been actively working in that tree.
 STALE_BUILD_PATTERNS=(
   node_modules vendor dist build out
-  .next .nuxt .turbo .vite .parcel-cache .svelte-kit .astro .cache
+  .next .nuxt .turbo .vite .parcel-cache .svelte-kit .astro
   target Pods coverage .nyc_output
+)
+# IMPORTANT: `.cache` was removed from STALE_BUILD_PATTERNS in 4.3.1.
+# It matched ~/.cache and any project-internal `.cache/` directory
+# indiscriminately, including critical tool state. Per-tool cache cleaning
+# is now strictly the job of section 3.
+
+# CRITICAL_HOME_DIRS — toolchain managers, language runtimes, secret
+# stores, IDE state, OS-level caches. NEVER entered by section 23,
+# NEVER deleted by any helper, regardless of mtime, regardless of
+# whether their basename matches a STALE_BUILD_PATTERNS entry.
+#
+# This list is the safety contract that prevents the 4.3.0 bug where
+# section 23 could nuke node_modules deep inside ~/.bun, ~/.local,
+# ~/.pnpm-store etc. — breaking every globally installed tool.
+CRITICAL_HOME_DIRS=(
+  # Node version + package managers
+  .nvm .fnm .n .tnvm .volta .asdf
+  .npm .npm-packages .yarn .pnpm-store .pnpm
+  # Other language runtimes
+  .bun .deno .rbenv .pyenv .rustup .rye .ruby
+  .cargo .gradle .m2 .sbt .ivy2
+  .pub-cache .cocoapods
+  # OS / tool caches & config
+  .cache .config .docker .android .dartServer
+  # Editors / IDEs / AI agents (state)
+  .vscode .vscode-server .cursor .cursor-server
+  .idea .nvim .vim .emacs.d
+  .claude .codex .agents .ollama
+  # Secrets / credentials — never touch
+  .ssh .gnupg .aws .azure .gcloud .kube .terraform.d
+  .password-store .1password .keepass
+  # Shell + git
+  .oh-my-zsh .git
 )
 
 # Filesystem allowlists for non-Apple bundle ID prefixes that we *do not*
@@ -137,6 +170,7 @@ EXCLUDE_SECTIONS=""  # --exclude "14,17"
 PROFILE_NAME=""    # --profile dev|minimal|cache-only|deep|audit
 NOTIFY=0           # --notify (macOS notification on completion)
 CHECK_UPDATE=0     # --check-update (query npm for latest)
+BREW_AUTOREMOVE=0  # --brew-autoremove (opt-in; removes "unused" formulae)
 
 TOTAL_FREED_KB=0
 DISK_FREE_BEFORE_KB=""
@@ -553,6 +587,10 @@ ${BOLD}Options${NC}
   --notify                    Show a macOS notification when the run finishes.
   --check-update              Query npm for the latest published version
                               and report if newer (no telemetry sent).
+  --brew-autoremove           Run 'brew autoremove' as part of section 3.
+                              Off by default since 4.3.1 — autoremove can
+                              uninstall dependency-installed formulae like
+                              node/python and break global tools.
   --list                      List every section number and label, then exit.
   --version, -V               Print version and exit.
   -h, --help                  Show this help.
@@ -710,20 +748,21 @@ resolve_scan_roots() {
     done
     return 0
   fi
-  local cand found=0
+  # Auto-detect common dev folders. We DO NOT silently fall back to
+  # scanning the entire $HOME — that's how the 4.3.0 bug nuked things
+  # inside ~/.bun, ~/.local, ~/.pnpm-store. If none of these exist the
+  # caller (section 23) handles the empty-result case explicitly and
+  # asks the user to pass --scan-roots.
+  local cand
   for cand in \
     "$HOME/Projects" "$HOME/projects" \
     "$HOME/Code" "$HOME/code" \
     "$HOME/Developer" "$HOME/dev" \
     "$HOME/repos" "$HOME/work" "$HOME/Work" \
-    "$HOME/Documents" "$HOME/Desktop"; do
-    if [[ -d "$cand" ]]; then
-      printf '%s\n' "$cand"; found=1
-    fi
+    "$HOME/Documents" "$HOME/Desktop" \
+    "$HOME/Downloads"; do
+    [[ -d "$cand" ]] && printf '%s\n' "$cand"
   done
-  if (( ! found )); then
-    printf '%s\n' "$HOME"
-  fi
 }
 
 parse_args() {
@@ -797,6 +836,8 @@ parse_args() {
         NOTIFY=1 ;;
       --check-update)
         CHECK_UPDATE=1 ;;
+      --brew-autoremove)
+        BREW_AUTOREMOVE=1 ;;
       --no-color)
         RED=""; GREEN=""; YELLOW=""; BLUE=""; CYAN=""; MAGENTA=""; BOLD=""; DIM=""; NC=""
         ;;
@@ -951,12 +992,23 @@ s03_pkg_managers() {
     else pip3 cache purge >/dev/null 2>&1 && ok "pip3 cache purged" || true; fi
   fi
   if has_cmd brew; then
-    if (( DRY_RUN )); then note "[dry-run] brew cleanup -s; brew autoremove"
+    if (( DRY_RUN )); then
+      note "[dry-run] brew cleanup -s"
+      (( BREW_AUTOREMOVE )) && note "[dry-run] brew autoremove (--brew-autoremove set)"
     else
       info "Homebrew cleanup…"
       brew cleanup -s >/dev/null 2>&1 || warn "brew cleanup failed"
-      brew autoremove  >/dev/null 2>&1 || warn "brew autoremove failed"
-      ok "Homebrew cleaned"
+      # SAFETY (4.3.1): brew autoremove can uninstall formulae that were
+      # installed as dependencies and are now considered unused. In
+      # practice this can remove `node`, `python`, `openssl`, etc. and
+      # silently break every globally-installed tool that depended on
+      # them. Now strictly opt-in via --brew-autoremove.
+      if (( BREW_AUTOREMOVE )); then
+        warn "Running 'brew autoremove' (--brew-autoremove was passed)."
+        warn "This can remove formulae installed as dependencies."
+        brew autoremove >/dev/null 2>&1 || warn "brew autoremove failed"
+      fi
+      ok "Homebrew cleaned (cache only)"
     fi
   fi
 
@@ -1868,12 +1920,18 @@ s23_stale_builds() {
   days=$(prompt_int "Days threshold (dirs untouched ≥ this are flagged)" "$STALE_BUILD_THRESHOLD_DAYS")
   STALE_BUILD_THRESHOLD_DAYS="$days"
 
-  # Pick scan roots: --scan-roots override, common dev folders, then $HOME.
+  # Pick scan roots: --scan-roots override, OR common dev folders only.
+  # We deliberately DO NOT fall back to scanning all of $HOME — see the
+  # 4.3.0 -> 4.3.1 SAFETY FIX in CHANGELOG.md.
   local roots=()
   while IFS= read -r _r; do roots+=("$_r"); done < <(resolve_scan_roots)
   if (( ${#roots[@]} == 0 )); then
-    warn "No valid scan roots; aborting section."
-    mark_done 23; return 0
+    warn "No common dev folder detected (~/Projects, ~/Code, ~/Developer, ~/dev, ~/repos, ~/work, ~/Documents, ~/Desktop, ~/Downloads)."
+    note "To scan a specific path, re-run with:"
+    note "    mac-cleanup --only 23 --scan-roots \"\$HOME/path/to/dev\""
+    note "Refusing to scan all of \$HOME — that risks deleting toolchain"
+    note "directories (~/.nvm, ~/.bun, ~/.pnpm-store, etc.)."
+    mark_done 23; press_enter; return 0
   fi
 
   printf '\n%bScan roots:%b\n' "$BOLD" "$NC"
@@ -1891,22 +1949,24 @@ s23_stale_builds() {
     else                  find_names+=( -o -name "$p" ); fi
   done
 
+  # Build CRITICAL_HOME_DIRS exclude args. Each entry expands to a pair
+  # of `! -path` predicates: one matches the dir literally (e.g. ~/.bun),
+  # the other matches anything underneath (~/.bun/...). This is what
+  # prevents the 4.3.0 bug from ever recurring.
+  local critical_excludes=() _excl
+  for _excl in "${CRITICAL_HOME_DIRS[@]}"; do
+    critical_excludes+=( ! -path "$HOME/$_excl" ! -path "$HOME/$_excl/*" )
+  done
+
   local results; results=$(tmp_file); : > "$results"
   for r in "${roots[@]}"; do
-    # -prune so we don't recurse into matches; exclude obvious user-cache roots.
     find "$r" -type d \
       ! -path "*/Library/CloudStorage/*" \
       ! -path "*/Library/Mobile Documents/*" \
       ! -path "*/.Trash/*" \
-      ! -path "$HOME/.gradle/*" \
-      ! -path "$HOME/.cargo/*" \
-      ! -path "$HOME/.cache/*" \
-      ! -path "$HOME/.npm/*" \
-      ! -path "$HOME/.yarn/*" \
-      ! -path "$HOME/.pnpm-store/*" \
-      ! -path "$HOME/.docker/*" \
-      ! -path "$HOME/.pub-cache/*" \
+      ! -path "$HOME/Library" \
       ! -path "$HOME/Library/*" \
+      "${critical_excludes[@]}" \
       \( "${find_names[@]}" \) -prune -mtime "+$days" \
       -print 2>/dev/null >> "$results" || true
   done
@@ -1916,18 +1976,36 @@ s23_stale_builds() {
     mark_done 23; press_enter; return 0
   fi
 
+  # Belt-and-braces post-filter: even if find slipped past the path
+  # excludes for any reason, drop any candidate whose absolute path
+  # touches a CRITICAL_HOME_DIRS entry. This is a final safety net.
+  is_in_critical_home_dir() {
+    local p="$1" e
+    for e in "${CRITICAL_HOME_DIRS[@]}"; do
+      [[ "$p" == "$HOME/$e" || "$p" == "$HOME/$e/"* ]] && return 0
+    done
+    return 1
+  }
+
   # Materialise items + sort by size (largest first)
   declare -a items_path=() items_kb=() items_age=()
-  local total_kb=0 now epoch d_age path sz_kb
+  local total_kb=0 now epoch d_age path sz_kb skipped=0
   now=$(date +%s)
   while IFS= read -r path; do
     [[ -d "$path" ]] || continue
+    if is_in_critical_home_dir "$path"; then
+      skipped=$(( skipped + 1 ))
+      continue
+    fi
     sz_kb=$(size_kb "$path")
     epoch=$(stat -f %m "$path" 2>/dev/null || echo 0)
     if (( epoch > 0 )); then d_age=$(( (now - epoch) / 86400 )); else d_age=$days; fi
     items_path+=("$path"); items_kb+=("$sz_kb"); items_age+=("$d_age")
     total_kb=$(( total_kb + sz_kb ))
   done < "$results"
+  if (( skipped > 0 )); then
+    note "Skipped $skipped candidate(s) inside protected toolchain/config dirs."
+  fi
 
   local n=${#items_path[@]}
   if (( n == 0 )); then

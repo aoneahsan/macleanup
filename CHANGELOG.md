@@ -7,6 +7,67 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.3.1] — 2026-05-10  •  SAFETY FIX
+
+**Users on 4.3.0: please upgrade immediately.**
+`npx macleanup@latest` will fetch this version.
+
+### Fixed
+- **Section 23 no longer enters toolchain or config directories.**
+  4.3.0 could match `node_modules`-shaped folders nested inside
+  `~/.bun`, `~/.pnpm-store`, `~/.local/share/pnpm`, `~/.npm-packages`,
+  `~/.volta`, `~/.asdf`, etc. and flag them for deletion. Selecting
+  "all" in the multi-select prompt would then break globally-installed
+  tools that lived under those toolchain managers. **Fixed via a hard
+  `CRITICAL_HOME_DIRS` allowlist** (35+ entries: `.nvm`, `.bun`,
+  `.fnm`, `.volta`, `.asdf`, `.deno`, `.rbenv`, `.pyenv`, `.rustup`,
+  `.cargo`, `.gradle`, `.m2`, `.cocoapods`, `.pub-cache`, `.npm`,
+  `.yarn`, `.pnpm-store`, `.pnpm`, `.npm-packages`, `.cache`,
+  `.config`, `.docker`, `.android`, `.vscode`, `.cursor`, `.idea`,
+  `.claude`, `.ssh`, `.gnupg`, `.aws`, `.azure`, `.gcloud`, `.kube`,
+  `.git`, …) — section 23 now refuses to enter these regardless of
+  mtime, regardless of whether their basename matches a pattern.
+  Defended in two layers: in the `find` predicates *and* in a
+  post-find filter that skips any candidate whose path falls under
+  any critical dir.
+- **Section 23 no longer silently falls back to scanning `$HOME`.**
+  If none of the standard dev folders exist (`~/Projects`, `~/Code`,
+  `~/Developer`, `~/dev`, `~/repos`, `~/work`, `~/Documents`,
+  `~/Desktop`, `~/Downloads`), the section now exits with a clear
+  message instructing the user to pass `--scan-roots`. Implicit
+  `$HOME` scan was the trigger for the toolchain-dir bug.
+- **Removed `.cache` from `STALE_BUILD_PATTERNS`.** It matched
+  `~/.cache` and any project's nested `.cache/` indiscriminately,
+  which was always too broad. Per-tool cache cleaning continues in
+  section 3 where the matching is precise.
+
+### Changed
+- **`brew autoremove` is now opt-in via `--brew-autoremove`.** It was
+  previously part of section 3's default flow. `brew autoremove` can
+  uninstall formulae that were originally installed as dependencies
+  and are now considered unused — in practice this can take down
+  `node`, `python`, `openssl`, etc. and silently break every globally
+  installed tool that depended on them. Section 3 now stops at
+  `brew cleanup -s` (cache + old versions only) unless you explicitly
+  pass `--brew-autoremove`.
+- `~/Downloads` was added to the standard dev-folder list since it's
+  often where ad-hoc projects accumulate.
+
+### Added
+- New flag: `--brew-autoremove` to opt back into the previous behaviour.
+- New README section: **🚑 Recovery — if 4.3.0 broke a global tool**.
+  Step-by-step commands to restore bun, pnpm globals, yarn, nvm, npm
+  globals, Volta, asdf, fnm, Deno, rbenv, pyenv, rustup, plus
+  `brew log`-based recovery for autoremoved formulae.
+
+### Migration
+No flag changes required for existing users. The behavioural changes
+are all *safer defaults*. To get the old behaviour back you'd have to
+explicitly pass `--brew-autoremove` and explicitly pass `--scan-roots`
+(deliberately).
+
+---
+
 ## [4.3.0] — 2026-05-10
 
 ### Added

@@ -7,7 +7,7 @@
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.3.0-blue.svg)](#changelog)
+[![version](https://img.shields.io/badge/version-4.3.1-blue.svg)](#changelog)
 [![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 
@@ -271,6 +271,69 @@ Machine snapshot or `tmutil snapshot` is a good last line of defence.
 | **Audit which login items are orphaned** | `./mac-cleanup.sh --only 25` |
 | **Pre-flight before reinstalling Xcode** | `./mac-cleanup.sh --only "1,17"` |
 | **CI / cron unattended sweep** | `./mac-cleanup.sh --all --yes --quiet` |
+
+---
+
+## 🚑 Recovery — if 4.3.0 broke a global tool
+
+`v4.3.0` had a bug where section 23 (stale build artefacts) could enter
+toolchain manager directories like `~/.bun`, `~/.pnpm-store`,
+`~/.local/share/pnpm`, `~/.npm-packages`, `~/.volta` and remove
+`node_modules`-shaped folders inside them, breaking globally installed
+tools. Fixed in 4.3.1 with the new `CRITICAL_HOME_DIRS` allowlist —
+section 23 will now refuse to enter these paths regardless of mtime.
+
+If you ran 4.3.0 against `--scan-roots $HOME` (or a 4.3.0 with the silent
+$HOME fallback) and your global tools stopped working, here are the
+commands to restore the most common ones:
+
+```bash
+# bun — single curl one-liner reinstalls it cleanly
+curl -fsSL https://bun.sh/install | bash
+
+# pnpm — corepack ships with Node 16+, no extra install needed
+corepack enable
+corepack prepare pnpm@latest --activate
+# then re-install your global pnpm packages, e.g.
+pnpm add -g typescript ts-node prettier eslint <other tools you had>
+
+# yarn — same path via corepack
+corepack prepare yarn@stable --activate
+
+# nvm + Node — if ~/.nvm is intact, just re-source:
+source "$HOME/.nvm/nvm.sh"
+nvm use --lts        # or whichever version
+
+# global npm packages — npm caches the list itself; if you have a recent
+# npm-shrinkwrap, re-install from it. Otherwise list manually:
+npm install -g typescript prettier serve <whatever you had>
+
+# Volta / asdf / fnm / Deno / rbenv / pyenv / rustup — re-run their installers:
+curl https://get.volta.sh | bash
+curl https://raw.githubusercontent.com/asdf-vm/asdf/master/bin/install | sh
+curl -fsSL https://fnm.vercel.app/install | bash
+curl -fsSL https://deno.land/install.sh | sh
+```
+
+If a brew-installed formula was uninstalled by `brew autoremove` (this
+happened if you ran 4.3.0 in `--all` mode and one of your tools'
+dependencies was treated as "no longer needed"), `brew autoremove` is
+no longer in the default flow as of 4.3.1 — but to restore what got
+removed:
+
+```bash
+# show recently uninstalled formulae from brew's history
+brew log
+# re-install whichever of them you still want
+brew install node python openssl <whatever>
+```
+
+> **Going forward:** `brew autoremove` is now opt-in via `--brew-autoremove`.
+> Section 23 has a hard allowlist refusing to touch toolchain dirs and no
+> longer falls back to scanning `$HOME` silently — if it can't find one of
+> the standard dev folders (`~/Projects`, `~/Code`, `~/Developer`, `~/dev`,
+> `~/repos`, `~/work`, `~/Documents`, `~/Desktop`, `~/Downloads`) it
+> errors out and asks you to pass `--scan-roots`.
 
 ---
 
