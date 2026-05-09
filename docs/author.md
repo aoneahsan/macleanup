@@ -89,6 +89,7 @@ the side-by-side.
 | 2026-05 | **v4.3.2** — age-aware cache pruning (`--cache-age-days`, default 100). |
 | 2026-05 | **v4.3.3** — universal two-condition rule for non-cache deletes (`--idle-days`, default 100). |
 | 2026-05 | **v4.4.0** — `--feedback`, `--report-issue`, `--stats`, `--contact`, crash hint, branded welcome screen. |
+| 2026-05 | **v4.4.1** — documentation release: 13-page docs set under `docs/`. No script behaviour changes. |
 
 See [CHANGELOG.md](../CHANGELOG.md) for the full per-version detail.
 
@@ -229,7 +230,7 @@ A BibTeX-friendly form:
   title        = {mac-cleanup: A safe-by-default macOS cleanup and maintenance tool},
   year         = {2026},
   url          = {https://github.com/aoneahsan/macleanup},
-  note         = {Source-available, version 4.4.0}
+  note         = {Source-available, version 4.4.1}
 }
 ```
 
@@ -300,4 +301,4 @@ one fellow Mac developer.
 
 ---
 
-_Author & credits page for **mac-cleanup** v4.4.0._
+_Author & credits page for **mac-cleanup** v4.4.1._

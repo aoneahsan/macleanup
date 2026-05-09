@@ -91,7 +91,7 @@ sections page](sections.md#section-5--user-caches) for what it actually does.
 When you launch `mac-cleanup` without flags, you'll see something like this:
 
 ```
-mac-cleanup v4.4.0
+mac-cleanup v4.4.1
 =====================================================
 
 Choose a section to run (or 'a' for the safe batch, 'q' to quit):

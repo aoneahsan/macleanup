@@ -542,7 +542,7 @@ refreshing without launching the menu.
 ```bash
 mac-cleanup --list
 # →
-# mac-cleanup v4.4.0 — section catalogue
+# mac-cleanup v4.4.1 — section catalogue
 #    [ 0] System health & process monitor
 #    [ 1] Xcode caches, DerivedData, simulators
 #    ...
@@ -560,7 +560,7 @@ mac-cleanup --list
 Print version and exit.
 
 ```bash
-mac-cleanup --version          # macleanup 4.4.0
+mac-cleanup --version          # macleanup 4.4.1
 ```
 
 ---
@@ -701,4 +701,4 @@ the underlying script.
 
 ---
 
-_CLI reference for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_CLI reference for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

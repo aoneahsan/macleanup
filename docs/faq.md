@@ -268,12 +268,12 @@ corepack enable && corepack prepare pnpm@latest --activate
 corepack enable && corepack prepare yarn@stable --activate
 
 # upgrade mac-cleanup itself
-npx macleanup@latest --version    # confirm 4.4.0+
+npx macleanup@latest --version    # confirm 4.4.1+
 ```
 
 The 4.3.1+ releases protect you from this happening again.
 
-### Is the 4.3.0 issue still possible in 4.4.0?
+### Is the 4.3.0 issue still possible in 4.4.1?
 
 No. The fix is twofold and permanent:
 
@@ -357,4 +357,4 @@ See [Author & Credits](author.md) for more.
 
 ---
 
-_FAQ for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_FAQ for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

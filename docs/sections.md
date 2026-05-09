@@ -952,4 +952,4 @@ Out-of-range or junk tokens are silently ignored. Used by sections 21
 
 ---
 
-_Sections reference for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Sections reference for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

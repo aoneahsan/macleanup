@@ -271,4 +271,4 @@ for one-line restore commands for `bun`, `pnpm`, `yarn`, `nvm`, `Volta`,
 
 ---
 
-_Safety model for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Safety model for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.4.0"
+SCRIPT_VERSION="4.4.1"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"

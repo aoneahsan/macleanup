@@ -300,7 +300,7 @@ mac-cleanup --profile cache-only --no-sudo --no-reports --yes --quiet
 ### Pin a specific version for reproducibility
 
 ```bash
-npx macleanup@4.4.0 --all --yes --quiet
+npx macleanup@4.4.1 --all --yes --quiet
 ```
 
 ### Same script, multiple workstations
@@ -311,7 +311,7 @@ If you operate a fleet, distribute a single shell wrapper:
 #!/usr/bin/env bash
 # /usr/local/bin/weekly-mac-clean
 set -euo pipefail
-exec npx macleanup@4.4.0 \
+exec npx macleanup@4.4.1 \
   --profile minimal \
   --yes --quiet --notify \
   --logs-dir /var/log/mac-cleanup \
@@ -411,4 +411,4 @@ diff -u ~/.mac-cleanup/reports/stale-build-$(date -v-7d +%Y-%m-%d).txt \
 
 ---
 
-_Examples cookbook for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Examples cookbook for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

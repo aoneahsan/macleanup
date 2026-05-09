@@ -1,7 +1,7 @@
 # Recovery Guide
 
 > If a `4.3.0` run broke a globally installed tool, this page restores
-> the most common ones in one command each. Then upgrade to **`4.4.0`**
+> the most common ones in one command each. Then upgrade to **`4.4.1`**
 > so it can't happen again.
 
 ---
@@ -47,7 +47,7 @@ uninstall formulae originally installed as dependencies (e.g. `node`,
 To upgrade:
 
 ```bash
-npx macleanup@latest --version    # confirm 4.4.0 (or newer)
+npx macleanup@latest --version    # confirm 4.4.1 (or newer)
 # or, for global installs:
 npm install -g macleanup@latest
 ```
@@ -185,7 +185,7 @@ must be explicitly opted into via `--brew-autoremove`. See [CLI Reference
 
 ## Going forward — preventing a repeat
 
-Once you've upgraded to **4.4.0** (or any 4.3.1+), the safety changes
+Once you've upgraded to **4.4.1** (or any 4.3.1+), the safety changes
 above are automatic. You can also adopt these habits:
 
 ### Always `--dry-run` first
@@ -270,4 +270,4 @@ For private security disclosures, see [SECURITY.md](../SECURITY.md).
 
 ---
 
-_Recovery guide for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Recovery guide for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

@@ -65,7 +65,7 @@ created if they don't exist (best-effort `mkdir -p`).
 Format: each line begins with an ISO-8601 timestamp and a level tag.
 
 ```
-[2026-05-10 12:34:56] [INFO] Starting mac-cleanup v4.4.0
+[2026-05-10 12:34:56] [INFO] Starting mac-cleanup v4.4.1
 [2026-05-10 12:34:57] [INFO] Section 1: Xcode caches…
 [2026-05-10 12:34:58] [OK]   ~/Library/Developer/Xcode/DerivedData → 12.4 GB freed
 [2026-05-10 12:35:01] [WARN] xcrun simctl delete unavailable failed
@@ -235,7 +235,7 @@ your colleague knows exactly what generated it.
 
 ```
 ═════════════════════════════════════════════════════════════════════
-  mac-cleanup v4.4.0 — comprehensive macOS cleanup & maintenance
+  mac-cleanup v4.4.1 — comprehensive macOS cleanup & maintenance
 ─────────────────────────────────────────────────────────────────────
   Author    : Ahsan Mahmood <aoneahsan@gmail.com>
   Website   : https://aoneahsan.com
@@ -346,4 +346,4 @@ the directory and show the welcome.
 
 ---
 
-_Reports & logs guide for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Reports & logs guide for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

@@ -11,7 +11,7 @@ safety rule and section that ships with `mac-cleanup`. If the
 - **Project:** [github.com/aoneahsan/macleanup](https://github.com/aoneahsan/macleanup)
 - **npm:** [npmjs.com/package/macleanup](https://www.npmjs.com/package/macleanup)
 - **Author:** [Ahsan Mahmood](author.md) · [aoneahsan.com](https://aoneahsan.com) · [LinkedIn](https://linkedin.com/in/aoneahsan) · [GitHub](https://github.com/aoneahsan)
-- **Current version:** `4.4.0`
+- **Current version:** `4.4.1`
 - **License:** Source-Available (see [LICENSE.md](../LICENSE.md))
 
 ---
@@ -132,4 +132,4 @@ for more on how to support the project.
 
 ---
 
-> _Documentation last reviewed against `mac-cleanup` v4.4.0._
+> _Documentation last reviewed against `mac-cleanup` v4.4.1._

@@ -418,4 +418,4 @@ For private security issues, email <aoneahsan@gmail.com>. See
 
 ---
 
-_Troubleshooting guide for **mac-cleanup** v4.4.0 by **[Ahsan Mahmood](author.md)**._
+_Troubleshooting guide for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._

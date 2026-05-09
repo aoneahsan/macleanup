@@ -7,6 +7,52 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.4.1] — 2026-05-10  •  DOCUMENTATION RELEASE
+
+Documentation-only release. **No script behaviour changes.** A complete
+end-user documentation set has been added under `docs/`, covering every
+feature, flag, profile, and section of the tool in detail.
+
+### Added
+- **`docs/`** — 13-page documentation set (~5,000 lines):
+  - `docs/README.md` — index and navigation
+  - `docs/getting-started.md` — first-run walkthrough with requirements
+  - `docs/installation.md` — all 3 install methods (`npx`, global `npm`,
+    direct git checkout) with troubleshooting
+  - `docs/cli-reference.md` — every command-line flag, with examples,
+    defaults, exit codes, env vars, and common compounds
+  - `docs/sections.md` — full reference for all 27 sections (paths
+    touched, sudo requirements, confirmations, dry-run behaviour,
+    reports written, CLI flags, safety rules, edge cases)
+  - `docs/profiles.md` — all 5 named profiles (`dev`, `minimal`,
+    `cache-only`, `deep`, `audit`) explained
+  - `docs/safety-model.md` — design principles, the two-condition rule,
+    `CRITICAL_HOME_DIRS` allowlist, sudo handling, dry-run guarantees
+  - `docs/reports-and-logs.md` — output file layout, branding header,
+    `--stats`, privacy, cleanup commands
+  - `docs/recovery-guide.md` — restoring tools after a 4.3.0 run
+    (`bun`, `pnpm`, `yarn`, `nvm`, `Volta`, `asdf`, `Deno`, `rbenv`,
+    `pyenv`, `rustup`, brew autoremove victims)
+  - `docs/examples-cookbook.md` — recipe-style commands for common
+    goals (cron, dev cleanup, stale `node_modules`, large files, fleet
+    use, anti-patterns)
+  - `docs/faq.md` — plain-English answers to common questions
+  - `docs/troubleshooting.md` — symptom → cause → fix mappings
+  - `docs/author.md` — author/credits page with bio, links,
+    "Hire Ahsan" section, citation snippet, license summary
+
+### Changed
+- README badge bumped to 4.4.1.
+
+### Notes
+- `docs/` is **not** included in the published npm tarball (the `files`
+  array is unchanged). Read the docs on GitHub:
+  <https://github.com/aoneahsan/macleanup/tree/main/docs>.
+- No code paths were modified. `mac-cleanup --version` now reports
+  `4.4.1`; everything else is byte-identical to 4.4.0.
+
+---
+
 ## [4.4.0] — 2026-05-10  •  USER-FACING POLISH (final 4.x feature drop)
 
 User-experience polish round, no behaviour changes to the cleanup
