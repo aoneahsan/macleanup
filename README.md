@@ -7,7 +7,7 @@
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.3.1-blue.svg)](#changelog)
+[![version](https://img.shields.io/badge/version-4.3.2-blue.svg)](#changelog)
 [![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 
@@ -160,10 +160,17 @@ self-attributing.
 | Variable | Default | Flag |
 |---|---:|---|
 | Days an app must be idle to be flagged | 100 | `--threshold N` |
+| Days a cache file must be unused (sections 1, 2, 3) | 100 | `--cache-age-days N` |
 | Days a build dir must be untouched (sec 23) | 100 | `--stale-build-days N` |
 | Days a large file must be untouched (sec 24) | 100 | `--large-file-days N` |
 | Min size for the large-file scan (sec 24) | 1 GB | `--large-file-size-gb N` |
 | Scan roots for sections 23/24 | auto-detected | `--scan-roots "p1:p2"` |
+
+> **Cache age, by `atime` AND `mtime`** — `--cache-age-days 100` keeps any file
+> you've **opened OR modified** in the last 100 days, even if it was downloaded
+> 6 months ago. A Gradle distribution you invoke once a month keeps recent
+> atime and survives every pass. Pass `--cache-age-days 0` to disable the
+> filter entirely (full wipe — old `<4.3.2` behaviour).
 
 ---
 

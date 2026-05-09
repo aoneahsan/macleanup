@@ -7,6 +7,72 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.3.2] — 2026-05-10  •  AGE-AWARE CACHE PRUNING
+
+**The 100-day rule, now applied to every cache.**
+`npx macleanup@latest` will fetch this version.
+
+### Fixed
+- **Sections 1 (Xcode), 2 (Android/Gradle), 3 (package managers) no
+  longer wipe entire caches.** Previously these used `clean_dir_contents`
+  which deleted every file regardless of whether it had been touched
+  recently. That was the bug behind reports like *"my Gradle 8.13
+  distribution that I use every 1–2 months got deleted"* — the file's
+  mtime stayed at download time but its atime was recent each time
+  Gradle ran.
+  Now uses a new `clean_dir_unused` helper that requires **both atime
+  AND mtime ≥ N days old** before removing a file. Anything you've
+  actually invoked, even rarely, keeps a recent atime and survives
+  every pass.
+
+### Changed
+- **Default age threshold for cache pruning is now 100 days.**
+  Configurable via `--cache-age-days N`. Use `--cache-age-days 0` to
+  restore the pre-4.3.2 full-wipe behaviour.
+- **Affected directories** (now age-aware):
+  - Section 1: `Xcode/DerivedData`, `iOS/tvOS/watchOS DeviceSupport`,
+    `Xcode/Logs`, `Xcode/DocumentationCache`, `Caches/com.apple.dt.Xcode`
+  - Section 2: `~/.gradle/caches`, `~/.gradle/wrapper/dists`,
+    `~/.android/cache`, `~/.android/build-cache`
+  - Section 3: `~/.pub-cache`, `~/.cargo/registry/cache`,
+    `~/.cargo/git/db`, `~/go/pkg/mod/cache`, `~/.bundle/cache`,
+    `~/.gem/cache`
+- **Section 3 no longer runs `go clean -modcache` by default.** That
+  command wipes the entire Go module cache — same problem as the
+  Gradle wipe. Now uses age-aware prune; `go clean -modcache` is only
+  run when `--cache-age-days 0` is explicitly passed.
+- Confirmation prompts updated to mention the threshold (e.g. *"Prune
+  Gradle distributions unused for 100+ days?"*) so you know what's
+  actually being asked.
+
+### Added
+- New flag: `--cache-age-days N` (default 100, 0 for full wipe).
+- New helper: `clean_dir_unused dir days` — finds files where both
+  atime and mtime are ≥ N days old, removes them, then collapses
+  newly-empty directories in up to 4 passes so nested empties roll up.
+
+### Unchanged (deliberately)
+These full-wipes are still appropriate because the data either
+regenerates instantly or is explicitly opted-in:
+- Browser caches (section 19) — pages re-cache on next visit.
+- `~/Library/Caches/<non-Apple-app>` (section 5) — apps regenerate.
+- `~/Library/Saved Application State` — state, not data.
+- `~/Library/Updates` — installer downloads.
+- `~/.Trash` (section 10) — that's the whole point of Trash.
+- `~/Library/Developer/CoreSimulator` — only wiped when user
+  explicitly chooses "Wipe ALL CoreSimulator data".
+- Tool-builtin commands: `npm cache clean --force`, `yarn cache clean`,
+  `pnpm store prune`, `pip cache purge`, `pod cache clean --all`,
+  `brew cleanup -s`. These are designed by their tool authors to be
+  safe and to wipe only redownloadable artefacts.
+
+### Migration
+No flag changes required. Behaviour change is purely safer-by-default.
+If you scripted `npx macleanup --all --yes` and want exactly the old
+wipe-everything behaviour: add `--cache-age-days 0`.
+
+---
+
 ## [4.3.1] — 2026-05-10  •  SAFETY FIX
 
 **Users on 4.3.0: please upgrade immediately.**

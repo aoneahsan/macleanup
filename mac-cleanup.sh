@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.3.1"
+SCRIPT_VERSION="4.3.2"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
@@ -88,6 +88,12 @@ UNUSED_APP_THRESHOLD_DAYS_DEFAULT=100
 STALE_BUILD_THRESHOLD_DAYS_DEFAULT=100
 LARGE_FILE_THRESHOLD_DAYS_DEFAULT=100
 LARGE_FILE_SIZE_GB_DEFAULT=1
+# Age threshold (days) for cache pruning in sections 1, 2, 3.
+# Any file whose atime AND mtime are both ≥ this many days old is
+# considered unused and may be removed. Files actively in use keep
+# recent atime, so they survive every pass even if they were
+# downloaded long ago. Use 0 for a full wipe (old behaviour).
+CACHE_AGE_DAYS_DEFAULT=100
 
 # Regenerable dev artefact directory names. Each can be rebuilt by re-running
 # the project's install/build, so deleting them is non-destructive provided
@@ -171,6 +177,7 @@ PROFILE_NAME=""    # --profile dev|minimal|cache-only|deep|audit
 NOTIFY=0           # --notify (macOS notification on completion)
 CHECK_UPDATE=0     # --check-update (query npm for latest)
 BREW_AUTOREMOVE=0  # --brew-autoremove (opt-in; removes "unused" formulae)
+CACHE_AGE_DAYS="$CACHE_AGE_DAYS_DEFAULT"  # --cache-age-days N
 
 TOTAL_FREED_KB=0
 DISK_FREE_BEFORE_KB=""
@@ -360,6 +367,64 @@ clean_dir_old() {
   after=$(size_kb "$d")
   track_freed "$before" "$after"
   ok "Pruned $(human_kb "$(( before - after ))") (>${days}d) from $d"
+}
+
+# clean_dir_unused path days
+# Like clean_dir_contents, but only removes files whose atime AND mtime
+# are both ≥ N days old — i.e., files that haven't been opened OR modified
+# in N days. Used for cache directories where we want to preserve actively-
+# used items (e.g., a Gradle distribution the user invokes once a month
+# keeps recent atime, so it survives every pass).
+#
+# `days == 0` triggers a full wipe (clean_dir_contents semantics) — kept
+# as an escape hatch for users who really want the old <4.3.2 behaviour.
+#
+# After file pruning, empty directories are removed in up to 4 passes so
+# nested empties collapse all the way up.
+clean_dir_unused() {
+  local d="$1" days="${2:-${CACHE_AGE_DAYS:-100}}"
+  [[ -z "$d" ]] && return 0
+  if [[ ! -d "$d" ]]; then
+    note "Skipping (missing): $d"
+    return 0
+  fi
+  local before after freed
+  before=$(size_kb "$d")
+  if (( DRY_RUN )); then
+    if (( days == 0 )); then
+      note "[dry-run] would full-wipe $d ($(human_kb "$before"))"
+    else
+      note "[dry-run] would prune files unused (atime+mtime) >${days}d in $d"
+    fi
+    return 0
+  fi
+  if (( days == 0 )); then
+    ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
+  else
+    # Files where BOTH atime > N days AND mtime > N days. Anything used
+    # recently (read by a tool, or rewritten) keeps its atime/mtime fresh
+    # and survives.
+    find "$d" -mindepth 1 -type f -atime "+$days" -mtime "+$days" \
+      -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
+    # Collapse newly-empty directories. Multiple passes handle nesting
+    # (parent becomes empty after children are removed, etc.).
+    local _ pass
+    for pass in 1 2 3 4; do
+      find "$d" -mindepth 1 -type d -empty -delete 2>/dev/null || break
+    done
+  fi
+  after=$(size_kb "$d")
+  track_freed "$before" "$after"
+  freed=$(( before - after ))
+  if (( freed > 0 )); then
+    if (( days == 0 )); then
+      ok "Wiped $(human_kb "$freed") from $d"
+    else
+      ok "Pruned $(human_kb "$freed") (>${days}d unused) from $d"
+    fi
+  else
+    note "Nothing to prune in $d (everything used within ${days} days)"
+  fi
 }
 
 # require_sudo — returns 0 if we have (or got) sudo, 1 otherwise
@@ -591,6 +656,11 @@ ${BOLD}Options${NC}
                               Off by default since 4.3.1 — autoremove can
                               uninstall dependency-installed formulae like
                               node/python and break global tools.
+  --cache-age-days N          Age threshold for cache pruning in sections
+                              1, 2, 3. Files whose atime AND mtime are
+                              both ≥ N days old are deleted; recent files
+                              kept. Default: ${CACHE_AGE_DAYS_DEFAULT}.
+                              Use 0 for a full wipe (old <4.3.2 behaviour).
   --list                      List every section number and label, then exit.
   --version, -V               Print version and exit.
   -h, --help                  Show this help.
@@ -838,6 +908,10 @@ parse_args() {
         CHECK_UPDATE=1 ;;
       --brew-autoremove)
         BREW_AUTOREMOVE=1 ;;
+      --cache-age-days)
+        shift
+        [[ "${1:-}" =~ ^[0-9]+$ ]] || { err "--cache-age-days needs a number"; exit 2; }
+        CACHE_AGE_DAYS="$1" ;;
       --no-color)
         RED=""; GREEN=""; YELLOW=""; BLUE=""; CYAN=""; MAGENTA=""; BOLD=""; DIM=""; NC=""
         ;;
@@ -908,6 +982,7 @@ s01_xcode() {
     info "No Xcode installation detected — skipping."
     mark_done 1; return 0
   fi
+  info "Pruning Xcode caches unused for ${CACHE_AGE_DAYS}+ days (atime+mtime). Recently-built projects survive."
   local d
   for d in \
     "$HOME/Library/Developer/Xcode/DerivedData" \
@@ -917,7 +992,7 @@ s01_xcode() {
     "$HOME/Library/Developer/Xcode/Logs" \
     "$HOME/Library/Developer/Xcode/DocumentationCache" \
     "$HOME/Library/Caches/com.apple.dt.Xcode"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
+    [[ -d "$d" ]] && clean_dir_unused "$d" "$CACHE_AGE_DAYS"
   done
   if has_cmd xcrun; then
     if (( DRY_RUN )); then
@@ -940,19 +1015,22 @@ s01_xcode() {
 # Section 2 — Android / Gradle
 s02_android() {
   header "[2] Android / Gradle caches"
+  info "Pruning items unused for ${CACHE_AGE_DAYS}+ days (atime+mtime)."
+  info "A Gradle distribution you invoke even once a month keeps a recent atime and survives."
   local cleaned=0
   if [[ -d "$HOME/.gradle/caches" ]]; then
-    clean_dir_contents "$HOME/.gradle/caches"; cleaned=1
+    clean_dir_unused "$HOME/.gradle/caches" "$CACHE_AGE_DAYS"; cleaned=1
   fi
   if [[ -d "$HOME/.gradle/wrapper/dists" ]]; then
     local sz; sz=$(size_h "$HOME/.gradle/wrapper/dists")
-    if confirm "Delete old Gradle wrapper distributions ($sz)?"; then
-      clean_dir_contents "$HOME/.gradle/wrapper/dists"
+    info "Gradle wrapper distributions: $sz total"
+    if confirm "Prune Gradle distributions unused for ${CACHE_AGE_DAYS}+ days?"; then
+      clean_dir_unused "$HOME/.gradle/wrapper/dists" "$CACHE_AGE_DAYS"
       cleaned=1
     fi
   fi
   for d in "$HOME/.android/cache" "$HOME/.android/build-cache"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d" && cleaned=1
+    [[ -d "$d" ]] && clean_dir_unused "$d" "$CACHE_AGE_DAYS" && cleaned=1
   done
   (( cleaned )) || info "No Android/Gradle caches found."
   mark_done 2; press_enter
@@ -1012,34 +1090,35 @@ s03_pkg_managers() {
     fi
   fi
 
-  # Flutter pub cache
+  # Flutter pub cache (age-aware — pubs you reference recently keep their atime)
   if [[ -d "$HOME/.pub-cache" ]]; then
     local sz; sz=$(size_h "$HOME/.pub-cache")
-    if confirm "Clear Flutter pub cache ($sz)? Will be repopulated on next build." 1; then
-      clean_dir_contents "$HOME/.pub-cache"
+    if confirm "Prune Flutter pub-cache packages unused for ${CACHE_AGE_DAYS}+ days ($sz total)?" 1; then
+      clean_dir_unused "$HOME/.pub-cache" "$CACHE_AGE_DAYS"
     fi
   fi
   # Cargo
   for d in "$HOME/.cargo/registry/cache" "$HOME/.cargo/git/db"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
+    [[ -d "$d" ]] && clean_dir_unused "$d" "$CACHE_AGE_DAYS"
   done
-  # Go module cache
+  # Go module cache — `go clean -modcache` would wipe everything; that
+  # contradicts the "100-day rule." Default to age-aware prune; only fall
+  # back to `go clean -modcache` if --cache-age-days 0 was explicitly set.
   if [[ -d "$HOME/go/pkg/mod/cache" ]]; then
-    local sz; sz=$(size_h "$HOME/go/pkg/mod/cache")
-    if has_cmd go && ! (( DRY_RUN )); then
-      info "go clean -modcache ($sz)…"
-      GOFLAGS="" go clean -modcache 2>/dev/null && ok "go modcache cleaned" \
-        || { warn "go clean failed; falling back to rm"; clean_dir_contents "$HOME/go/pkg/mod/cache"; }
+    if (( CACHE_AGE_DAYS == 0 )) && has_cmd go && ! (( DRY_RUN )); then
+      info "go clean -modcache (full wipe — --cache-age-days 0)…"
+      GOFLAGS="" go clean -modcache 2>/dev/null && ok "go modcache wiped" \
+        || { warn "go clean failed; falling back to rm"; clean_dir_unused "$HOME/go/pkg/mod/cache" 0; }
     else
-      clean_dir_contents "$HOME/go/pkg/mod/cache"
+      clean_dir_unused "$HOME/go/pkg/mod/cache" "$CACHE_AGE_DAYS"
     fi
   fi
   # Ruby
   for d in "$HOME/.bundle/cache"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
+    [[ -d "$d" ]] && clean_dir_unused "$d" "$CACHE_AGE_DAYS"
   done
   if [[ -d "$HOME/.gem/cache" ]]; then
-    clean_dir_contents "$HOME/.gem/cache"
+    clean_dir_unused "$HOME/.gem/cache" "$CACHE_AGE_DAYS"
   fi
   mark_done 3; press_enter
 }
