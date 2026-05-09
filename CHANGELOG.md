@@ -7,6 +7,67 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.3.3] — 2026-05-10  •  TWO-CONDITION RULE FOR NON-CACHE DELETES
+
+**The principle**: any uninstall/delete that targets a piece of software,
+tool, or user data (i.e. **anything that isn't pure cache**) now must
+satisfy **both**:
+
+1. **Not used by any active software/tool** — the existing detection
+   (no installed-app match for orphan data, broken target binary for
+   LaunchAgents, no last-used signal for idle apps).
+2. **Not touched by the user (atime AND mtime) for ≥ N days**, where
+   N defaults to 100. Configurable via the new `--idle-days N`.
+
+This is the second half of the rule the user explicitly asked for. It
+prevents the failure mode where condition (a) was true but condition
+(b) was missed, e.g. a Container directory whose owning app couldn't
+be matched by bundle ID but was still being touched by something
+(spotlight indexer, a service, a daemon).
+
+### Fixed
+- **Section 12 (orphaned app data)** now requires the candidate to be
+  both orphan AND idle ≥ ${IDLE_THRESHOLD_DAYS_DEFAULT} days. Items orphan-shaped but touched
+  recently are skipped with a count: *"Skipped N orphan-shaped entries
+  that were touched within the last 100 days (probably still in use)."*
+- **Section 23 (stale build artefacts)** now uses both `-atime +N` AND
+  `-mtime +N` in the find expression, mirroring the rule. A
+  `node_modules` whose IDE has been reading files (autocomplete /
+  intellisense) keeps a recent atime even if `npm install` hasn't run
+  in months — it'll no longer be flagged.
+
+### Added
+- **`--idle-days N`** — universal idle threshold for non-cache deletes
+  in sections 12 and 23. Default 100. The dedicated
+  `--stale-build-days N` still wins if the user passes it explicitly,
+  but `--idle-days N` is now the canonical knob for "I want a stricter
+  100-day rule everywhere."
+- **Sections 16 (iOS backups) and 17 (Xcode archives)** now display
+  per-item age in days plus a tag — `[idle ≥100d]` for safe-to-delete
+  items, `(recent — likely keep)` otherwise. Doesn't auto-skip (these
+  sections are interactive review by design), but lets the user apply
+  the rule by hand without consulting external tooling.
+- New constant `IDLE_THRESHOLD_DAYS_DEFAULT=100` exported as the
+  single source of truth so future sections can reuse it.
+
+### Coverage map
+| Section | Condition (a) — not in active use | Condition (b) — idle ≥100d |
+|---:|---|---|
+| 12 — Orphan app data | ✅ no installed-app match | ✅ atime+mtime check (NEW) |
+| 16 — iOS backups | n/a (user data) | ✅ age tag in UI |
+| 17 — Xcode archives | n/a (project artefacts) | ✅ age tag in UI |
+| 21 — Idle apps | n/a (user-owned) | ✅ already (5-source last-used check) |
+| 23 — Stale build artefacts | n/a (regenerable) | ✅ atime+mtime (NEW) |
+| 24 — Large stale files | n/a (user files) | ✅ already |
+| 25 — Orphan LaunchAgents | ✅ target binary missing | n/a (broken plist is bad regardless of age) |
+
+### Migration
+No flag changes required. Behaviour is purely safer-by-default. To get
+the old (4.3.2) behaviour back you'd have to explicitly pass
+`--idle-days 0`.
+
+---
+
 ## [4.3.2] — 2026-05-10  •  AGE-AWARE CACHE PRUNING
 
 **The 100-day rule, now applied to every cache.**

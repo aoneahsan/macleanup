@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.3.2"
+SCRIPT_VERSION="4.3.3"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
@@ -94,6 +94,12 @@ LARGE_FILE_SIZE_GB_DEFAULT=1
 # recent atime, so they survive every pass even if they were
 # downloaded long ago. Use 0 for a full wipe (old behaviour).
 CACHE_AGE_DAYS_DEFAULT=100
+# Universal idle threshold for non-cache deletes (sections 12, 23 et al).
+# Per the 4.3.3 safety rule: any uninstall/delete of software/tools/data
+# (not pure cache) must satisfy BOTH conditions —
+#   (a) not used by any active software/tool, and
+#   (b) not touched by the user (atime+mtime) for ≥ this many days.
+IDLE_THRESHOLD_DAYS_DEFAULT=100
 
 # Regenerable dev artefact directory names. Each can be rebuilt by re-running
 # the project's install/build, so deleting them is non-destructive provided
@@ -178,6 +184,7 @@ NOTIFY=0           # --notify (macOS notification on completion)
 CHECK_UPDATE=0     # --check-update (query npm for latest)
 BREW_AUTOREMOVE=0  # --brew-autoremove (opt-in; removes "unused" formulae)
 CACHE_AGE_DAYS="$CACHE_AGE_DAYS_DEFAULT"  # --cache-age-days N
+IDLE_THRESHOLD_DAYS="$IDLE_THRESHOLD_DAYS_DEFAULT"  # --idle-days N (sections 12, 23)
 
 TOTAL_FREED_KB=0
 DISK_FREE_BEFORE_KB=""
@@ -661,6 +668,13 @@ ${BOLD}Options${NC}
                               both ≥ N days old are deleted; recent files
                               kept. Default: ${CACHE_AGE_DAYS_DEFAULT}.
                               Use 0 for a full wipe (old <4.3.2 behaviour).
+  --idle-days N               Universal idle threshold for non-cache
+                              deletes in sections 12 (orphan data) and
+                              23 (stale build artefacts). Default:
+                              ${IDLE_THRESHOLD_DAYS_DEFAULT}. Per the 4.3.3 safety rule, items
+                              are only deleted if they're (a) not in use
+                              by any active software AND (b) untouched
+                              for ≥ N days.
   --list                      List every section number and label, then exit.
   --version, -V               Print version and exit.
   -h, --help                  Show this help.
@@ -912,6 +926,10 @@ parse_args() {
         shift
         [[ "${1:-}" =~ ^[0-9]+$ ]] || { err "--cache-age-days needs a number"; exit 2; }
         CACHE_AGE_DAYS="$1" ;;
+      --idle-days)
+        shift
+        [[ "${1:-}" =~ ^[0-9]+$ ]] || { err "--idle-days needs a number"; exit 2; }
+        IDLE_THRESHOLD_DAYS="$1" ;;
       --no-color)
         RED=""; GREEN=""; YELLOW=""; BLUE=""; CYAN=""; MAGENTA=""; BOLD=""; DIM=""; NC=""
         ;;
@@ -1381,6 +1399,9 @@ s12_orphaned() {
   }
 
   declare -a candidates=()
+  local recent_skipped=0
+  local _now; _now=$(date +%s)
+  local _idle_days="$IDLE_THRESHOLD_DAYS"
 
   _scan_dir() {
     local dir="$1" pattern="$2"
@@ -1392,6 +1413,23 @@ s12_orphaned() {
       is_apple_bundle "$base" && continue
       [[ "$base" == "."* ]] && continue
       _match_installed "$base" && continue
+      # 4.3.3 SAFETY: orphaned-by-bundle-ID is condition (a). Now also
+      # require condition (b): the entry hasn't been touched (atime AND
+      # mtime) for ≥ IDLE_THRESHOLD_DAYS. Skip recently-active items
+      # even if our heuristic matcher couldn't find an installed app —
+      # something IS using it.
+      local _atime _mtime _newer _idle
+      _atime=$(stat -f %a "$entry" 2>/dev/null || echo 0)
+      _mtime=$(stat -f %m "$entry" 2>/dev/null || echo 0)
+      _newer=$_atime
+      (( _mtime > _newer )) && _newer=$_mtime
+      if (( _newer > 0 )); then
+        _idle=$(( (_now - _newer) / 86400 ))
+        if (( _idle < _idle_days )); then
+          recent_skipped=$(( recent_skipped + 1 ))
+          continue
+        fi
+      fi
       candidates+=("$entry")
     done < <(find "$dir" -mindepth 1 -maxdepth 1 $pattern 2>/dev/null)
   }
@@ -1403,12 +1441,16 @@ s12_orphaned() {
   _scan_dir "$HOME/Library/Preferences"         "-type f -name *.plist"
   _scan_dir "$HOME/Library/LaunchAgents"        "-type f -name *.plist"
 
+  if (( recent_skipped > 0 )); then
+    note "Skipped $recent_skipped orphan-shaped entries that were touched within the last ${_idle_days} days (probably still in use)."
+  fi
+
   if (( ${#candidates[@]} == 0 )); then
-    ok "No orphaned data found."
+    ok "No orphaned data found older than ${_idle_days} days."
     mark_done 12; press_enter; return 0
   fi
 
-  info "Found ${#candidates[@]} candidate orphan entries. Reporting to:"
+  info "Found ${#candidates[@]} candidate orphan entries (orphaned AND idle ≥${_idle_days}d). Reporting to:"
   note "$report"
   local total_kb=0 c sz_kb
   for c in "${candidates[@]}"; do
@@ -1517,7 +1559,9 @@ s16_ios_backups() {
     mark_done 16; return 0
   fi
   info "Found ${#backups[@]} backup(s) in $root"
+  info "Per the 4.3.3 safety rule: items untouched for ${IDLE_THRESHOLD_DAYS}+ days are highlighted as safe-to-delete; recent backups are not."
   local b name date sz_h
+  local _now; _now=$(date +%s)
   local i=0
   for b in "${backups[@]}"; do
     i=$((i+1))
@@ -1527,7 +1571,28 @@ s16_ios_backups() {
       date=$(plutil -extract 'Last Backup Date' raw -o - "$b/Info.plist" 2>/dev/null || true)
     fi
     sz_h=$(size_h "$b")
-    printf '   %b[%d]%b %s  %s — %s — %s\n' "$CYAN" "$i" "$NC" "$(basename "$b")" "${name:-?}" "${date:-?}" "$sz_h"
+    # Compute age: prefer Last Backup Date from plist; fall back to dir mtime
+    local _epoch=0 _age_label="" _flag=""
+    if [[ -n "$date" ]]; then
+      _epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$date" +%s 2>/dev/null \
+        || date -j -f "%Y-%m-%d %H:%M:%S %z" "$date" +%s 2>/dev/null \
+        || echo 0)
+    fi
+    if (( _epoch == 0 )); then
+      _epoch=$(stat -f %m "$b" 2>/dev/null || echo 0)
+    fi
+    if (( _epoch > 0 )); then
+      local _age=$(( (_now - _epoch) / 86400 ))
+      _age_label="${_age}d"
+      if (( _age >= IDLE_THRESHOLD_DAYS )); then
+        _flag=" ${YELLOW}[idle ≥${IDLE_THRESHOLD_DAYS}d]${NC}"
+      else
+        _flag=" ${DIM}(recent)${NC}"
+      fi
+    fi
+    printf '   %b[%d]%b %s  %s — %s — %s — %s%b\n' \
+      "$CYAN" "$i" "$NC" "$(basename "$b")" "${name:-?}" \
+      "${date:-?}" "$sz_h" "$_age_label" "$_flag"
   done
   if (( BATCH_MODE && ! ASSUME_YES )); then
     note "Batch mode: report-only."
@@ -1564,10 +1629,24 @@ s17_xcode_archives() {
     mark_done 17; return 0
   fi
   info "Found ${#archives[@]} archive(s) ($(size_h "$root") total). Required for App Store re-signing."
-  local a i=0
+  info "Per the 4.3.3 safety rule: archives untouched ≥${IDLE_THRESHOLD_DAYS}d are highlighted; recent ones are kept by default."
+  local a i=0 _now
+  _now=$(date +%s)
   for a in "${archives[@]}"; do
     i=$((i+1))
-    printf '   %b[%d]%b %s — %s\n' "$CYAN" "$i" "$NC" "$(basename "$a")" "$(size_h "$a")"
+    local _epoch _age_label="" _flag=""
+    _epoch=$(stat -f %m "$a" 2>/dev/null || echo 0)
+    if (( _epoch > 0 )); then
+      local _age=$(( (_now - _epoch) / 86400 ))
+      _age_label="${_age}d"
+      if (( _age >= IDLE_THRESHOLD_DAYS )); then
+        _flag=" ${YELLOW}[idle ≥${IDLE_THRESHOLD_DAYS}d]${NC}"
+      else
+        _flag=" ${DIM}(recent — likely keep)${NC}"
+      fi
+    fi
+    printf '   %b[%d]%b %s — %s — %s%b\n' \
+      "$CYAN" "$i" "$NC" "$(basename "$a")" "$(size_h "$a")" "$_age_label" "$_flag"
   done
   if (( BATCH_MODE && ! ASSUME_YES )); then
     note "Batch mode: report-only."
@@ -1992,11 +2071,17 @@ s22_purgeable_trigger() {
 # or build, so deleting old ones is normally safe.
 s23_stale_builds() {
   header "[23] Stale build artefacts (node_modules, vendor, dist, build, .next, target, …)"
-  info "Find regenerable dev directories that haven't changed for a while."
+  info "Find regenerable dev directories untouched (atime+mtime) for a while."
   printf '   %bPatterns:%b %s\n' "$DIM" "$NC" "${STALE_BUILD_PATTERNS[*]}"
 
+  # 4.3.3: default the per-section threshold to IDLE_THRESHOLD_DAYS so
+  # `--idle-days N` flows through here too. The dedicated
+  # --stale-build-days N still wins if the user passes it explicitly.
   local days
-  days=$(prompt_int "Days threshold (dirs untouched ≥ this are flagged)" "$STALE_BUILD_THRESHOLD_DAYS")
+  if [[ "$STALE_BUILD_THRESHOLD_DAYS" == "$STALE_BUILD_THRESHOLD_DAYS_DEFAULT" ]]; then
+    STALE_BUILD_THRESHOLD_DAYS="$IDLE_THRESHOLD_DAYS"
+  fi
+  days=$(prompt_int "Days threshold — flag dirs untouched (atime+mtime) ≥ this" "$STALE_BUILD_THRESHOLD_DAYS")
   STALE_BUILD_THRESHOLD_DAYS="$days"
 
   # Pick scan roots: --scan-roots override, OR common dev folders only.
@@ -2015,7 +2100,7 @@ s23_stale_builds() {
 
   printf '\n%bScan roots:%b\n' "$BOLD" "$NC"
   local r; for r in "${roots[@]}"; do printf '   • %s\n' "$r"; done
-  printf '%bAge filter:%b directories whose mtime is ≥ %d days old\n\n' "$BOLD" "$NC" "$days"
+  printf '%bAge filter:%b directories whose atime AND mtime are both ≥ %d days old\n\n' "$BOLD" "$NC" "$days"
 
   if ! confirm "Proceed with scan?" 1; then mark_done 23; return 0; fi
   info "Scanning… (large trees can take a minute)"
@@ -2046,7 +2131,7 @@ s23_stale_builds() {
       ! -path "$HOME/Library" \
       ! -path "$HOME/Library/*" \
       "${critical_excludes[@]}" \
-      \( "${find_names[@]}" \) -prune -mtime "+$days" \
+      \( "${find_names[@]}" \) -prune -atime "+$days" -mtime "+$days" \
       -print 2>/dev/null >> "$results" || true
   done
 
