@@ -1,0 +1,36 @@
+mac-cleanup
+===========
+
+Copyright (c) 2024-2026 Ahsan Mahmood <aoneahsan@gmail.com>
+
+All rights reserved.
+
+This software is licensed under the mac-cleanup Source-Available
+License v1.0. See the LICENSE.md file in the root of this repository
+for the full terms.
+
+Summary (non-binding):
+
+  - You may read and run this software on hardware you personally own
+    or administer, for personal, educational, evaluation, or internal
+    business purposes.
+
+  - You may NOT modify, fork, redistribute, repackage, sell, sublicense,
+    rent, or commercially exploit this software, in whole or in part.
+
+  - The software is provided AS IS, without warranty of any kind. The
+    author is not liable for any damage, data loss, or business impact
+    arising from its use.
+
+  - You agree to indemnify and hold the author harmless against any
+    claim arising from your use of this software.
+
+For commercial licensing or any other permission outside the scope of
+the public source-available license, contact the author:
+
+    Ahsan Mahmood
+    aoneahsan@gmail.com
+    https://aoneahsan.com
+    https://linkedin.com/in/aoneahsan
+
+Project home: https://github.com/aoneahsan/macleanup

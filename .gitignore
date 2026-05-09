@@ -1,0 +1,59 @@
+# =============================================================================
+#  mac-cleanup — .gitignore
+#  Block anything that could leak personal data, machine state, or build cruft.
+# =============================================================================
+
+# --- Runtime output ---------------------------------------------------------
+# Reports & logs ALWAYS contain personal paths and app names. Never commit.
+logs/
+*.log
+*-report.txt
+*-report-*.txt
+orphans-*.txt
+unused-apps-*.txt
+large-files-*.txt
+large-stale-*.txt
+stale-build-*.txt
+
+# --- Personal / sensitive ---------------------------------------------------
+.env
+.env.*
+*.pem
+*.p12
+*.keystore
+*.jks
+secrets/
+credentials/
+*.private.*
+*.secret.*
+
+# --- Editor / IDE ----------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+.history/
+
+# --- OS cruft ---------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini
+ehthumbs.db
+Icon?
+
+# --- Custom user patterns ---------------------------------------------------
+*.ignore.*
+project-record-ignore/
+scratch/
+tmp/
+.tmp/
+
+# --- Misc -------------------------------------------------------------------
+*.bak
+*.orig
+*.rej

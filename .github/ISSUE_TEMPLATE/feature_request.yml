@@ -1,0 +1,41 @@
+name: ✨ Feature request
+description: Suggest a new section, flag, or behaviour change.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The maintainer accepts features at sole discretion. Please describe the **use case** before the implementation.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the real-world workflow that motivates this. "It would be nice if…" without a workflow gets closed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Be specific. Flag name, default value, expected behaviour.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Why not use an existing section / flag combination?
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirm
+      options:
+        - label: I have searched existing issues and discussions.
+          required: true
+        - label: I understand this project is source-available and that the maintainer is under no obligation to accept the feature.
+          required: true

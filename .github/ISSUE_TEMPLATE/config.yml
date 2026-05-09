@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🛡️ Security vulnerability
+    url: https://github.com/aoneahsan/macleanup/blob/main/SECURITY.md
+    about: Email aoneahsan@gmail.com privately. Do NOT file public issues for security bugs.
+  - name: 💬 General questions
+    url: https://github.com/aoneahsan/macleanup/discussions
+    about: Ask in Discussions before opening an issue.
