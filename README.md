@@ -7,7 +7,7 @@
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.3.3-blue.svg)](#changelog)
+[![version](https://img.shields.io/badge/version-4.4.0-blue.svg)](#changelog)
 [![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 
@@ -447,6 +447,31 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history. Highlights:
   `--scan-roots`, `--list`, `--version`, `--no-color` flags. Multi-select
   in section 21. Hardened path quoting; bash-version + macOS preflight.
 - **4.0.0** (2026-04) — Single-file rewrite of the modular split.
+
+---
+
+## 💬 Get help, give feedback, report bugs
+
+Three flags, all local-first — nothing is auto-sent. You review every
+prefilled message before clicking Submit / Send.
+
+```bash
+mac-cleanup --contact         # show the author contact card
+mac-cleanup --feedback        # open mail client with prefilled message
+mac-cleanup --report-issue    # open a pre-filled GitHub issue
+                              # (env info gathered locally, last 50 log
+                              #  lines copied to clipboard if available)
+mac-cleanup --stats           # show your run history at ~/.mac-cleanup
+```
+
+There's also a one-time **welcome screen** the first time you run the
+tool on a machine. Marker file at `~/.mac-cleanup/.welcomed`; delete it
+to see the welcome again.
+
+If something exits with an error, the script automatically prints a
+hint pointing at `--report-issue` so you don't have to remember the
+flag name. **No automatic crash submission** — you always choose what
+to share.
 
 ---
 

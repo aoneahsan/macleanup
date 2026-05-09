@@ -1,6 +1,6 @@
 {
   "name": "macleanup",
-  "version": "4.3.3",
+  "version": "4.4.0",
   "description": "Comprehensive, safe-by-default macOS cleanup & maintenance tool — 27 sections, dry-run support, zero install via npx.",
   "bin": {
     "macleanup": "bin/mac-cleanup.js",

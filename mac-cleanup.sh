@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.3.3"
+SCRIPT_VERSION="4.4.0"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
@@ -194,6 +194,7 @@ COMPLETED_SECTIONS=()
 TMPFILES=()
 
 _cleanup_temps() {
+  local rc=$?
   local f
   for f in "${TMPFILES[@]+"${TMPFILES[@]}"}"; do
     [[ -n "$f" && -e "$f" ]] && rm -f "$f" 2>/dev/null || true
@@ -204,6 +205,16 @@ _cleanup_temps() {
   # Reports always persist; only this run's log is removed.
   if [[ "${CLEANUP_LOGS_ON_FINISH:-0}" == "1" ]] && [[ -f "${LOG_FILE:-}" ]]; then
     rm -f -- "$LOG_FILE" 2>/dev/null || true
+  fi
+  # Crash hint — when exiting non-zero AND the script actually got far
+  # enough to set up logs (post-parse_args, where SCRIPT_VERSION is
+  # known and the welcome was past), point the user at --report-issue.
+  # Skip rc=0 (success) and rc=2 (deliberate user-error from
+  # parse_args; "Unknown option" already printed help).
+  if (( rc != 0 )) && (( rc != 2 )) && [[ -d "${LOG_DIR:-}" ]]; then
+    printf '\n%b   Something went wrong (exit %d).%b\n' "${YELLOW:-}" "$rc" "${NC:-}" >&2
+    printf '%b   Run \`%s --report-issue\` to file a pre-filled bug report,%b\n' "${YELLOW:-}" "${SCRIPT_NAME:-mac-cleanup}" "${NC:-}" >&2
+    printf '%b   or \`%s --feedback\` to email the author directly.%b\n\n' "${YELLOW:-}" "${SCRIPT_NAME:-mac-cleanup}" "${NC:-}" >&2
   fi
   # Reset terminal attributes so an interrupted printf doesn't leave the
   # shell in a coloured / dimmed state — only when we were using colours.
@@ -677,6 +688,12 @@ ${BOLD}Options${NC}
                               for ≥ N days.
   --list                      List every section number and label, then exit.
   --version, -V               Print version and exit.
+  --contact                   Print author contact card and exit.
+  --feedback                  Open mail client with prefilled message.
+  --report-issue              Collect environment info LOCALLY and open
+                              a pre-filled GitHub issue (you review it
+                              before submitting — nothing is auto-sent).
+  --stats                     Show history of runs at $HOME/.mac-cleanup.
   -h, --help                  Show this help.
 
 ${BOLD}Examples${NC}
@@ -775,6 +792,150 @@ check_update_npm() {
     warn "Update check: newer version available — installed $SCRIPT_VERSION, latest $latest."
     note "Upgrade with:  npx macleanup@latest"
   fi
+}
+
+# url_encode "string" → URL-encoded form (uses python3 which ships
+# with macOS by default). Used to prefill mailto: + GitHub issue URLs.
+url_encode() {
+  python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "${1:-}" 2>/dev/null \
+    || printf '%s' "${1:-}"
+}
+
+# cmd_contact — prints contact info in a tidy, copy-friendly card.
+cmd_contact() {
+  printf '\n%b%s — by %s%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$AUTHOR_NAME" "$NC"
+  printf '%b%s%b\n' "$DIM" "─────────────────────────────────────────────" "$NC"
+  printf '   Email      : %s\n' "$AUTHOR_EMAIL"
+  printf '   Website    : %s\n' "$AUTHOR_WEBSITE"
+  printf '   LinkedIn   : %s\n' "$AUTHOR_LINKEDIN"
+  printf '   GitHub     : %s\n' "$AUTHOR_GITHUB"
+  printf '   Project    : %s\n' "$PROJECT_REPO"
+  printf '   npm        : %s\n' "$PROJECT_NPM"
+  printf '\n%bGet help / give feedback%b\n' "$BOLD" "$NC"
+  printf '   %s --feedback       %bemail with prefilled subject%b\n' "$SCRIPT_NAME" "$DIM" "$NC"
+  printf '   %s --report-issue   %bopen a pre-filled GitHub issue%b\n' "$SCRIPT_NAME" "$DIM" "$NC"
+  printf '\n'
+}
+
+# cmd_feedback — opens the user's default mail client with a prefilled
+# message to the author. Falls back to printing the URL if `open` is
+# unavailable (e.g. headless / sandbox).
+cmd_feedback() {
+  local subj body url
+  subj="$(url_encode "Feedback: ${SCRIPT_NAME} v${SCRIPT_VERSION}")"
+  body="$(url_encode "Hi Ahsan,
+
+I'm using ${SCRIPT_NAME} v${SCRIPT_VERSION} on macOS $(sw_vers -productVersion 2>/dev/null || echo '?').
+
+[your feedback here]
+
+— sent from \`${SCRIPT_NAME} --feedback\`")"
+  url="mailto:${AUTHOR_EMAIL}?subject=${subj}&body=${body}"
+  printf '\n%bOpening your mail client…%b\n' "$BOLD" "$NC"
+  printf '   to:      %s\n' "$AUTHOR_EMAIL"
+  printf '   subject: Feedback: %s v%s\n\n' "$SCRIPT_NAME" "$SCRIPT_VERSION"
+  if has_cmd open; then
+    open "$url" >/dev/null 2>&1 \
+      || { warn "Couldn't open mail client. Email manually:"; printf '   %s\n' "$AUTHOR_EMAIL"; }
+  else
+    printf 'Email manually: %s\n' "$AUTHOR_EMAIL"
+  fi
+  printf '\nPrefer the issue tracker?\n   %s\n' "$PROJECT_REPO/issues/new"
+}
+
+# cmd_report_issue — opens a pre-filled GitHub issue with environment
+# info collected ENTIRELY LOCALLY. Nothing is transmitted automatically;
+# the user reviews the prefilled body and clicks Submit themselves.
+cmd_report_issue() {
+  local mac_ver chip ram_h node_v latest_log
+  mac_ver=$(sw_vers -productVersion 2>/dev/null || echo "?")
+  chip=$(uname -m)
+  ram_h=$(awk -v b="$(sysctl -n hw.memsize 2>/dev/null || echo 0)" 'BEGIN{printf "%.0f GB", b/1024/1024/1024}')
+  node_v=$(node --version 2>/dev/null || echo "n/a (running script directly)")
+  latest_log=$(ls -1t "$LOG_DIR"/${SCRIPT_NAME}-*.log 2>/dev/null | head -1)
+
+  local body subj url
+  subj="$(url_encode "[bug] ")"
+  body=$(cat <<EOF
+**Describe the bug**
+<!-- what happened, what you expected, steps to reproduce -->
+
+**Environment**
+- ${SCRIPT_NAME} version: ${SCRIPT_VERSION}
+- macOS: ${mac_ver} (${chip})
+- RAM: ${ram_h}
+- bash: ${BASH_VERSION}
+- Node: ${node_v}
+- Latest log: ${latest_log:-(none — run a section first)}
+
+**Command you ran**
+\`\`\`bash
+# paste the exact command
+\`\`\`
+
+**Output / error**
+<!-- copy the relevant stderr/stdout lines, redact personal paths if needed -->
+
+**Latest log excerpt** (from ${latest_log:-?})
+<!-- last 30 lines that show the failure -->
+EOF
+)
+  body="$(url_encode "$body")"
+  url="${PROJECT_REPO}/issues/new?title=${subj}&body=${body}"
+
+  printf '\n%bOpening a pre-filled GitHub issue…%b\n' "$BOLD" "$NC"
+  printf '   environment info collected LOCALLY — review before submitting.\n'
+  printf '   nothing is sent until you click Submit on github.com.\n\n'
+  if [[ -n "$latest_log" ]] && has_cmd pbcopy; then
+    if tail -50 "$latest_log" 2>/dev/null | pbcopy 2>/dev/null; then
+      ok "Last 50 log lines copied to clipboard — paste into the 'Latest log excerpt' section."
+    fi
+  fi
+  if has_cmd open; then
+    open "$url" >/dev/null 2>&1 \
+      || { warn "Couldn't open browser. Visit manually:"; printf '   %s\n' "${PROJECT_REPO}/issues/new"; }
+  else
+    printf 'Visit manually: %s\n' "${PROJECT_REPO}/issues/new"
+  fi
+  printf '\nPrefer email?  %s\n' "$AUTHOR_EMAIL"
+}
+
+# cmd_stats — read-only summary of historical runs from ~/.mac-cleanup/.
+cmd_stats() {
+  printf '\n%b%s — runtime stats%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$NC"
+  printf '%b%s%b\n' "$DIM" "─────────────────────────────────────────────" "$NC"
+  printf '%bData directory:%b %s\n\n' "$BOLD" "$NC" "$DEFAULT_DATA_DIR"
+
+  local logs_n reports_n logs_size reports_size oldest_log newest_log
+  if [[ -d "$LOG_DIR" ]]; then
+    logs_n=$(find "$LOG_DIR" -type f -name "${SCRIPT_NAME}-*.log" 2>/dev/null | wc -l | awk '{print $1}')
+    logs_size=$(du -sh "$LOG_DIR" 2>/dev/null | awk '{print $1}')
+    oldest_log=$(ls -1t "$LOG_DIR"/${SCRIPT_NAME}-*.log 2>/dev/null | tail -1 | xargs -I{} basename {} 2>/dev/null)
+    newest_log=$(ls -1t "$LOG_DIR"/${SCRIPT_NAME}-*.log 2>/dev/null | head -1 | xargs -I{} basename {} 2>/dev/null)
+    printf '   Logs        : %s files, %s total\n' "${logs_n:-0}" "${logs_size:-0B}"
+    [[ -n "$oldest_log" ]] && printf '                 oldest %s\n' "$oldest_log"
+    [[ -n "$newest_log" && "$newest_log" != "$oldest_log" ]] && printf '                 newest %s\n' "$newest_log"
+  else
+    printf '   Logs        : (no logs dir yet — run a section first)\n'
+  fi
+
+  if [[ -d "$REPORTS_DIR" ]]; then
+    reports_n=$(find "$REPORTS_DIR" -type f -name "*.txt" 2>/dev/null | wc -l | awk '{print $1}')
+    reports_size=$(du -sh "$REPORTS_DIR" 2>/dev/null | awk '{print $1}')
+    printf '   Reports     : %s files, %s total\n' "${reports_n:-0}" "${reports_size:-0B}"
+    if (( reports_n > 0 )); then
+      printf '\n%bRecent reports:%b\n' "$BOLD" "$NC"
+      ls -1t "$REPORTS_DIR"/*.txt 2>/dev/null | head -8 | while IFS= read -r f; do
+        printf '   • %s   %s\n' "$(stat -f '%Sm' -t '%Y-%m-%d' "$f" 2>/dev/null)" "$(basename "$f")"
+      done
+    fi
+  fi
+
+  printf '\n%bGet help%b\n' "$BOLD" "$NC"
+  printf '   %s --feedback       email Ahsan\n' "$SCRIPT_NAME"
+  printf '   %s --report-issue   open a pre-filled bug report\n' "$SCRIPT_NAME"
+  printf '   %s --contact        full contact card\n' "$SCRIPT_NAME"
+  printf '\n'
 }
 
 # Section catalogue — single source of truth for `--list`, `--help`, and
@@ -938,6 +1099,14 @@ parse_args() {
       --version|-V)
         printf '%s %s\n' "$SCRIPT_NAME" "$SCRIPT_VERSION"
         exit 0 ;;
+      --contact)
+        cmd_contact; exit 0 ;;
+      --feedback)
+        cmd_feedback; exit 0 ;;
+      --report-issue|--report-bug)
+        cmd_report_issue; exit 0 ;;
+      --stats)
+        cmd_stats; exit 0 ;;
       -h|--help)    print_help; exit 0 ;;
       *) err "Unknown option: $1"; print_help; exit 2 ;;
     esac
@@ -2702,12 +2871,49 @@ dispatch() {
   esac
 }
 
+# show_first_run_welcome_if_needed — one-time intro screen, marker file
+# at $DEFAULT_DATA_DIR/.welcomed. Skipped for non-interactive runs
+# (BATCH_MODE is set when --all / --only / --profile is used). Skipped
+# also when stdin isn't a TTY (cron, CI). Quick-exit flags like
+# --version / --help / --contact / --stats already exit before main()
+# is called, so they never see this.
+show_first_run_welcome_if_needed() {
+  local marker="$DEFAULT_DATA_DIR/.welcomed"
+  [[ -f "$marker" ]] && return 0
+  (( BATCH_MODE )) && { touch "$marker" 2>/dev/null; return 0; }
+  [[ -t 0 ]] || { touch "$marker" 2>/dev/null; return 0; }
+
+  printf '\n%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n' "$BOLD$MAGENTA" "$NC"
+  printf '%b   Welcome to %s — first run on this machine 👋%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$NC"
+  printf '%b━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n\n' "$BOLD$MAGENTA" "$NC"
+
+  printf '%b A few things you should know:%b\n\n' "$BOLD" "$NC"
+  printf '   1. %bDry-run is sacred.%b The very first time you try a destructive\n' "$GREEN" "$NC"
+  printf '      section, prefix it with %b--dry-run%b. Nothing will be deleted.\n\n' "$CYAN" "$NC"
+  printf '   2. %bReports + logs persist%b at %s\n' "$GREEN" "$NC" "$DEFAULT_DATA_DIR"
+  printf '      They survive npx cache cleanup. Run %b%s --stats%b later for history.\n\n' "$CYAN" "$SCRIPT_NAME" "$NC"
+  printf '   3. %bSafety rules%b — non-cache deletes need both:\n' "$GREEN" "$NC"
+  printf '      (a) not used by any active software/tool, AND\n'
+  printf '      (b) not touched by you for ≥ 100 days (atime+mtime).\n\n'
+  printf '   4. %bSomething wrong?%b\n' "$GREEN" "$NC"
+  printf '      %b%s --report-issue%b   open a pre-filled GitHub issue\n' "$CYAN" "$SCRIPT_NAME" "$NC"
+  printf '      %b%s --feedback%b       email Ahsan directly\n' "$CYAN" "$SCRIPT_NAME" "$NC"
+  printf '      %b%s --contact%b        full contact card\n\n' "$CYAN" "$SCRIPT_NAME" "$NC"
+  printf '%b Recommended first run:%b\n   %s --dry-run --all\n\n' "$BOLD" "$NC" "$SCRIPT_NAME"
+
+  printf '%bPress Enter to continue (this screen shows once)…%b' "$DIM" "$NC"
+  read -r _ || true
+  touch "$marker" 2>/dev/null || true
+  printf '\n'
+}
+
 main() {
   parse_args "$@"
   # Make sure logs/reports dirs exist after any --logs-dir / --reports-dir
   # overrides that may have been parsed from argv.
   mkdir -p "$LOG_DIR" "$REPORTS_DIR" 2>/dev/null || true
   init_log_file
+  show_first_run_welcome_if_needed
   DISK_FREE_BEFORE_KB=$(disk_free_kb /)
   log_to_file "── mac-cleanup v$SCRIPT_VERSION started ──"
 

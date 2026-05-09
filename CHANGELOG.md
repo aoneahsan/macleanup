@@ -7,6 +7,59 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.4.0] — 2026-05-10  •  USER-FACING POLISH (final 4.x feature drop)
+
+User-experience polish round, no behaviour changes to the cleanup
+sections themselves. **Crash reporting + feedback channels are now
+first-class** but the tool's no-telemetry promise is unchanged —
+nothing is ever auto-sent.
+
+### Added
+- **`--contact`** — prints a tidy author contact card (email, website,
+  LinkedIn, GitHub, npm, repo) and exits.
+- **`--feedback`** — opens the system mail client with a prefilled
+  subject + body addressed to the author. Falls back to printing the
+  email address if `open` is unavailable.
+- **`--report-issue`** (alias `--report-bug`) — collects environment
+  info **entirely locally** (script version, macOS version, chip,
+  RAM, bash version, Node version, latest log path), URL-encodes it
+  into a GitHub issue body, and opens a pre-filled new-issue page in
+  the browser. The last 50 lines of the most recent log are copied to
+  the clipboard via `pbcopy` if available, so the user can paste them
+  into the issue's "Latest log excerpt" section. **Nothing is
+  transmitted until the user clicks Submit on github.com.**
+- **`--stats`** — read-only summary of `~/.mac-cleanup/`: log count,
+  report count, total sizes, oldest/newest log, recent reports list.
+  Useful for checking history without `cd`-ing.
+- **First-run welcome screen** — one-time intro shown the first time
+  someone runs the tool on a machine (marker file
+  `~/.mac-cleanup/.welcomed`). Explains the dry-run rule, the persistent
+  paths, the two-condition safety rule, and the contact flags. Skipped
+  for batch / non-TTY invocations.
+- **EXIT-trap crash hint** — when the script exits non-zero (other
+  than rc=2 which is "user error" from bad CLI args), it now prints a
+  yellow hint pointing the user at `--report-issue` and `--feedback`.
+  No log slurp, no auto-submit — just a reminder of the two channels.
+
+### Changed
+- Help groups improved: contact / feedback / stats flags listed
+  together as "Get help" so they're discoverable.
+- Internal: extracted `url_encode` helper (uses macOS-shipped python3)
+  for the mailto + GitHub issue URL prefilling.
+
+### Deliberately not added (per design)
+- **No GUI.** A SwiftUI / Electron wrapper would push the install size
+  from 50 KB to 100+ MB and require code-signing, breaking the
+  "single bash file you can audit" promise that's in the README. The
+  TUI gets all the polish.
+- **No automatic crash collection.** Crash dumps are user-triggered
+  via `--report-issue`. The tool never phones home.
+- **No analytics, no opt-in telemetry, no install-count beacon, no
+  feature-usage stats.** The whole network footprint stays at "zero
+  unless you explicitly pass `--check-update`."
+
+---
+
 ## [4.3.3] — 2026-05-10  •  TWO-CONDITION RULE FOR NON-CACHE DELETES
 
 **The principle**: any uninstall/delete that targets a piece of software,
