@@ -506,6 +506,6 @@ with a fellow Mac developer.
 
 <div align="center">
 
-Made with ❤️ on macOS in Karachi, Pakistan.
+Made with ❤️ and a lot of care.
 
 </div>
