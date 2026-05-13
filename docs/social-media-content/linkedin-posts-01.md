@@ -18,7 +18,7 @@ Claims have been cross-checked against the actual product. Nothing is invented.
 
 ---
 
-## 1. Launch announcement
+## 1. Launch announcement - USED
 
 - **Angle**: Story-driven, "today I shipped"
 - **Best for**: First post in your launch sequence
@@ -51,6 +51,9 @@ The whole tool is one bash file plus a tiny Node launcher for the npx magic. You
   npx macleanup --dry-run --all
 
 If you've ever wiped /Library/Caches and regretted it, this one's for you.
+
+Github: https://github.com/aoneahsan/macleanup
+NPM: https://www.npmjs.com/package/macleanup
 
 —
 Ahsan Mahmood
