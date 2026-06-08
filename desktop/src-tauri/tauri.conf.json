@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "macleanup",
+  "version": "4.5.0",
+  "identifier": "com.aoneahsan.macleanup",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "macleanup",
+        "width": 1000,
+        "height": 720,
+        "minWidth": 760,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "createUpdaterArtifacts": true,
+    "category": "Utility",
+    "shortDescription": "Safe-by-default macOS cleanup & maintenance.",
+    "longDescription": "macleanup is a comprehensive, safe-by-default macOS cleanup & maintenance app — 28 sections, true dry-run preview, persistent reports, no telemetry.",
+    "copyright": "(c) 2024-2026 Ahsan Mahmood",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": ["resources/mac-cleanup.sh"],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/aoneahsan/macleanup/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExMTc4RjJGOTBBQjM2MUIKUldRYk5xdVFMNDhYRVZTbXh0QmY3KzNEc2hKbk1qV1FnWlRMazg2V3pnYzM3UjJhR2FLUnBlWTEK"
+    }
+  }
+}

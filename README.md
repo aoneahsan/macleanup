@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🧹 mac-cleanup
+<img src="assets/logo/macleanup-wordmark.svg" width="420" alt="macleanup"/>
 
-### Comprehensive, safe-by-default macOS cleanup & maintenance — in a single bash script.
+### Comprehensive, safe-by-default macOS cleanup & maintenance — CLI + native macOS app.
 
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
@@ -17,8 +17,11 @@ Every destructive action confirms before running.**
 [Quick start](#-quick-start) ·
 [Sections](#-the-twenty-eight-sections) ·
 [Safety](#%EF%B8%8F-safety-model) ·
+[Desktop app](desktop/) ·
 [FAQ](#-faq) ·
 [Author](#-author)
+
+<sub>Prefer a GUI? A tiny native macOS app (Tauri) wraps this CLI — see <a href="desktop/">desktop/</a>.</sub>
 
 </div>
 

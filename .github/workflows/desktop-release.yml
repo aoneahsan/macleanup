@@ -1,0 +1,77 @@
+name: desktop-release
+
+# Builds the macOS desktop app (.dmg + signed updater artifacts + latest.json)
+# and attaches them to a GitHub Release. Triggered by pushing a tag like
+# `desktop-v4.5.0`, or manually. The `latest.json` it produces is what the
+# in-app forced-updater checks on launch.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   TAURI_SIGNING_PRIVATE_KEY           (from `tauri signer generate`)
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+# Optional (Apple code-signing / notarization — removes the Gatekeeper prompt):
+#   APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
+#   APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+
+      - name: Install frontend deps
+        working-directory: desktop
+        run: npm ci
+
+      - name: Prepare bundled script + icons
+        working-directory: desktop
+        run: |
+          npm run sync:script
+          npm run gen:icons
+
+      - name: Build, sign & release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Apple signing/notarization — these are no-ops if the secrets are unset.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'macleanup desktop ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+          # Emits latest.json (the updater manifest) alongside the artifacts.
+          includeUpdaterJson: true
+          args: --target universal-apple-darwin

@@ -1,0 +1,23 @@
+# deps / build
+node_modules/
+dist/
+src-tauri/target/
+# Tauri-generated schemas
+src-tauri/gen/
+# tsc -b emit/build artifacts (vite config is authored as .ts)
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+# bundled-in copy of the CLI (generated at build time from ../mac-cleanup.sh)
+src-tauri/resources/mac-cleanup.sh
+# generated icons (produced from ../assets/logo by scripts/gen-icons.mjs)
+src-tauri/icons/
+# local secrets / config
+.env
+.env.*
+src/config.local.ts
+# updater signing keys (private key must never be committed)
+.tauri/
+*.key
+# os
+.DS_Store
