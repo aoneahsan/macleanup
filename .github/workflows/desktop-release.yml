@@ -13,9 +13,11 @@ name: desktop-release
 #   APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
 
 on:
-  push:
-    tags:
-      - 'desktop-v*'
+  # Manual for now (run from the Actions tab) so a tag push doesn't kick off a
+  # build before the signing secrets exist. Re-enable the tag trigger once
+  # TAURI_SIGNING_PRIVATE_KEY* (and optionally the Apple* secrets) are set:
+  #   push:
+  #     tags: ['desktop-v*']
   workflow_dispatch:
 
 jobs:
