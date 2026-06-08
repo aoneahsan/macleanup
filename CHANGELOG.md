@@ -7,6 +7,129 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.5.0] — 2026-06-08  •  SAFETY, CORRECTNESS, FEATURES
+
+A broad audit-driven release. The headline changes are safety hardening
+(several ways the tool could delete more than intended are now closed),
+plus new cleanup coverage, scripting support, and a config file. **Two
+behaviour changes for unattended users are called out under _Changed_.**
+
+### Security / Safety
+
+- **Ctrl-C now actually aborts.** The combined `trap … EXIT INT TERM`
+  handler returned without exiting, so on SIGINT/SIGTERM bash ran cleanup
+  and then **resumed** the interrupted operation — including a destructive
+  delete loop. Signals are now handled separately, re-raised after cleanup,
+  so the process terminates (exit 130/143) and never resumes mid-delete.
+- **Deep sections can no longer run unattended by accident.** Sections
+  `6` (system caches as root), `11` (TM snapshots), `14`
+  (`/private/var/folders` wipe), `21` (app uninstall) and `24` (large
+  files → Trash) are now refused under `--only` / `--profile` / `--all`
+  unless you pass the new `--i-understand-deep`. `--yes` alone no longer
+  enables them. Dry-run previews are still allowed. Previously
+  `--only 14 --yes` would wipe `/private/var/folders` with no human present.
+- **App uninstall (21) is safer.** Companion data matched by display-name
+  (e.g. an `Application Support/<App Name>` folder) is now age-gated and
+  only removed when itself idle ≥ threshold — so a name collision with a
+  *different, in-use* app can't delete its data. Bundle-ID-confined paths
+  are separated from name-based ones, an empty-name guard prevents forming
+  a bare parent dir, and all removals go to the **Trash** (recoverable)
+  with a guarded-`rm` fallback.
+- **Orphan data (12) is safer.** Deletions now go to the Trash; an
+  unreadable timestamp now means **keep** (not delete); and the
+  installed-app matcher is more conservative (token floor 4 → 2, which can
+  only *reduce* false orphans).
+- **`safe_rm_rf` hardened and used more.** It now also refuses relative/dot
+  paths (`/..`, trailing `/.`), more system roots (`/System/Library`,
+  `/System/Applications`, `/private`, `/usr`, `/etc`, `/var`, `/bin`,
+  `/sbin`, `/cores`), the user document roots (`~/Documents`, `~/Desktop`,
+  `~/Downloads`, `~/Pictures`, `~/Movies`, `~/Music`), and every
+  `CRITICAL_HOME_DIRS` entry. Sections 12 and 21 now route their deletes
+  through it.
+- **Docker (4) no longer deletes volumes by default.** The default prune is
+  now `docker system prune -a -f` (images/containers/networks/build cache).
+  Removing **volumes** (which hold database data) is a separate, literal-
+  `yes` step that is never run unattended.
+- **`clean_dir_*` revalidate the target** is a real, non-symlink directory
+  immediately before wiping its contents (closes a symlink/TOCTOU window).
+- **corepack cache protected.** `~/Library/Caches/node` is now preserved by
+  the section-5 user-cache sweep (it backs corepack-pinned yarn/pnpm).
+- **Section 14** excludes symlinks (`! -type l`) from the deep wipe.
+- **Section 8** skips live sockets/FIFOs when pruning temp dirs.
+
+### Changed (behaviour changes for unattended users)
+
+- **`--all` no longer runs section 13 (`sudo periodic`).** It was not a
+  cache/log/temp/report cleanup and ran privileged maintenance unattended.
+  Run it from the menu or with `--only 13`. The safe batch is now
+  `0 3 5 7 8 9 15 18 22 26`.
+- **`--profile deep --yes` / `--profile <…> --yes` no longer auto-run** the
+  deep sections those profiles include (e.g. `deep`→6, `audit`→21) unless
+  `--i-understand-deep` is also passed.
+
+### Added
+
+- **Section 27 — macOS UI maintenance:** resets the QuickLook thumbnail
+  cache (`qlmanage -r cache`) and font caches (`atsutil databases
+  -removeUser`, with an optional sudo system-cache clear). Menu / `--only`
+  only; never in `--all`. (The tool now has **28 sections**, 0–27.)
+- **External-volume Trash (10):** also empties `/Volumes/*/.Trashes/<uid>`
+  on mounted external volumes, skipping the boot volume and read-only
+  mounts, each with its own confirmation.
+- **More browsers (19):** iterates **all** Chromium profiles (not just
+  `Default`) and covers Chrome + Canary, Brave, Edge, Vivaldi, Chromium,
+  Opera, Opera GX, DuckDuckGo, Arc; plus Firefox-family forks (LibreWolf,
+  Floorp, Zen, Developer Edition, Nightly).
+- **More dev caches (3):** age-gated prune of Bun, ccache, uv, Deno,
+  Composer and the nvm download cache (explicit cache sub-paths only —
+  never the toolchain roots).
+- **iOS IPSW sweep (16):** removes old, re-downloadable iOS/iPadOS
+  software-update `.ipsw` files (age-gated).
+- **`--json`** — emit a one-line machine-readable run summary on stdout
+  (all other output to stderr); implies `--quiet`.
+- **`--exclude-path PATH`** (repeatable) — never touch a path/subtree in the
+  scanning sections 23/24.
+- **`--prune-history [N]`** — delete logs/reports older than N days
+  (default 90); **`--uninstall-data`** — remove the whole `~/.mac-cleanup`
+  data dir after confirming.
+- **Config file** `~/.mac-cleanuprc` (or `$MAC_CLEANUP_RC`): simple
+  `key=value` defaults (parsed with `read`, never `eval`); CLI flags win.
+- Documented the existing `--report-bug` alias of `--report-issue`.
+
+### Fixed (correctness)
+
+- **Section 12 `*.plist` glob bug:** the orphan scan passed find predicates
+  as an unquoted string, so `*.plist` was expanded against the *current
+  working directory*. Predicates are now passed as a quoted argv array.
+- **Idle detection for apps (21):** currently-running apps are skipped
+  (`pgrep`), and the prefs/container/saved-state signals now use
+  `max(atime, mtime)` so a recently-*read* file keeps an app "in use".
+- **Section 12 report** no longer sorts its own branding banner into the
+  data rows, and honours `--no-reports`.
+- **iOS backup dates** parse the trailing-`Z` form as UTC (no local shift).
+- **`--quiet`** now also suppresses the section-0 panels and the section-18
+  large-files dump.
+- **Version is single-sourced** from `package.json` (exported as
+  `MAC_CLEANUP_VERSION` by the launcher; literal fallback for direct
+  checkouts), with a `prepublishOnly` parity assertion.
+
+### Performance
+
+- **Section 26** no longer scans `/Users` (every user's home) or re-scans
+  `$HOME`: the `"$HOME"/.*` glob (which expanded to `.` and `..`) was
+  replaced with `find -mindepth 1 -maxdepth 1`.
+- Fewer forks in section 12 (builtin basename, combined `stat`), cached
+  candidate sizes, combined `stat` in section 24, and the full-wipe helpers
+  skip the redundant post-delete `du`.
+
+### Internal
+
+- Script is shellcheck-clean of errors and warnings; remaining output is
+  benign notes (idiomatic `cmd && ok || warn`, literal `$HOME` in report
+  headings). Stays bash 3.2 + BSD-userland compatible.
+
+---
+
 ## [4.4.2] — 2026-05-13  •  SAFETY PATCH
 
 Defensive hardening for the `CRITICAL_HOME_DIRS` allowlist. **No

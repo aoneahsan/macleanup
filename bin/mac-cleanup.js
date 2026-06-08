@@ -54,10 +54,24 @@ try {
 // expose its directory. The script self-checks for bash 3.2+ at startup.
 const bashCmd = 'bash';
 
+// ── Single-source the version ───────────────────────────────────────────
+// package.json is the source of truth. Export it so the bash script reports
+// the exact published version (MAC_CLEANUP_VERSION) instead of a hand-kept
+// literal that could drift.
+let pkgVersion = '';
+try {
+  pkgVersion = require('../package.json').version || '';
+} catch (_) {
+  /* best-effort — direct checkouts fall back to the literal in the script */
+}
+const childEnv = pkgVersion
+  ? Object.assign({}, process.env, { MAC_CLEANUP_VERSION: pkgVersion })
+  : process.env;
+
 // ── Forward argv + stdio + signals ──────────────────────────────────────
 const child = spawn(bashCmd, [scriptPath, ...process.argv.slice(2)], {
   stdio: 'inherit',
-  env: process.env,
+  env: childEnv,
 });
 
 // Propagate common terminate signals so Ctrl+C inside npx hits the bash

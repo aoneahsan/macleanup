@@ -4,9 +4,12 @@
 # =============================================================================
 #
 #  Author    : Ahsan Mahmood  <aoneahsan@gmail.com>
-#  Website   : https://aoneahsan.com
+#  Phone/WA  : +92 304 6619706
+#  Portfolio : https://aoneahsan.com
 #  LinkedIn  : https://linkedin.com/in/aoneahsan
 #  GitHub    : https://github.com/aoneahsan
+#  npm user  : https://www.npmjs.com/~aoneahsan
+#  Address   : https://aoneahsan.com/address
 #  Repo      : https://github.com/aoneahsan/macleanup
 #  npm       : https://www.npmjs.com/package/macleanup
 #  Copyright : (c) 2024-2026 Ahsan Mahmood. All rights reserved.
@@ -51,21 +54,27 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.4.2"
+# Single source of truth is package.json: the npx/npm launcher (bin/mac-cleanup.js)
+# exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
+# checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
+# stay in sync so they can never drift on a publish.
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.5.0}"
 SCRIPT_NAME="mac-cleanup"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 
 # ── Author / branding constants — embedded in every log + report ──────────
 AUTHOR_NAME="Ahsan Mahmood"
 AUTHOR_EMAIL="aoneahsan@gmail.com"
+AUTHOR_PHONE="+92 304 6619706"      # also WhatsApp
 AUTHOR_WEBSITE="https://aoneahsan.com"
+AUTHOR_PORTFOLIO="https://aoneahsan.com"
 AUTHOR_LINKEDIN="https://linkedin.com/in/aoneahsan"
 AUTHOR_GITHUB="https://github.com/aoneahsan"
+AUTHOR_NPM="https://www.npmjs.com/~aoneahsan"
+AUTHOR_ADDRESS="https://aoneahsan.com/address"
 PROJECT_REPO="https://github.com/aoneahsan/macleanup"
 PROJECT_NPM="https://www.npmjs.com/package/macleanup"
-PROJECT_NPM_INSTALL="npx macleanup"
 
 # ── Persistent runtime directories (survive npx cache cleanup) ────────────
 # Default to $HOME/.mac-cleanup/{logs,reports} so reports + history are
@@ -160,6 +169,24 @@ CRITICAL_HOME_DIRS=(
 # (these get auto-recreated, are part of macOS, or belong to system tooling).
 APPLE_PREFIXES=("com.apple." "com.apple-samplecode." "apple." "com.Apple.")
 
+# Top-level ~/Library/Caches entries that section 5 must PRESERVE. Apple and the
+# major browsers (handled by section 19) are kept so their caches aren't wiped
+# out from under a running browser; password managers are kept to avoid churn;
+# and `node` is kept because ~/Library/Caches/node/corepack is a
+# CRITICAL_HOME_DIRS entry (deleting it breaks every corepack-pinned yarn/pnpm).
+# Best-effort, hand-maintained list — patterns are matched by `find ! -name`.
+USER_CACHE_PRESERVE=(
+  'com.apple.*'
+  'com.google.Chrome*' 'org.mozilla.firefox*' 'com.apple.Safari*'
+  'com.brave.*' 'BraveSoftware*' 'Company'
+  'com.microsoft.edgemac*' 'com.operasoftware.Opera*' 'com.operasoftware.OperaGX*'
+  'com.vivaldi.Vivaldi*' 'com.thebrowser.Browser*' 'company.thebrowser.*'
+  'com.duckduckgo.macos.browser*' 'com.kagi.kagimacOS*'
+  'app.zen-browser.zen*' 'org.floorp.*' 'net.imput.chromium*' 'org.chromium.Chromium*'
+  '1Password*' 'com.agilebits.*' 'Bitwarden*' 'org.keepassxc.keepassxc*'
+  'node'
+)
+
 mkdir -p "$LOG_DIR" "$REPORTS_DIR" 2>/dev/null || true
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -196,7 +223,10 @@ NOTIFY=0           # --notify (macOS notification on completion)
 CHECK_UPDATE=0     # --check-update (query npm for latest)
 BREW_AUTOREMOVE=0  # --brew-autoremove (opt-in; removes "unused" formulae)
 CACHE_AGE_DAYS="$CACHE_AGE_DAYS_DEFAULT"  # --cache-age-days N
-IDLE_THRESHOLD_DAYS="$IDLE_THRESHOLD_DAYS_DEFAULT"  # --idle-days N (sections 12, 23)
+IDLE_THRESHOLD_DAYS="$IDLE_THRESHOLD_DAYS_DEFAULT"  # --idle-days N (sections 12, 23 gate; 16, 17 highlight)
+DEEP_OPT_IN=0      # --i-understand-deep (allow deep destructive sections under batch)
+EXCLUDE_PATHS=()   # --exclude-path PATH (repeatable; extra protection for sections 23/24)
+JSON_MODE=0        # --json (emit a machine-readable summary on stdout)
 
 TOTAL_FREED_KB=0
 DISK_FREE_BEFORE_KB=""
@@ -235,7 +265,22 @@ _cleanup_temps() {
   fi
 }
 
-trap _cleanup_temps EXIT INT TERM
+# Wire cleanup to EXIT for normal/error paths, and handle signals separately so
+# that Ctrl-C (INT) / TERM actually TERMINATE the script. A combined
+# `trap … EXIT INT TERM` handler that merely returns would let bash RESUME the
+# interrupted command (e.g. a destructive delete loop) after cleanup — a real
+# hazard for a tool that removes files. _on_signal disables the traps (so
+# cleanup runs exactly once), cleans up, then re-raises the signal to die with
+# the conventional code (130 INT / 143 TERM).
+trap _cleanup_temps EXIT
+_on_signal() {
+  local sig="$1"
+  trap - INT TERM EXIT
+  _cleanup_temps
+  kill -s "$sig" "$$"
+}
+trap '_on_signal INT' INT
+trap '_on_signal TERM' TERM
 
 # ──────────────────────────────────────────────────────────────────────────
 #                                LOGGING
@@ -288,6 +333,19 @@ human_kb() {
   }'
 }
 
+# _path_newer_ts path → the MORE RECENT of atime/mtime as an epoch (0 if
+# unreadable). Used as an "idleness" signal: a file that was recently READ
+# (atime) OR written (mtime) counts as recently touched, which fails safe
+# (an app whose prefs were read on launch looks used even if never rewritten).
+_path_newer_ts() {
+  local _s _a _m
+  _s=$(stat -f '%a %m' "$1" 2>/dev/null || echo "0 0")
+  _a=${_s%% *}; _m=${_s##* }
+  [[ "$_a" =~ ^[0-9]+$ ]] || _a=0
+  [[ "$_m" =~ ^[0-9]+$ ]] || _m=0
+  if (( _m > _a )); then printf '%s' "$_m"; else printf '%s' "$_a"; fi
+}
+
 # track_freed before_kb after_kb → adds delta to TOTAL_FREED_KB
 track_freed() {
   local before="${1:-0}" after="${2:-0}" delta
@@ -330,14 +388,37 @@ press_enter() {
   read -r _ || true
 }
 
-# safe_rm_rf path → respects DRY_RUN; refuses suspicious paths
+# safe_rm_rf path → respects DRY_RUN; refuses suspicious paths.
+# This is the central deletion chokepoint. Its refusal list is intentionally
+# broad: top-level system roots, user document roots, and every
+# CRITICAL_HOME_DIRS entry are rejected even on an exact match, and any path
+# containing a relative ".."/"." component is rejected outright (we never
+# canonicalise — macOS lacks GNU `readlink -f` by default).
 safe_rm_rf() {
   local p="$1"
+  # Reject relative-escape / dot components before anything else.
   case "$p" in
-    ""|"/"|"/Users"|"/Users/"|"$HOME"|"$HOME/"|"/Library"|"/System"|"/Applications")
-      err "Refusing to delete suspicious path: '$p'"
+    *"/../"*|*"/.."|".."|*"/."|".") err "Refusing relative/dot path: '$p'"; return 1 ;;
+  esac
+  # Static blocklist of system + user-data roots (with trailing-slash forms).
+  case "$p" in
+    ""|"/"|"/Users"|"/Users/"|"$HOME"|"$HOME/" \
+    |"/Library"|"/Library/"|"/System"|"/System/"|"/System/Library"|"/System/Applications" \
+    |"/Applications"|"/Applications/"|"/private"|"/private/"|"/usr"|"/usr/" \
+    |"/etc"|"/etc/"|"/var"|"/var/"|"/bin"|"/bin/"|"/sbin"|"/sbin/"|"/cores"|"/cores/" \
+    |"$HOME/Documents"|"$HOME/Documents/"|"$HOME/Desktop"|"$HOME/Desktop/" \
+    |"$HOME/Downloads"|"$HOME/Downloads/"|"$HOME/Pictures"|"$HOME/Pictures/" \
+    |"$HOME/Movies"|"$HOME/Movies/"|"$HOME/Music"|"$HOME/Music/"|"$HOME/Library"|"$HOME/Library/")
+      err "Refusing to delete protected path: '$p'"
       return 1 ;;
   esac
+  # Refuse any CRITICAL_HOME_DIRS entry on exact match (toolchains/secrets).
+  local _e
+  for _e in "${CRITICAL_HOME_DIRS[@]}"; do
+    case "$p" in
+      "$HOME/$_e"|"$HOME/$_e/") err "Refusing protected toolchain/config dir: '$p'"; return 1 ;;
+    esac
+  done
   if (( DRY_RUN )); then
     note "[dry-run] rm -rf $p"
     return 0
@@ -354,7 +435,7 @@ safe_rm_f() {
 # clean_dir_contents path
 # Removes everything inside path (but not the dir itself), tracks freed KB.
 clean_dir_contents() {
-  local d="$1" before after
+  local d="$1" before
   [[ -z "$d" ]] && return 0
   if [[ ! -d "$d" ]]; then
     note "Skipping (missing): $d"
@@ -365,11 +446,14 @@ clean_dir_contents() {
     note "[dry-run] would clear $(human_kb "$before") in $d"
     return 0
   fi
+  # Revalidate immediately before the wipe: reject a symlinked $d (its /* glob
+  # would delete through to the link target) and close the TOCTOU window.
+  [[ -d "$d" && ! -L "$d" ]] || { note "Skipping (symlink or not a real dir): $d"; return 0; }
   # Delete contents; never the directory itself. Use ${var:?} guard.
   ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
-  after=$(size_kb "$d")
-  track_freed "$before" "$after"
-  ok "Cleared $(human_kb "$(( before - after ))") from $d"
+  # The directory was fully emptied; skip a second du and report `before`.
+  track_freed "$before" 0
+  ok "Cleared $(human_kb "$before") from $d"
 }
 
 # clean_dir_old path days [name_glob…]
@@ -429,7 +513,10 @@ clean_dir_unused() {
     return 0
   fi
   if (( days == 0 )); then
+    # Revalidate immediately before the full wipe (reject symlinked $d).
+    [[ -d "$d" && ! -L "$d" ]] || { note "Skipping (symlink or not a real dir): $d"; return 0; }
     ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
+    after=0   # directory was fully emptied; avoid a second du
   else
     # Files where BOTH atime > N days AND mtime > N days. Anything used
     # recently (read by a tool, or rewritten) keeps its atime/mtime fresh
@@ -438,12 +525,11 @@ clean_dir_unused() {
       -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
     # Collapse newly-empty directories. Multiple passes handle nesting
     # (parent becomes empty after children are removed, etc.).
-    local _ pass
-    for pass in 1 2 3 4; do
+    for _ in 1 2 3 4; do
       find "$d" -mindepth 1 -type d -empty -delete 2>/dev/null || break
     done
+    after=$(size_kb "$d")
   fi
-  after=$(size_kb "$d")
   track_freed "$before" "$after"
   freed=$(( before - after ))
   if (( freed > 0 )); then
@@ -527,11 +613,14 @@ write_branding_header() {
     printf '#  %s v%s — %s\n' "$SCRIPT_NAME" "$SCRIPT_VERSION" "${subtitle:-comprehensive macOS cleanup & maintenance tool}"
     printf '# ----------------------------------------------------------------------------\n'
     printf '#  Author    : %s <%s>\n' "$AUTHOR_NAME" "$AUTHOR_EMAIL"
-    printf '#  Website   : %s\n' "$AUTHOR_WEBSITE"
+    printf '#  Phone/WA  : %s\n' "$AUTHOR_PHONE"
+    printf '#  Portfolio : %s\n' "$AUTHOR_PORTFOLIO"
     printf '#  LinkedIn  : %s\n' "$AUTHOR_LINKEDIN"
     printf '#  GitHub    : %s\n' "$AUTHOR_GITHUB"
+    printf '#  npm user  : %s\n' "$AUTHOR_NPM"
+    printf '#  Address   : %s\n' "$AUTHOR_ADDRESS"
     printf '#  Repo      : %s\n' "$PROJECT_REPO"
-    printf '#  npm       : %s\n' "$PROJECT_NPM"
+    printf '#  npm pkg   : %s\n' "$PROJECT_NPM"
     printf '#  License   : Source-Available v1.0 — personal use, no modification, no resale\n'
     printf '#              Provided AS IS, no warranty. See LICENSE.md.\n'
     printf '#  Generated : %s\n' "$RUN_TIMESTAMP"
@@ -669,6 +758,8 @@ ${BOLD}Options${NC}
   --large-file-size-gb N      Min size in GB for the large-file scan (default: ${LARGE_FILE_SIZE_GB_DEFAULT}).
   --scan-roots "P1:P2:…"      Override scan roots for sections 23 / 24
                               (colon-separated absolute paths).
+  --exclude-path PATH         Never touch PATH (or anything under it) in the
+                              scanning sections 23 / 24. Repeatable.
   --logs-dir PATH             Persistent logs directory
                               (default: \$HOME/.mac-cleanup/logs).
   --reports-dir PATH          Persistent reports directory
@@ -678,6 +769,9 @@ ${BOLD}Options${NC}
   --cleanup-logs-on-finish    Delete this run's log file at exit.
                               Default: keep all logs forever.
   --quiet                     Less chatter (errors and warnings still shown).
+  --json                      Emit a one-line JSON run summary on stdout (all
+                              other output goes to stderr). Implies --quiet.
+                              Best paired with --only / --all for scripting/CI.
   --no-color                  Disable ANSI colour output (auto on non-TTYs).
   --notify                    Show a macOS notification when the run finishes.
   --check-update              Query npm for the latest published version
@@ -691,22 +785,45 @@ ${BOLD}Options${NC}
                               both ≥ N days old are deleted; recent files
                               kept. Default: ${CACHE_AGE_DAYS_DEFAULT}.
                               Use 0 for a full wipe (old <4.3.2 behaviour).
-  --idle-days N               Universal idle threshold for non-cache
-                              deletes in sections 12 (orphan data) and
-                              23 (stale build artefacts). Default:
-                              ${IDLE_THRESHOLD_DAYS_DEFAULT}. Per the 4.3.3 safety rule, items
-                              are only deleted if they're (a) not in use
-                              by any active software AND (b) untouched
-                              for ≥ N days.
+  --idle-days N               Universal idle threshold (days). GATES deletes
+                              in sections 12 (orphan data) and 23 (stale
+                              build artefacts); also sets the idle HIGHLIGHT
+                              threshold in sections 16 (iOS backups) and 17
+                              (Xcode archives). Default: ${IDLE_THRESHOLD_DAYS_DEFAULT}. Per the
+                              safety rule, gated items are only deleted if
+                              they're (a) not in use by any active software
+                              AND (b) untouched for ≥ N days. Idleness is
+                              measured via atime+mtime, which on APFS is a
+                              best-effort heuristic (background scanners can
+                              refresh atime — failing safe — and Finder/Time
+                              Machine restores can reset it).
+  --i-understand-deep         Allow the deepest, irreversible sections
+                              (6, 11, 14, 21, 24) to run unattended under
+                              --only / --profile / --all when combined with
+                              --yes. WITHOUT this flag they are refused in
+                              batch mode (a one-char typo of a section number
+                              can't trigger them). --yes alone never enables
+                              them. Dry-run previews are always allowed.
   --list                      List every section number and label, then exit.
   --version, -V               Print version and exit.
   --contact                   Print author contact card and exit.
   --feedback                  Open mail client with prefilled message.
   --report-issue              Collect environment info LOCALLY and open
-                              a pre-filled GitHub issue (you review it
+       (--report-bug)         a pre-filled GitHub issue (you review it
                               before submitting — nothing is auto-sent).
   --stats                     Show history of runs at $HOME/.mac-cleanup.
+  --prune-history [N]         Delete logs + reports older than N days from
+                              $HOME/.mac-cleanup (default N=90). Honours
+                              --dry-run.
+  --uninstall-data            Remove the entire $HOME/.mac-cleanup data dir
+                              (logs, reports, run history) after confirming.
   -h, --help                  Show this help.
+
+${BOLD}Config file${NC}
+  Defaults can be set in ~/.mac-cleanuprc (or \$MAC_CLEANUP_RC) as simple
+  key=value lines; CLI flags always override. Recognised keys:
+  cache-age-days, idle-days, threshold, stale-build-days, large-file-days,
+  large-file-size-gb, scan-roots, quiet, notify, brew-autoremove.
 
 ${BOLD}Examples${NC}
   $0                                       # interactive menu (recommended)
@@ -722,9 +839,13 @@ ${BOLD}Examples${NC}
 
 ${BOLD}Safety${NC}
   • Destructive operations always confirm by default.
-  • The deepest cleanups (orphan data, /private/var/folders, iOS backups,
-    Xcode archives, app uninstall, Trash empty) are NEVER auto-run; you
-    must select them from the menu or pass --yes explicitly.
+  • --all (even --all --yes) only ever runs the safe batch: caches, logs,
+    temp, and read-only reports. It never runs the deep sections.
+  • The deepest, irreversible sections (6 system caches as root, 11 TM
+    snapshots, 14 /private/var/folders wipe, 21 app uninstall, 24 large
+    files → Trash) are NEVER auto-run by --only / --profile / --all unless
+    you ALSO pass --i-understand-deep. Pick them from the interactive menu,
+    or opt in explicitly. --yes alone will not auto-run them.
   • Logs are written to: ${LOG_FILE}
 EOF
 }
@@ -818,11 +939,14 @@ cmd_contact() {
   printf '\n%b%s — by %s%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$AUTHOR_NAME" "$NC"
   printf '%b%s%b\n' "$DIM" "─────────────────────────────────────────────" "$NC"
   printf '   Email      : %s\n' "$AUTHOR_EMAIL"
-  printf '   Website    : %s\n' "$AUTHOR_WEBSITE"
+  printf '   Phone/WA   : %s\n' "$AUTHOR_PHONE"
+  printf '   Portfolio  : %s\n' "$AUTHOR_PORTFOLIO"
   printf '   LinkedIn   : %s\n' "$AUTHOR_LINKEDIN"
   printf '   GitHub     : %s\n' "$AUTHOR_GITHUB"
+  printf '   npm (user) : %s\n' "$AUTHOR_NPM"
+  printf '   Address    : %s\n' "$AUTHOR_ADDRESS"
   printf '   Project    : %s\n' "$PROJECT_REPO"
-  printf '   npm        : %s\n' "$PROJECT_NPM"
+  printf '   npm (pkg)  : %s\n' "$PROJECT_NPM"
   printf '\n%bGet help / give feedback%b\n' "$BOLD" "$NC"
   printf '   %s --feedback       %bemail with prefilled subject%b\n' "$SCRIPT_NAME" "$DIM" "$NC"
   printf '   %s --report-issue   %bopen a pre-filled GitHub issue%b\n' "$SCRIPT_NAME" "$DIM" "$NC"
@@ -950,6 +1074,119 @@ cmd_stats() {
   printf '\n'
 }
 
+# cmd_prune_history N — delete logs + report files older than N days from the
+# persistent data dir. Honours DRY_RUN. Quick-exit command (never sets batch).
+cmd_prune_history() {
+  local days="${1:-90}"
+  [[ "$days" =~ ^[0-9]+$ ]] || { err "--prune-history needs a number of days"; exit 2; }
+  printf '\n%b%s — prune history older than %s days%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$days" "$NC"
+  local d before=0 after=0
+  for d in "$LOG_DIR" "$REPORTS_DIR"; do
+    [[ -d "$d" ]] || continue
+    before=$(( before + $(size_kb "$d") ))
+    if (( DRY_RUN )); then
+      note "[dry-run] would delete files >${days}d in $d"
+      find "$d" -type f -mtime "+$days" -print 2>/dev/null | sed 's/^/   would remove: /'
+    else
+      find "$d" -type f -mtime "+$days" -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
+      after=$(( after + $(size_kb "$d") ))
+    fi
+  done
+  if (( DRY_RUN )); then
+    note "Dry-run — nothing deleted."
+  else
+    ok "Pruned $(human_kb "$(( before - after ))") of old logs/reports (kept files newer than ${days}d)."
+  fi
+}
+
+# cmd_uninstall_data — remove the entire persistent data dir (~/.mac-cleanup:
+# logs, reports, the first-run marker). Confirms first; honours DRY_RUN.
+cmd_uninstall_data() {
+  printf '\n%b%s — remove persistent data%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$NC"
+  printf '   Target: %s  (%s)\n\n' "$DEFAULT_DATA_DIR" "$(size_h "$DEFAULT_DATA_DIR")"
+  if [[ ! -d "$DEFAULT_DATA_DIR" ]]; then
+    info "Nothing to remove — $DEFAULT_DATA_DIR does not exist."
+    return 0
+  fi
+  if (( DRY_RUN )); then
+    note "[dry-run] would remove $DEFAULT_DATA_DIR"
+    return 0
+  fi
+  if confirm_yes "Delete all logs, reports, and run history under $DEFAULT_DATA_DIR?"; then
+    if safe_rm_rf "$DEFAULT_DATA_DIR"; then
+      ok "Removed $DEFAULT_DATA_DIR"
+    else
+      warn "Could not remove $DEFAULT_DATA_DIR"
+    fi
+  else
+    info "Kept."
+  fi
+}
+
+# load_rc_file — read ~/.mac-cleanuprc (or $MAC_CLEANUP_RC) as simple key=value
+# lines BEFORE CLI parsing, so explicit flags always win. Parsed with `read`
+# (never source/eval); only a whitelist of keys is honoured; malformed lines
+# warn and are skipped so a stray line can never brick the tool.
+load_rc_file() {
+  local rc="${MAC_CLEANUP_RC:-$HOME/.mac-cleanuprc}"
+  [[ -f "$rc" ]] || return 0
+  local key val
+  while IFS='=' read -r key val; do
+    # trim surrounding whitespace
+    key="${key#"${key%%[![:space:]]*}"}"; key="${key%"${key##*[![:space:]]}"}"
+    val="${val#"${val%%[![:space:]]*}"}"; val="${val%"${val##*[![:space:]]}"}"
+    [[ -z "$key" || "$key" == \#* ]] && continue
+    case "$key" in
+      cache-age-days|idle-days|threshold|stale-build-days|large-file-days|large-file-size-gb)
+        if [[ "$val" =~ ^[0-9]+$ ]]; then
+          case "$key" in
+            cache-age-days)     CACHE_AGE_DAYS="$val" ;;
+            idle-days)          IDLE_THRESHOLD_DAYS="$val" ;;
+            threshold)          UNUSED_APP_THRESHOLD_DAYS="$val" ;;
+            stale-build-days)   STALE_BUILD_THRESHOLD_DAYS="$val" ;;
+            large-file-days)    LARGE_FILE_THRESHOLD_DAYS="$val" ;;
+            large-file-size-gb) LARGE_FILE_SIZE_GB="$val" ;;
+          esac
+        else
+          warn "$rc: key '$key' needs a number, got '$val' — ignored."
+        fi ;;
+      scan-roots)  [[ -n "$val" ]] && SCAN_ROOTS_OVERRIDE="$val" ;;
+      quiet)       [[ "$val" == "1" || "$val" == "true" ]] && QUIET=1 ;;
+      notify)      [[ "$val" == "1" || "$val" == "true" ]] && NOTIFY=1 ;;
+      brew-autoremove) [[ "$val" == "1" || "$val" == "true" ]] && BREW_AUTOREMOVE=1 ;;
+      *)           warn "$rc: unknown key '$key' — ignored." ;;
+    esac
+  done < "$rc"
+}
+
+# json_escape — escape backslashes and double-quotes for embedding in JSON.
+json_escape() { local s="${1:-}"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s"; }
+
+# emit_json — print a single-line machine-readable run summary to stdout.
+# Used by --json. Caller is responsible for keeping other output off stdout.
+emit_json() {
+  local elapsed disk_delta=0 arr="" reps="" s r
+  elapsed=$(( $(date +%s) - START_EPOCH ))
+  DISK_FREE_AFTER_KB=$(disk_free_kb /)
+  if [[ -n "$DISK_FREE_BEFORE_KB" && -n "$DISK_FREE_AFTER_KB" ]]; then
+    disk_delta=$(( DISK_FREE_AFTER_KB - DISK_FREE_BEFORE_KB )); (( disk_delta < 0 )) && disk_delta=0
+  fi
+  for s in "${COMPLETED_SECTIONS[@]+"${COMPLETED_SECTIONS[@]}"}"; do
+    [[ -n "$arr" ]] && arr+=","
+    arr+="$s"
+  done
+  for r in "$ORPHAN_REPORT" "$UNUSED_APPS_REPORT" "$LARGE_FILES_REPORT" "$STALE_BUILD_REPORT" \
+           "$LARGE_STALE_REPORT" "$LAUNCH_AUDIT_REPORT" "$DU_REPORT"; do
+    [[ -f "$r" ]] || continue
+    [[ -n "$reps" ]] && reps+=","
+    reps+="\"$(json_escape "$r")\""
+  done
+  printf '{"tool":"%s","version":"%s","dry_run":%s,"freed_kb":%d,"disk_free_delta_kb":%d,"elapsed_s":%d,"sections_done":[%s],"reports":[%s],"log_file":"%s"}\n' \
+    "$(json_escape "$SCRIPT_NAME")" "$(json_escape "$SCRIPT_VERSION")" \
+    "$([[ $DRY_RUN -eq 1 ]] && echo true || echo false)" \
+    "$TOTAL_FREED_KB" "$disk_delta" "$elapsed" "$arr" "$reps" "$(json_escape "$LOG_FILE")"
+}
+
 # Section catalogue — single source of truth for `--list`, `--help`, and
 # the interactive menu. Each entry is "<number>|<one-line label>".
 SECTION_CATALOGUE=(
@@ -980,6 +1217,7 @@ SECTION_CATALOGUE=(
   "24|Large stale files ≥N GB unused N+ days"
   "25|LaunchAgents / LaunchDaemons audit"
   "26|Disk usage report (~/* and ~/Library/*)"
+  "27|macOS UI maintenance: QuickLook + font caches"
 )
 
 print_section_list() {
@@ -1103,6 +1341,20 @@ parse_args() {
         shift
         [[ "${1:-}" =~ ^[0-9]+$ ]] || { err "--idle-days needs a number"; exit 2; }
         IDLE_THRESHOLD_DAYS="$1" ;;
+      --i-understand-deep)
+        DEEP_OPT_IN=1 ;;
+      --exclude-path)
+        shift
+        [[ -n "${1:-}" ]] || { err "--exclude-path needs a path"; exit 2; }
+        EXCLUDE_PATHS+=("$1") ;;
+      --json)
+        JSON_MODE=1; QUIET=1 ;;
+      --prune-history)
+        local _ph=90
+        if [[ "${2:-}" =~ ^[0-9]+$ ]]; then _ph="$2"; shift; fi
+        cmd_prune_history "$_ph"; exit 0 ;;
+      --uninstall-data)
+        cmd_uninstall_data; exit 0 ;;
       --no-color)
         RED=""; GREEN=""; YELLOW=""; BLUE=""; CYAN=""; MAGENTA=""; BOLD=""; DIM=""; NC=""
         ;;
@@ -1143,32 +1395,37 @@ s00_health() {
   info "Chip:     $chip ($([[ "$chip" == "arm64" ]] && echo "Apple Silicon" || echo "Intel"))"
   info "RAM:      $(awk -v b="$ram_b" 'BEGIN{printf "%.1f GB", b/1024/1024/1024}')"
   info "Uptime:   $uptime"
-  printf '\n%bDisk:%b\n' "$BOLD" "$NC"
-  df -h / | sed 's/^/   /'
 
-  printf '\n%bMemory pressure:%b\n' "$BOLD" "$NC"
-  if has_cmd memory_pressure; then
-    memory_pressure 2>/dev/null | head -8 | sed 's/^/   /' || true
-  else
-    vm_stat | head -10 | sed 's/^/   /'
+  # The detailed disk/memory/CPU/battery/SMART panels are advisory; suppress
+  # them under --quiet (the one-line info() summaries above already self-gate).
+  if (( ! QUIET )); then
+    printf '\n%bDisk:%b\n' "$BOLD" "$NC"
+    df -h / | sed 's/^/   /'
+
+    printf '\n%bMemory pressure:%b\n' "$BOLD" "$NC"
+    if has_cmd memory_pressure; then
+      memory_pressure 2>/dev/null | head -8 | sed 's/^/   /' || true
+    else
+      vm_stat | head -10 | sed 's/^/   /'
+    fi
+
+    printf '\n%bTop CPU processes:%b\n' "$BOLD" "$NC"
+    ps -Aceo pcpu,pid,comm | sort -k1 -n -r | head -6 | sed 's/^/   /'
+    printf '\n%bTop memory processes:%b\n' "$BOLD" "$NC"
+    ps -Aceo pmem,pid,comm | sort -k1 -n -r | head -6 | sed 's/^/   /'
+
+    # Battery (laptops only)
+    if system_profiler SPPowerDataType 2>/dev/null | grep -q "Battery Information"; then
+      printf '\n%bBattery:%b\n' "$BOLD" "$NC"
+      system_profiler SPPowerDataType 2>/dev/null \
+        | awk '/Cycle Count|Condition|Maximum Capacity|State of Charge/ {print "   " $0}'
+    fi
+
+    # Disk SMART
+    printf '\n%bSSD SMART:%b\n' "$BOLD" "$NC"
+    diskutil info disk0 2>/dev/null | awk '/SMART Status/ {print "   " $0}' \
+      || note "   diskutil info unavailable"
   fi
-
-  printf '\n%bTop CPU processes:%b\n' "$BOLD" "$NC"
-  ps -Aceo pcpu,pid,comm | sort -k1 -n -r | head -6 | sed 's/^/   /'
-  printf '\n%bTop memory processes:%b\n' "$BOLD" "$NC"
-  ps -Aceo pmem,pid,comm | sort -k1 -n -r | head -6 | sed 's/^/   /'
-
-  # Battery (laptops only)
-  if system_profiler SPPowerDataType 2>/dev/null | grep -q "Battery Information"; then
-    printf '\n%bBattery:%b\n' "$BOLD" "$NC"
-    system_profiler SPPowerDataType 2>/dev/null \
-      | awk '/Cycle Count|Condition|Maximum Capacity|State of Charge/ {print "   " $0}'
-  fi
-
-  # Disk SMART
-  printf '\n%bSSD SMART:%b\n' "$BOLD" "$NC"
-  diskutil info disk0 2>/dev/null | awk '/SMART Status/ {print "   " $0}' \
-    || note "   diskutil info unavailable"
 
   mark_done 0
   press_enter
@@ -1313,12 +1570,24 @@ s03_pkg_managers() {
     fi
   fi
   # Ruby
-  for d in "$HOME/.bundle/cache"; do
-    [[ -d "$d" ]] && clean_dir_unused "$d" "$CACHE_AGE_DAYS"
+  [[ -d "$HOME/.bundle/cache" ]] && clean_dir_unused "$HOME/.bundle/cache" "$CACHE_AGE_DAYS"
+  [[ -d "$HOME/.gem/cache" ]]    && clean_dir_unused "$HOME/.gem/cache" "$CACHE_AGE_DAYS"
+
+  # Modern dev caches — regenerable, age-gated. Explicit cache SUBPATHS only;
+  # never the toolchain roots (~/.bun, ~/.nvm, ~/.cache, … are in
+  # CRITICAL_HOME_DIRS and hold installed binaries / tool state). Caches that
+  # live under ~/Library/Caches (Deno, SwiftPM, Carthage, sccache) are already
+  # swept by section 5, so they're not repeated here.
+  local _devcache
+  for _devcache in \
+    "$HOME/.bun/install/cache" \
+    "$HOME/.ccache" \
+    "$HOME/.cache/uv" \
+    "$HOME/.cache/deno" \
+    "$HOME/.composer/cache" \
+    "$HOME/.nvm/.cache"; do
+    [[ -d "$_devcache" ]] && clean_dir_unused "$_devcache" "$CACHE_AGE_DAYS"
   done
-  if [[ -d "$HOME/.gem/cache" ]]; then
-    clean_dir_unused "$HOME/.gem/cache" "$CACHE_AGE_DAYS"
-  fi
   mark_done 3; press_enter
 }
 
@@ -1333,12 +1602,27 @@ s04_docker() {
     warn "Docker daemon not running. Start Docker Desktop and re-run this section."
     mark_done 4; return 0
   fi
-  if confirm "Prune ALL unused Docker containers, images, volumes, networks?"; then
+  # Default prune deliberately EXCLUDES --volumes: named volumes routinely hold
+  # the only copy of a database for a stopped project, and their loss is
+  # irreversible. Images/containers/networks/build-cache are all recoverable.
+  if confirm "Prune unused Docker containers, images, networks, build cache (NOT volumes)?"; then
     if (( DRY_RUN )); then
-      note "[dry-run] docker system prune -a --volumes -f"
+      note "[dry-run] docker system prune -a -f"
     else
-      docker system prune -a --volumes -f
-      ok "Docker pruned"
+      docker system prune -a -f
+      ok "Docker pruned (volumes preserved)"
+    fi
+  fi
+  # Volume deletion is offered separately behind a literal-yes gate, and is
+  # NEVER run unattended — even with --yes — because the BATCH_MODE skip takes
+  # precedence over confirm_yes's (ASSUME_YES && BATCH_MODE) auto-approve.
+  if (( BATCH_MODE )); then
+    note "Skipping volume prune in batch mode (would delete named-volume data). Run interactively to remove volumes."
+  elif confirm_yes "Also remove ALL unused Docker VOLUMES? This permanently deletes database data in named volumes for stopped projects and is NOT recoverable."; then
+    if (( DRY_RUN )); then
+      note "[dry-run] docker volume prune -f"
+    else
+      docker volume prune -f && ok "Docker volumes pruned" || warn "docker volume prune failed"
     fi
   fi
   mark_done 4; press_enter
@@ -1353,23 +1637,17 @@ s05_user_caches() {
     local before after
     before=$(size_kb "$cache_root")
     if (( DRY_RUN )); then
-      note "[dry-run] would prune most non-Apple, non-browser entries"
+      note "[dry-run] would prune non-Apple, non-browser, non-password-manager entries"
     else
-      # Preserve Apple, all major browsers (handle in [19]), password managers, system tooling.
+      # Preserve Apple, all major browsers (handled in [19]), password managers,
+      # and the corepack cache — built from USER_CACHE_PRESERVE so the allowlist
+      # has a single source of truth. Each pattern becomes a `! -name P`
+      # predicate (AND of negations) — DO NOT introduce -o/grouping here or the
+      # allowlist would collapse and the sweep would delete everything.
+      local _preserve_args=() _pp
+      for _pp in "${USER_CACHE_PRESERVE[@]}"; do _preserve_args+=( ! -name "$_pp" ); done
       find "$cache_root" -mindepth 1 -maxdepth 1 \
-        ! -name 'com.apple.*' \
-        ! -name 'com.google.Chrome*' \
-        ! -name 'org.mozilla.firefox*' \
-        ! -name 'com.apple.Safari*' \
-        ! -name 'com.brave.*' \
-        ! -name 'BraveSoftware*' \
-        ! -name 'Company' \
-        ! -name 'com.microsoft.edgemac*' \
-        ! -name 'com.operasoftware.Opera*' \
-        ! -name 'com.vivaldi.Vivaldi*' \
-        ! -name '1Password*' \
-        ! -name 'com.agilebits.*' \
-        ! -name 'Bitwarden*' \
+        "${_preserve_args[@]}" \
         -exec rm -rf -- {} + 2>/dev/null || true
     fi
     after=$(size_kb "$cache_root")
@@ -1385,8 +1663,11 @@ s05_user_caches() {
       clean_dir_contents "$HOME/Library/Saved Application State"
     fi
   fi
+  # Prune old crash/diagnostic reports (age-aware, matching section 7's logs
+  # treatment) rather than wiping unconditionally — a just-filed report can
+  # still be useful for --report-issue.
   if [[ -d "$HOME/Library/Logs/DiagnosticReports" ]]; then
-    clean_dir_contents "$HOME/Library/Logs/DiagnosticReports"
+    clean_dir_old "$HOME/Library/Logs/DiagnosticReports" 7
   fi
   mark_done 5; press_enter
 }
@@ -1443,7 +1724,7 @@ s08_temp() {
     if (( DRY_RUN )); then
       note "[dry-run] would prune $user_tmp (user-owned, >1d)"
     else
-      find "$user_tmp" -mindepth 1 -user "$(id -un)" -mtime +1 \
+      find "$user_tmp" -mindepth 1 -user "$(id -un)" ! -type s ! -type p -mtime +1 \
         -exec rm -rf -- {} + 2>/dev/null || true
       ok "Pruned old user temp files"
     fi
@@ -1452,7 +1733,7 @@ s08_temp() {
     if (( DRY_RUN )); then
       note "[dry-run] would prune /tmp (user-owned, >1d)"
     else
-      find /tmp -mindepth 1 -user "$(id -un)" -mtime +1 \
+      find /tmp -mindepth 1 -user "$(id -un)" ! -type s ! -type p -mtime +1 \
         -exec rm -rf -- {} + 2>/dev/null || true
       ok "Pruned old /tmp entries (user-owned)"
     fi
@@ -1478,22 +1759,52 @@ s09_update_caches() {
   mark_done 9; press_enter
 }
 
-# Section 10 — Empty Trash
+# Section 10 — Empty Trash (home + mounted external volumes)
 s10_trash() {
   header "[10] Empty Trash"
-  if [[ ! -d "$HOME/.Trash" ]]; then
-    info "No Trash directory found."
-    mark_done 10; return 0
+  local uid root_dev
+  uid=$(id -u)
+  root_dev=$(stat -f %d / 2>/dev/null || echo "")
+
+  # Prompt for + empty one trash dir if it has contents. Reuses clean_dir_contents
+  # (DRY_RUN-aware, symlink-guarded, tracks freed KB). auto_yes=1 keeps parity
+  # with the prior home-Trash behaviour.
+  _empty_trash_dir() {
+    local _label="$1" _dir="$2" _sz _n
+    [[ -d "$_dir" ]] || return 0
+    _n=$(find "$_dir" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | awk '{print $1}')
+    if (( _n == 0 )); then note "$_label: already empty."; return 0; fi
+    _sz=$(size_h "$_dir")
+    if confirm "Empty $_label ($_n items, $_sz)? This is irreversible." 1; then
+      clean_dir_contents "$_dir"
+    fi
+  }
+
+  if [[ -d "$HOME/.Trash" ]]; then
+    _empty_trash_dir "Trash (home)" "$HOME/.Trash"
+  else
+    info "No home Trash directory found."
   fi
-  local sz; sz=$(size_h "$HOME/.Trash")
-  local n;  n=$(find "$HOME/.Trash" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | awk '{print $1}')
-  if (( n == 0 )); then
-    info "Trash is already empty."
-    mark_done 10; return 0
-  fi
-  if confirm "Empty Trash ($n items, $sz)? This is irreversible." 1; then
-    clean_dir_contents "$HOME/.Trash"
-  fi
+
+  # Per-volume trashes on mounted external/removable volumes live at
+  # /Volumes/<name>/.Trashes/<uid>. We set nullglob (restoring prior state) so a
+  # no-match glob doesn't iterate a literal path, skip the boot volume (same
+  # device id as /), and skip read-only mounts. Kept in the current shell — NOT
+  # a subshell — so clean_dir_contents' freed-KB tracking propagates.
+  local _ng_was_set=0; shopt -q nullglob && _ng_was_set=1
+  shopt -s nullglob
+  local vol vdev t
+  for vol in /Volumes/*; do
+    [[ -d "$vol" ]] || continue
+    vdev=$(stat -f %d "$vol" 2>/dev/null || echo "")
+    [[ -n "$root_dev" && "$vdev" == "$root_dev" ]] && continue   # skip boot volume
+    t="$vol/.Trashes/$uid"
+    [[ -d "$t" ]] || continue
+    if [[ ! -w "$t" ]]; then note "Skipping read-only volume trash: $(basename "$vol")"; continue; fi
+    _empty_trash_dir "Trash on $(basename "$vol")" "$t"
+  done
+  (( _ng_was_set )) || shopt -u nullglob
+
   mark_done 10; press_enter
 }
 
@@ -1543,15 +1854,17 @@ s12_orphaned() {
   : > "$installed_names"; : > "$installed_bids"
   local app n bid
   while IFS= read -r app; do
-    n=$(basename "$app" .app)
+    n=${app##*/}; n=${n%.app}   # builtin basename (no fork)
     printf '%s\n' "$n" >> "$installed_names"
     bid=$(defaults read "$app/Contents/Info" CFBundleIdentifier 2>/dev/null || echo "")
     [[ -n "$bid" ]] && printf '%s\n' "$bid" >> "$installed_bids"
   done < "$apps_file"
 
   # Helper: is given basename matched by any installed app?
-  local report; report="$ORPHAN_REPORT"
+  local report _have_report=0
+  report="$ORPHAN_REPORT"
   if init_report_file "$report" "orphan app data scan"; then
+    _have_report=1
     printf '# Orphan scan results\n\n' >> "$report"
   fi
 
@@ -1570,10 +1883,13 @@ s12_orphaned() {
     done < "$installed_bids"
     # name match (case-insensitive)
     if grep -Fxqi -- "$cand" "$installed_names" 2>/dev/null; then return 0; fi
-    # token presence: split candidate and see if any token equals app name
+    # token presence: split candidate and see if any token equals app name.
+    # Floor of 2 chars (lowered from 4 in 4.5.0): matching MORE is the safe
+    # direction here — every extra match means an entry is treated as belonging
+    # to an installed app and skipped, so it can only REDUCE false orphans.
     local token
     for token in $(echo "$lc" | tr '.,_-' '\n'); do
-      [[ ${#token} -lt 4 ]] && continue
+      [[ ${#token} -lt 2 ]] && continue
       if grep -Fxqi -- "$token" "$installed_names" 2>/dev/null; then return 0; fi
     done
     return 1
@@ -1585,11 +1901,16 @@ s12_orphaned() {
   local _idle_days="$IDLE_THRESHOLD_DAYS"
 
   _scan_dir() {
-    local dir="$1" pattern="$2"
+    # Take find predicates as discrete positional args (not a single splittable
+    # string): passing them as "$@" keeps globs like '*.plist' literal instead
+    # of letting the shell expand them against the CURRENT directory before find
+    # ever sees them (which silently broke the Preferences/LaunchAgents scan
+    # when run from a folder containing .plist files).
+    local dir="$1"; shift
     [[ -d "$dir" ]] || return 0
     local entry
     while IFS= read -r entry; do
-      local base; base=$(basename "$entry")
+      local base=${entry##*/}
       # ignore Apple
       is_apple_bundle "$base" && continue
       [[ "$base" == "."* ]] && continue
@@ -1599,28 +1920,31 @@ s12_orphaned() {
       # mtime) for ≥ IDLE_THRESHOLD_DAYS. Skip recently-active items
       # even if our heuristic matcher couldn't find an installed app —
       # something IS using it.
-      local _atime _mtime _newer _idle
-      _atime=$(stat -f %a "$entry" 2>/dev/null || echo 0)
-      _mtime=$(stat -f %m "$entry" 2>/dev/null || echo 0)
-      _newer=$_atime
-      (( _mtime > _newer )) && _newer=$_mtime
-      if (( _newer > 0 )); then
-        _idle=$(( (_now - _newer) / 86400 ))
-        if (( _idle < _idle_days )); then
-          recent_skipped=$(( recent_skipped + 1 ))
-          continue
-        fi
+      local _newer _idle
+      _newer=$(_path_newer_ts "$entry")   # one stat, max(atime,mtime)
+      # Unknown age (unreadable timestamps) MUST mean keep, not delete — for a
+      # safety-critical non-cache delete, "I can't tell how old this is" fails
+      # toward preservation. Only entries with a readable timestamp AND
+      # idle >= threshold become candidates.
+      if (( _newer <= 0 )); then
+        recent_skipped=$(( recent_skipped + 1 ))
+        continue
+      fi
+      _idle=$(( (_now - _newer) / 86400 ))
+      if (( _idle < _idle_days )); then
+        recent_skipped=$(( recent_skipped + 1 ))
+        continue
       fi
       candidates+=("$entry")
-    done < <(find "$dir" -mindepth 1 -maxdepth 1 $pattern 2>/dev/null)
+    done < <(find "$dir" -mindepth 1 -maxdepth 1 "$@" 2>/dev/null)
   }
 
-  _scan_dir "$HOME/Library/Application Support" "-type d"
-  _scan_dir "$HOME/Library/Containers"          "-type d"
-  _scan_dir "$HOME/Library/Group Containers"    "-type d"
-  _scan_dir "$HOME/Library/Saved Application State" "-type d"
-  _scan_dir "$HOME/Library/Preferences"         "-type f -name *.plist"
-  _scan_dir "$HOME/Library/LaunchAgents"        "-type f -name *.plist"
+  _scan_dir "$HOME/Library/Application Support" -type d
+  _scan_dir "$HOME/Library/Containers"          -type d
+  _scan_dir "$HOME/Library/Group Containers"    -type d
+  _scan_dir "$HOME/Library/Saved Application State" -type d
+  _scan_dir "$HOME/Library/Preferences"         -type f -name '*.plist'
+  _scan_dir "$HOME/Library/LaunchAgents"        -type f -name '*.plist'
 
   if (( recent_skipped > 0 )); then
     note "Skipped $recent_skipped orphan-shaped entries that were touched within the last ${_idle_days} days (probably still in use)."
@@ -1633,13 +1957,21 @@ s12_orphaned() {
 
   info "Found ${#candidates[@]} candidate orphan entries (orphaned AND idle ≥${_idle_days}d). Reporting to:"
   note "$report"
-  local total_kb=0 c sz_kb
+  # Compute each candidate's size ONCE and cache it (reused in the review loop).
+  # Write data rows to a temp file and sort only those, so the report's branding
+  # banner isn't shuffled into the data — and so --no-reports writes nothing.
+  local total_kb=0 c sz_kb idx=0
+  declare -a cand_kb=()
+  local data; data=$(tmp_file); : > "$data"
   for c in "${candidates[@]}"; do
     sz_kb=$(size_kb "$c")
+    cand_kb[idx]=$sz_kb; idx=$(( idx + 1 ))
     total_kb=$(( total_kb + sz_kb ))
-    printf '%s\t%s\n' "$(human_kb "$sz_kb")" "$c" >> "$report"
+    printf '%s\t%s\n' "$(human_kb "$sz_kb")" "$c" >> "$data"
   done
-  sort -hr "$report" -o "$report" 2>/dev/null || true
+  if (( _have_report )); then
+    sort -hr "$data" 2>/dev/null >> "$report" || cat "$data" >> "$report"
+  fi
   info "Total candidate size: $(human_kb "$total_kb")"
 
   if (( BATCH_MODE && ! ASSUME_YES )); then
@@ -1651,20 +1983,24 @@ s12_orphaned() {
     local i=0 reply
     for c in "${candidates[@]}"; do
       i=$((i+1))
-      sz_kb=$(size_kb "$c")
+      sz_kb=${cand_kb[$(( i - 1 ))]}
       printf '\n%b[%d/%d]%b %s  (%s)\n' "$CYAN" "$i" "${#candidates[@]}" "$NC" "$c" "$(human_kb "$sz_kb")"
       printf '%bDelete? [y/N/q to quit]%b ' "$BOLD" "$NC"
       read -r reply || reply=""
       case "$reply" in
         [yY]|[yY][eE][sS])
-          if (( DRY_RUN )); then note "[dry-run] would delete $c"
+          # Move to Trash first so a mis-matched orphan (the matcher is a
+          # heuristic) stays recoverable; fall back to the guarded safe_rm_rf
+          # when Finder/Trash is unavailable (headless/SSH).
+          if (( DRY_RUN )); then note "[dry-run] would move to Trash: $c"
+          elif osascript_trash "$c"; then
+            TOTAL_FREED_KB=$(( TOTAL_FREED_KB + sz_kb ))
+            ok "Moved to Trash"
+          elif safe_rm_rf "$c"; then
+            TOTAL_FREED_KB=$(( TOTAL_FREED_KB + sz_kb ))
+            ok "Deleted"
           else
-            if rm -rf -- "$c" 2>/dev/null; then
-              TOTAL_FREED_KB=$(( TOTAL_FREED_KB + sz_kb ))
-              ok "Deleted"
-            else
-              warn "Failed to delete $c"
-            fi
+            warn "Failed to delete $c"
           fi ;;
         [qQ]) info "Stopped at $i."; break ;;
         *) note "Skipped" ;;
@@ -1698,10 +2034,16 @@ s14_var_folders() {
     mark_done 14; return 0
   fi
   if ! require_sudo "/private/var/folders"; then mark_done 14; return 0; fi
+  # NOTE: this is a deliberate FULL wipe of /private/var/folders to depth 3 —
+  # the T (temp), C (Darwin user cache) and 0 (per-bootsession) subtrees, which
+  # is why it demands literal "yes", sudo, and a reboot. We exclude symlinks
+  # (! -type l) so a link is never followed/expanded, but otherwise do not
+  # age-filter: clearing the accumulated state is the whole point of this
+  # menu-only nuclear option.
   if (( DRY_RUN )); then
-    note "[dry-run] sudo find /private/var/folders -mindepth 1 -maxdepth 3 -delete"
+    note "[dry-run] sudo find /private/var/folders -mindepth 1 -maxdepth 3 ! -type l -print0 | xargs -0 sudo rm -rf"
   else
-    sudo find /private/var/folders -mindepth 1 -maxdepth 3 -print0 2>/dev/null \
+    sudo find /private/var/folders -mindepth 1 -maxdepth 3 ! -type l -print0 2>/dev/null \
       | xargs -0 sudo rm -rf 2>/dev/null || true
     ok "Deep cache cleared. REBOOT NOW."
   fi
@@ -1728,6 +2070,20 @@ s15_installer() {
 # Section 16 — iOS / iPadOS backups
 s16_ios_backups() {
   header "[16] iOS / iPadOS device backups"
+
+  # Old iOS/iPadOS software-update downloads (.ipsw) — multi-GB and fully
+  # re-downloadable from Apple. Age-gated, and handled before the backups
+  # check so they're swept even when no device backup exists.
+  local _ipsw
+  for _ipsw in \
+    "$HOME/Library/iTunes/iPhone Software Updates" \
+    "$HOME/Library/iTunes/iPad Software Updates"; do
+    if [[ -d "$_ipsw" ]]; then
+      info "iOS software-update downloads: $(size_h "$_ipsw") in $(basename "$_ipsw")"
+      clean_dir_unused "$_ipsw" "$CACHE_AGE_DAYS"
+    fi
+  done
+
   local root="$HOME/Library/Application Support/MobileSync/Backup"
   if [[ ! -d "$root" ]]; then
     info "No iOS backups directory found."
@@ -1755,7 +2111,10 @@ s16_ios_backups() {
     # Compute age: prefer Last Backup Date from plist; fall back to dir mtime
     local _epoch=0 _age_label="" _flag=""
     if [[ -n "$date" ]]; then
-      _epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$date" +%s 2>/dev/null \
+      # The first form's trailing 'Z' is literal UTC; force TZ=UTC so the epoch
+      # isn't shifted by the local zone. The second form carries its own %z and
+      # must NOT be wrapped, or it would be double-shifted.
+      _epoch=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%SZ" "$date" +%s 2>/dev/null \
         || date -j -f "%Y-%m-%d %H:%M:%S %z" "$date" +%s 2>/dev/null \
         || echo 0)
     fi
@@ -1873,12 +2232,30 @@ s18_large_files() {
     -exec du -h {} + 2>/dev/null \
     | sort -hr \
     | head -25 > "$_scan"
-  cat "$_scan"
+  (( QUIET )) || cat "$_scan"
   if (( ! NO_REPORTS )); then
     cat "$_scan" >> "$LARGE_FILES_REPORT"
     info "Top entries written to: $LARGE_FILES_REPORT"
   fi
   mark_done 18; press_enter
+}
+
+# clean_chromium_caches USER_DATA_DIR  CACHES_DIR
+# Clears a Chromium-family browser's HTTP cache (CACHES_DIR under
+# ~/Library/Caches) plus per-profile cache subdirs (Default, Profile 1…,
+# Guest/System Profile) under USER_DATA_DIR. Only cache subdirs that exist are
+# touched — profile data, history, logins, extensions are left intact. Pure
+# cache, so clean_dir_contents (DRY_RUN-aware, freed-KB tracking) is used.
+clean_chromium_caches() {
+  local user_data="$1" caches_dir="$2" prof sub
+  [[ -n "$caches_dir" && -d "$caches_dir" ]] && clean_dir_contents "$caches_dir"
+  [[ -d "$user_data" ]] || return 0
+  while IFS= read -r prof; do
+    for sub in "Cache" "Code Cache" "GPUCache" "DawnGraphiteCache" "DawnWebGPUCache" \
+               "Service Worker/CacheStorage" "Service Worker/ScriptCache"; do
+      [[ -d "$prof/$sub" ]] && clean_dir_contents "$prof/$sub"
+    done
+  done < <(find "$user_data" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
 }
 
 # Section 19 — Browser caches
@@ -1887,43 +2264,50 @@ s19_browser_caches() {
   warn "This invalidates browser caches (next page loads will be slower)."
   if ! confirm "Proceed with browser cache cleanup?"; then mark_done 19; return 0; fi
 
-  # Chrome
+  # Chromium-family browsers: "<App Support User-Data dir>|<~/Library/Caches dir>".
+  # Covers all profiles (Default, Profile 1…), not just Default.
+  local entry as_rel caches_rel
+  for entry in \
+    "Google/Chrome|com.google.Chrome" \
+    "Google/Chrome Canary|com.google.Chrome.canary" \
+    "BraveSoftware/Brave-Browser|BraveSoftware" \
+    "Microsoft Edge|com.microsoft.edgemac" \
+    "Vivaldi|com.vivaldi.Vivaldi" \
+    "Chromium|org.chromium.Chromium" \
+    "com.operasoftware.Opera|com.operasoftware.Opera" \
+    "com.operasoftware.OperaGX|com.operasoftware.OperaGX" \
+    "DuckDuckGo|com.duckduckgo.macos.browser" \
+    "Arc|com.thebrowser.Browser"; do
+    as_rel="${entry%%|*}"; caches_rel="${entry#*|}"
+    clean_chromium_caches "$HOME/Library/Application Support/$as_rel" "$HOME/Library/Caches/$caches_rel"
+  done
+  # Chrome helper + Arc's "Company" cache dir (non-standard locations).
   local d
-  for d in \
-    "$HOME/Library/Caches/com.google.Chrome" \
-    "$HOME/Library/Application Support/Google/Chrome/Default/Cache" \
-    "$HOME/Library/Application Support/Google/Chrome/Default/Code Cache" \
-    "$HOME/Library/Caches/com.google.Chrome.helper"; do
+  for d in "$HOME/Library/Caches/com.google.Chrome.helper" "$HOME/Library/Caches/Company/Arc"; do
     [[ -d "$d" ]] && clean_dir_contents "$d"
   done
-  # Firefox
-  for d in \
-    "$HOME/Library/Caches/org.mozilla.firefox" \
-    "$HOME/Library/Caches/Firefox"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
+
+  # Firefox-family (Firefox + forks share the cache2 layout): top-level Caches
+  # entries plus per-profile cache2 under each profiles root.
+  local ff
+  for ff in \
+    "org.mozilla.firefox" "Firefox" \
+    "org.mozilla.firefoxdeveloperedition" "org.mozilla.nightly" \
+    "org.mozilla.librewolf" "org.floorp.Floorp" "app.zen-browser.zen"; do
+    [[ -d "$HOME/Library/Caches/$ff" ]] && clean_dir_contents "$HOME/Library/Caches/$ff"
   done
-  if [[ -d "$HOME/Library/Application Support/Firefox/Profiles" ]]; then
+  local prof_root
+  for prof_root in \
+    "$HOME/Library/Application Support/Firefox/Profiles" \
+    "$HOME/Library/Application Support/zen/Profiles" \
+    "$HOME/Library/Application Support/Floorp/Profiles" \
+    "$HOME/Library/Application Support/LibreWolf/Profiles"; do
+    [[ -d "$prof_root" ]] || continue
     while IFS= read -r d; do
       [[ -d "$d/cache2" ]] && clean_dir_contents "$d/cache2"
-    done < <(find "$HOME/Library/Application Support/Firefox/Profiles" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
-  fi
-  # Brave
-  for d in \
-    "$HOME/Library/Caches/BraveSoftware" \
-    "$HOME/Library/Application Support/BraveSoftware/Brave-Browser/Default/Cache" \
-    "$HOME/Library/Application Support/BraveSoftware/Brave-Browser/Default/Code Cache"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
+    done < <(find "$prof_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
   done
-  # Arc
-  for d in "$HOME/Library/Caches/Company/Arc" "$HOME/Library/Caches/com.thebrowser.Browser"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
-  done
-  # Edge
-  for d in \
-    "$HOME/Library/Caches/com.microsoft.edgemac" \
-    "$HOME/Library/Application Support/Microsoft Edge/Default/Cache"; do
-    [[ -d "$d" ]] && clean_dir_contents "$d"
-  done
+
   info "Safari caches: clear via Safari → Develop → Empty Caches (or Settings → Privacy)."
   mark_done 19; press_enter
 }
@@ -1967,13 +2351,21 @@ s21_unused_apps() {
   # We need at least one usable signal per app; if every signal is null we
   # SKIP it (Spotlight may be re-indexing — better to under-flag than to
   # falsely uninstall an app the user actually uses).
-  local skipped=0 evaluated=0
+  local skipped=0 evaluated=0 running_skipped=0
   while IFS= read -r app; do
     [[ -z "$app" ]] && continue
     name=$(basename "$app" .app)
     bid=$(defaults read "$app/Contents/Info" CFBundleIdentifier 2>/dev/null || echo "")
     [[ -z "$bid" ]] && continue
     is_apple_bundle "$bid" && continue
+    # Condition (a) — "not used by any active software": never flag an app that
+    # is running right now. pgrep failures (e.g. a regex-special char in the
+    # path) are swallowed and fall through to the timestamp logic, matching the
+    # prior behaviour. The '.' in '.app' over-matches slightly toward "running",
+    # which is the safe direction.
+    if pgrep -f "$app/Contents/MacOS/" >/dev/null 2>&1; then
+      running_skipped=$(( running_skipped + 1 )); continue
+    fi
     evaluated=$(( evaluated + 1 ))
 
     local last_epoch=0 source="unknown" last_str=""
@@ -1983,27 +2375,30 @@ s21_unused_apps() {
       last_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S %z" "$last_str" +%s 2>/dev/null || echo 0)
       [[ "$last_epoch" != "0" ]] && source="spotlight"
     fi
-    # 2) Saved Application State mtime (updates on every launch)
+    # 2) Saved Application State — newest of atime/mtime (a recent READ counts
+    #    as a launch even when the file wasn't rewritten).
     if (( last_epoch == 0 )); then
       local sav="$HOME/Library/Saved Application State/$bid.savedState"
       if [[ -e "$sav" ]]; then
-        last_epoch=$(stat -f %m "$sav" 2>/dev/null || echo 0)
+        last_epoch=$(_path_newer_ts "$sav")
         [[ "$last_epoch" != "0" ]] && source="savedstate"
       fi
     fi
-    # 3) Container mtime (sandboxed apps)
+    # 3) Container (sandboxed apps) — newest of atime/mtime.
     if (( last_epoch == 0 )); then
       local ctr="$HOME/Library/Containers/$bid"
       if [[ -d "$ctr" ]]; then
-        last_epoch=$(stat -f %m "$ctr" 2>/dev/null || echo 0)
+        last_epoch=$(_path_newer_ts "$ctr")
         [[ "$last_epoch" != "0" ]] && source="container"
       fi
     fi
-    # 4) Preferences plist mtime
+    # 4) Preferences plist — newest of atime/mtime. Prefs are only REWRITTEN
+    #    when settings change, but they're READ on every launch, so atime is
+    #    the more reliable recency signal here.
     if (( last_epoch == 0 )); then
       local pref="$HOME/Library/Preferences/$bid.plist"
       if [[ -e "$pref" ]]; then
-        last_epoch=$(stat -f %m "$pref" 2>/dev/null || echo 0)
+        last_epoch=$(_path_newer_ts "$pref")
         [[ "$last_epoch" != "0" ]] && source="prefs"
       fi
     fi
@@ -2031,7 +2426,7 @@ s21_unused_apps() {
         "$days_idle" "$size_kb_v" "$bid" "$name" "$last_str" "$source" "$app" >> "$results"
     fi
   done < "$apps_file"
-  note "Evaluated ${evaluated} apps; skipped ${skipped} with no usable last-used signal."
+  note "Evaluated ${evaluated} apps; skipped ${skipped} with no usable last-used signal; skipped ${running_skipped} currently running."
 
   if [[ ! -s "$results" ]]; then
     ok "No apps idle ≥${UNUSED_APP_THRESHOLD_DAYS} days."
@@ -2051,7 +2446,7 @@ s21_unused_apps() {
   printf '   %s\n' "──────────────────────────────────────────────────────────────────────"
 
   declare -a uapps=() unames=() ubids=() upaths=() usizes=()
-  local line d sz_kb b nm last p
+  local d sz_kb b nm last p
   while IFS=$'\t' read -r d sz_kb b nm last p; do
     uapps+=("$p"); unames+=("$nm"); ubids+=("$b"); upaths+=("$p"); usizes+=("$sz_kb")
     printf '   %-5s  %-9s  %-40s  %s\n' "$d" "$(human_kb "$sz_kb")" "${nm:0:40}" "$last"
@@ -2092,14 +2487,16 @@ s21_unused_apps() {
   _gather_app_data_paths() {
     _data_paths=()
     local app_name="$1" app_bid="$2" candidate
+    # Guard against an empty name/bundle-id producing a bare parent directory
+    # (e.g. ".../Application Support/") that would then be deleted wholesale.
+    [[ -n "$app_name" && -n "$app_bid" ]] || return 0
+    # Bundle-ID-confined paths: a bundle id is unique, so these belong only to
+    # THIS app — safe to remove with the app.
     for candidate in \
-      "$HOME/Library/Application Support/$app_name" \
       "$HOME/Library/Application Support/$app_bid" \
       "$HOME/Library/Containers/$app_bid" \
       "$HOME/Library/Caches/$app_bid" \
-      "$HOME/Library/Caches/$app_name" \
       "$HOME/Library/Preferences/$app_bid.plist" \
-      "$HOME/Library/Logs/$app_name" \
       "$HOME/Library/Saved Application State/$app_bid.savedState" \
       "$HOME/Library/LaunchAgents/$app_bid.plist" \
       "$HOME/Library/HTTPStorages/$app_bid" \
@@ -2110,6 +2507,25 @@ s21_unused_apps() {
     while IFS= read -r candidate; do
       [[ -e "$candidate" ]] && _data_paths+=("$candidate")
     done < <(find "$HOME/Library/Group Containers" -maxdepth 1 -name "*$app_bid*" 2>/dev/null)
+    # Name-based paths: a DIFFERENT, actively-used installed app could store
+    # data under the same display-name folder (generic names like "Updater",
+    # "Player"). Only include such a folder when it is itself idle for
+    # >= UNUSED_APP_THRESHOLD_DAYS (readable timestamp required); recent or
+    # unknown-age => keep, so we never delete an in-use app's data. (4.5.0)
+    local _now2; _now2=$(date +%s)
+    for candidate in \
+      "$HOME/Library/Application Support/$app_name" \
+      "$HOME/Library/Caches/$app_name" \
+      "$HOME/Library/Logs/$app_name"; do
+      [[ -e "$candidate" ]] || continue
+      local _ca _cm _cn
+      _ca=$(stat -f %a "$candidate" 2>/dev/null || echo 0)
+      _cm=$(stat -f %m "$candidate" 2>/dev/null || echo 0)
+      _cn=$_ca; (( _cm > _cn )) && _cn=$_cm
+      if (( _cn > 0 )) && (( (_now2 - _cn) / 86400 >= UNUSED_APP_THRESHOLD_DAYS )); then
+        _data_paths+=("$candidate")
+      fi
+    done
   }
 
   # Helper: uninstall a single app + its companion data, tracking freed KB.
@@ -2124,17 +2540,19 @@ s21_unused_apps() {
       ok "Moved $app_name to Trash"
       TOTAL_FREED_KB=$(( TOTAL_FREED_KB + app_size_kb ))
     else
-      warn "Finder move failed; trying rm -rf"
-      if rm -rf -- "$app_path" 2>/dev/null; then
+      warn "Finder move failed; trying guarded rm"
+      if safe_rm_rf "$app_path"; then
         ok "Removed $app_name"
         TOTAL_FREED_KB=$(( TOTAL_FREED_KB + app_size_kb ))
       else
         warn "Could not remove $app_path (permission?)"
       fi
     fi
+    # Companion data → Trash first (recoverable if a name-match was wrong),
+    # falling back to the guarded safe_rm_rf when Finder is unavailable.
     for dp in "${_data_paths[@]+"${_data_paths[@]}"}"; do
       kb=$(size_kb "$dp")
-      if rm -rf -- "$dp" 2>/dev/null; then
+      if osascript_trash "$dp" || safe_rm_rf "$dp"; then
         TOTAL_FREED_KB=$(( TOTAL_FREED_KB + kb ))
       else
         warn "Could not remove $dp"
@@ -2302,6 +2720,11 @@ s23_stale_builds() {
   for _excl in "${CRITICAL_HOME_DIRS[@]}"; do
     critical_excludes+=( ! -path "$HOME/$_excl" ! -path "$HOME/$_excl/*" )
   done
+  # User-supplied --exclude-path entries get the same literal + subtree guard.
+  local _xp
+  for _xp in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    critical_excludes+=( ! -path "$_xp" ! -path "$_xp/*" )
+  done
 
   local results; results=$(tmp_file); : > "$results"
   for r in "${roots[@]}"; do
@@ -2328,6 +2751,9 @@ s23_stale_builds() {
     local p="$1" e
     for e in "${CRITICAL_HOME_DIRS[@]}"; do
       [[ "$p" == "$HOME/$e" || "$p" == "$HOME/$e/"* ]] && return 0
+    done
+    for e in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+      [[ "$p" == "$e" || "$p" == "$e/"* ]] && return 0
     done
     return 1
   }
@@ -2457,6 +2883,12 @@ s24_large_stale() {
   if ! confirm "Proceed with scan?" 1; then mark_done 24; return 0; fi
   info "Scanning… (this may take a few minutes for large home directories)"
 
+  # Honour any --exclude-path entries (literal path + subtree).
+  local _xpaths=() _xp
+  for _xp in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    _xpaths+=( ! -path "$_xp" ! -path "$_xp/*" )
+  done
+
   local results; results=$(tmp_file); : > "$results"
   find "$HOME" -type f -size "$size_arg" -atime "+$days" -mtime "+$days" \
     ! -path "*/Library/CloudStorage/*" \
@@ -2467,6 +2899,7 @@ s24_large_stale() {
     ! -path "*/Virtual Machines/*" \
     ! -path "*/Parallels/*" \
     ! -path "*/VMware/*" \
+    "${_xpaths[@]}" \
     -print 2>/dev/null > "$results" || true
 
   if [[ ! -s "$results" ]]; then
@@ -2475,14 +2908,12 @@ s24_large_stale() {
   fi
 
   declare -a items_path=() items_kb=() items_age=()
-  local total_kb=0 now atime mtime newer age path sz_kb i
+  local total_kb=0 now newer age path sz_kb i
   now=$(date +%s)
   while IFS= read -r path; do
     [[ -f "$path" ]] || continue
     sz_kb=$(size_kb "$path")
-    atime=$(stat -f %a "$path" 2>/dev/null || echo 0)
-    mtime=$(stat -f %m "$path" 2>/dev/null || echo 0)
-    newer=$atime; (( mtime > newer )) && newer=$mtime
+    newer=$(_path_newer_ts "$path")   # one stat, max(atime,mtime)
     if (( newer > 0 )); then age=$(( (now - newer) / 86400 )); else age=$days; fi
     items_path+=("$path"); items_kb+=("$sz_kb"); items_age+=("$age")
     total_kb=$(( total_kb + sz_kb ))
@@ -2698,8 +3129,12 @@ s26_du_report() {
   local _scan; _scan=$(tmp_file)
 
   printf '\n%bTop $HOME children:%b\n' "$BOLD" "$NC"
-  du -sh "$HOME"/* "$HOME"/.* 2>/dev/null \
-    | grep -v -E '^[^ 	]+[ 	]+(\.|\.\.)$' \
+  # Use find -mindepth 1 -maxdepth 1 rather than a "$HOME"/* "$HOME"/.* glob:
+  # the glob's `.*` expands to `.` (re-scans all of $HOME) and `..` (= /Users,
+  # scanning EVERY user's home). The old grep tried to drop those but the regex
+  # never matched the full absolute paths, so du walked them anyway — turning a
+  # ~30s report into a multi-minute, cross-user scan.
+  find "$HOME" -mindepth 1 -maxdepth 1 -exec du -sh {} + 2>/dev/null \
     | sort -h \
     | tail -20 > "$_scan"
   sed 's/^/   /' "$_scan"
@@ -2737,12 +3172,71 @@ s26_du_report() {
   mark_done 26; press_enter
 }
 
+# Section 27 — macOS UI maintenance: QuickLook thumbnails + font caches
+# Resets regenerable UI caches that commonly cause garbled fonts or stale
+# QuickLook previews. Everything here rebuilds automatically on demand, so it
+# is non-destructive. Menu / --only only (never in --all).
+s27_ui_maintenance() {
+  header "[27] macOS UI maintenance: QuickLook + font caches"
+  info "Resets regenerable UI caches (QuickLook thumbnails, font caches). They rebuild on demand."
+
+  # QuickLook thumbnail cache — no sudo; regenerates next time you preview a file.
+  if has_cmd qlmanage; then
+    if (( DRY_RUN )); then
+      note "[dry-run] qlmanage -r cache"
+    else
+      qlmanage -r cache >/dev/null 2>&1 && ok "QuickLook thumbnail cache reset" \
+        || warn "qlmanage cache reset returned non-zero"
+    fi
+  else
+    note "qlmanage unavailable — skipping QuickLook cache."
+  fi
+
+  # Font caches — clearing fixes duplicate/garbled fonts. User scope needs no
+  # sudo; the system scope is offered separately and never forced.
+  if has_cmd atsutil; then
+    if (( DRY_RUN )); then
+      note "[dry-run] atsutil databases -removeUser"
+    else
+      atsutil databases -removeUser >/dev/null 2>&1 && ok "User font cache cleared" \
+        || warn "atsutil (user) returned non-zero"
+    fi
+    if confirm "Also clear the SYSTEM font cache (needs sudo)?"; then
+      if require_sudo "system font cache"; then
+        if (( DRY_RUN )); then
+          note "[dry-run] sudo atsutil databases -remove"
+        else
+          sudo atsutil databases -remove >/dev/null 2>&1 && ok "System font cache cleared" \
+            || warn "atsutil (system) returned non-zero"
+          note "A logout or restart finalises the font-cache rebuild."
+        fi
+      fi
+    fi
+  else
+    note "atsutil unavailable — skipping font caches."
+  fi
+
+  mark_done 27; press_enter
+}
+
 # ──────────────────────────────────────────────────────────────────────────
 #                              MENU / FLOW
 # ──────────────────────────────────────────────────────────────────────────
 
 # Sections that --all runs unattended (caches/logs/temp/reports only).
-SAFE_BATCH=(0 3 5 7 8 9 13 15 18 22 26)
+# Section 13 (`sudo periodic`) was removed in 4.5.0 — it is privileged system
+# maintenance, not a cache/log/temp/report cleanup, so it no longer runs under
+# --all; invoke it from the menu or with --only 13.
+SAFE_BATCH=(0 3 5 7 8 9 15 18 22 26)
+
+# Deep, irreversible sections that must NOT run unattended via --only/--profile
+# /--all even with --yes. They require a logged-in human at the menu, OR the
+# explicit --i-understand-deep opt-in (which --yes alone does NOT set). The set
+# is space-padded for a substring membership test.
+#   6  system caches wiped as root      11 Time Machine local snapshots
+#   14 /private/var/folders deep wipe    21 app uninstall + companion data
+#   24 large stale files → Trash
+DEEP_INTERACTIVE_SECTIONS=" 6 11 14 21 24 "
 
 run_all_safe() {
   step "Running safe-batch sections: ${SAFE_BATCH[*]}"
@@ -2755,7 +3249,6 @@ run_all_safe() {
       7)  s07_logs ;;
       8)  s08_temp ;;
       9)  s09_update_caches ;;
-      13) s13_maintenance ;;
       15) s15_installer ;;
       18) s18_large_files ;;
       22) s22_purgeable_trigger ;;
@@ -2789,6 +3282,19 @@ session_summary() {
   if (( DRY_RUN )); then printf '%b   Mode: DRY-RUN — nothing was deleted.%b\n' "$YELLOW" "$NC"; fi
   printf '\n%b   %s v%s — by %s · %s%b\n' \
     "$DIM" "$SCRIPT_NAME" "$SCRIPT_VERSION" "$AUTHOR_NAME" "$PROJECT_REPO" "$NC"
+}
+
+# _finish_run — common end-of-run handling. Prints the human session summary
+# (which, in --json mode, has been redirected to stderr by main), then in
+# --json mode restores real stdout (saved on fd 3) and emits the JSON object as
+# the sole stdout line, and finally fires the optional completion notification.
+_finish_run() {
+  session_summary
+  if (( JSON_MODE )); then
+    exec 1>&3 3>&-
+    emit_json
+  fi
+  notify_user "mac-cleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
 }
 
 show_menu() {
@@ -2836,9 +3342,10 @@ show_menu() {
   LBL[24]="Large stale files ≥${LARGE_FILE_SIZE_GB}GB unused ${LARGE_FILE_THRESHOLD_DAYS}+ days"
   LBL[25]="LaunchAgents / LaunchDaemons audit (orphaned login items)"
   LBL[26]="Disk usage report (\$HOME & ~/Library)"
+  LBL[27]="macOS UI maintenance: QuickLook + font caches"
 
   local i mark
-  for i in $(seq 0 26); do
+  for i in $(seq 0 27); do
     if is_done "$i"; then mark="${GREEN}✓${NC}"; else mark=" "; fi
     printf '   %s [%2d] %s\n' "$mark" "$i" "${LBL[$i]}"
   done
@@ -2851,6 +3358,18 @@ show_menu() {
 }
 
 dispatch() {
+  local n="$1"
+  # Enforce the "human-present" safety contract: deep destructive sections are
+  # refused under batch mode unless the operator explicitly opted in with
+  # --i-understand-deep. Dry-run is allowed through (it cannot touch disk) so
+  # previews still work. The interactive menu (BATCH_MODE=0) is unaffected.
+  if (( BATCH_MODE && ! DRY_RUN && ! DEEP_OPT_IN )) \
+     && [[ "$DEEP_INTERACTIVE_SECTIONS" == *" $n "* ]]; then
+    warn "Section $n is interactive-only; refusing to auto-run it under --only/--profile/--all."
+    note "Run it from the menu, or pass --i-understand-deep to allow it (with --yes) unattended."
+    mark_done "$n"
+    return 0
+  fi
   case "$1" in
     0)  s00_health ;;
     1)  s01_xcode ;;
@@ -2879,6 +3398,7 @@ dispatch() {
     24) s24_large_stale ;;
     25) s25_launchitems ;;
     26) s26_du_report ;;
+    27) s27_ui_maintenance ;;
     *)  warn "Unknown section: $1" ;;
   esac
 }
@@ -2906,7 +3426,8 @@ show_first_run_welcome_if_needed() {
   printf '      They survive npx cache cleanup. Run %b%s --stats%b later for history.\n\n' "$CYAN" "$SCRIPT_NAME" "$NC"
   printf '   3. %bSafety rules%b — non-cache deletes need both:\n' "$GREEN" "$NC"
   printf '      (a) not used by any active software/tool, AND\n'
-  printf '      (b) not touched by you for ≥ 100 days (atime+mtime).\n\n'
+  printf '      (b) not touched by you for ≥ 100 days. Idleness uses mtime +\n'
+  printf '      atime as a best-effort heuristic (atime on APFS is approximate).\n\n'
   printf '   4. %bSomething wrong?%b\n' "$GREEN" "$NC"
   printf '      %b%s --report-issue%b   open a pre-filled GitHub issue\n' "$CYAN" "$SCRIPT_NAME" "$NC"
   printf '      %b%s --feedback%b       email Ahsan directly\n' "$CYAN" "$SCRIPT_NAME" "$NC"
@@ -2920,6 +3441,8 @@ show_first_run_welcome_if_needed() {
 }
 
 main() {
+  # Load ~/.mac-cleanuprc defaults BEFORE argv so explicit CLI flags win.
+  load_rc_file
   parse_args "$@"
   # Make sure logs/reports dirs exist after any --logs-dir / --reports-dir
   # overrides that may have been parsed from argv.
@@ -2928,6 +3451,10 @@ main() {
   show_first_run_welcome_if_needed
   DISK_FREE_BEFORE_KB=$(disk_free_kb /)
   log_to_file "── mac-cleanup v$SCRIPT_VERSION started ──"
+
+  # --json: send every human/log line to stderr (real stdout saved on fd 3) so
+  # the only thing written to stdout is the JSON object emitted by _finish_run.
+  if (( JSON_MODE )); then exec 3>&1 1>&2; fi
 
   # Optional opt-in update check (no telemetry).
   check_update_npm
@@ -2958,8 +3485,7 @@ main() {
       [[ "$s" =~ ^[0-9]+$ ]] || { warn "Skipping invalid section '$s'"; continue; }
       dispatch "$s"
     done
-    session_summary
-    notify_user "mac-cleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
+    _finish_run
     return 0
   fi
 
@@ -2978,14 +3504,13 @@ main() {
     else
       run_all_safe
     fi
-    session_summary
-    notify_user "mac-cleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
+    _finish_run
     return 0
   fi
 
   while true; do
     show_menu
-    printf '%bSelect [0-26 / A / D / Y / S / Q]:%b ' "$BOLD" "$NC"
+    printf '%bSelect [0-27 / A / D / Y / S / Q]:%b ' "$BOLD" "$NC"
     local choice
     read -r choice || { echo; break; }
     case "$choice" in
@@ -2996,7 +3521,7 @@ main() {
       [Ss]*) session_summary; press_enter ;;
       ''   ) continue ;;
       *)
-        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 0 && choice <= 26 )); then
+        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 0 && choice <= 27 )); then
           dispatch "$choice"
         else
           warn "Unrecognised choice: $choice"
@@ -3004,9 +3529,8 @@ main() {
     esac
   done
 
-  session_summary
+  _finish_run
   log_to_file "── mac-cleanup ended ──"
-  notify_user "mac-cleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
   # Note: --cleanup-logs-on-finish is handled by the EXIT trap so it
   # fires for every code path (interactive quit, --only, --all, signals).
 }
