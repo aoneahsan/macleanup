@@ -7,6 +7,24 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.5.1] — 2026-06-08  •  PATCH
+
+### Fixed
+- **CLI now accepts `--flag=value` as well as `--flag value`.** A token like
+  `--cache-age-days=30` was previously rejected with `Unknown option` (exit 2);
+  `parse_args` now splits a leading `--key=value` into two arguments before
+  matching. This also fixes the desktop app, whose Settings passed thresholds
+  in the `=value` form.
+- **Clearer unknown-option error.** Prints the offending option plus a one-line
+  `Run 'mac-cleanup --help'` hint instead of dumping the entire help text.
+
+### Desktop
+- The macOS GUI now builds threshold flags as discrete argv tokens via a single
+  shared `buildExtraArgs` helper (no more `--flag=value`), and bundles the
+  4.5.1 CLI.
+
+---
+
 ## [4.5.0] — 2026-06-08  •  SAFETY, CORRECTNESS, FEATURES
 
 A broad audit-driven release. The headline changes are safety hardening

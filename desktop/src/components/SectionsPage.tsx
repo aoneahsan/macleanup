@@ -7,6 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { useRun } from '../hooks/useRun';
 import type { AppSettings } from '../hooks/useSettings';
 import { humanKb } from '../lib/format';
+import { buildExtraArgs } from '../lib/runargs';
 
 type SectionsPhase =
   | { kind: 'browse' }
@@ -259,10 +260,3 @@ export function SectionsPage({ settings, canRun, onNeedsSignIn, onRecordRun }: S
   );
 }
 
-function buildExtraArgs(settings: AppSettings): string[] {
-  return [
-    `--cache-age-days=${settings.cacheAgeDays}`,
-    `--idle-days=${settings.idleDays}`,
-    `--large-file-size-gb=${settings.largeFileSizeGb}`,
-  ];
-}

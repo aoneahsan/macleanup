@@ -58,7 +58,7 @@ fi
 # exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.5.0}"
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.5.1}"
 SCRIPT_NAME="mac-cleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -1262,6 +1262,12 @@ resolve_scan_roots() {
 
 parse_args() {
   while (( $# )); do
+    # Accept the --flag=value form in addition to --flag value, so callers
+    # (scripts, cron, and the desktop GUI) can pass either. Split a leading
+    # --key=value token into two positional args before matching.
+    if [[ "$1" == --*=* ]]; then
+      set -- "${1%%=*}" "${1#*=}" "${@:2}"
+    fi
     case "$1" in
       --all)        RUN_ALL=1; BATCH_MODE=1 ;;
       --only)
@@ -1372,7 +1378,10 @@ parse_args() {
       --stats)
         cmd_stats; exit 0 ;;
       -h|--help)    print_help; exit 0 ;;
-      *) err "Unknown option: $1"; print_help; exit 2 ;;
+      *)
+        err "Unknown option: $1"
+        err "Run '$SCRIPT_NAME --help' to see all available options."
+        exit 2 ;;
     esac
     shift
   done
