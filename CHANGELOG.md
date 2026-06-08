@@ -7,6 +7,35 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.4.2] — 2026-05-13  •  SAFETY PATCH
+
+Defensive hardening for the `CRITICAL_HOME_DIRS` allowlist. **No
+behaviour change** for users who never had section 23 misbehave — the
+existing `$HOME/Library` path-exclude already kept the pnpm setup
+target out of stale-build scans. This release makes the protection
+explicit so that a future code change cannot regress it silently.
+
+### Added
+- `CRITICAL_HOME_DIRS` now explicitly lists:
+  - `Library/pnpm` — pnpm setup target on macOS (`PNPM_HOME` default).
+    Holds the global bin shims, the content-addressable store, and the
+    v11 global `node_modules` tree. Anything deleted here breaks every
+    `pnpm add -g` tool and any corepack-managed yarn shim.
+  - `.local/share/pnpm`, `.local/state/pnpm` — Linux XDG pnpm targets;
+    safe to include on macOS for homes migrated from Linux.
+  - `.cache/node/corepack`, `Library/Caches/node/corepack` — Corepack
+    home, holds vendored yarn / pnpm / npm pinned by
+    `package.json#packageManager`.
+
+### Notes
+- The literal user-facing recovery story stays the same as documented
+  in `docs/recovery-guide.md`. This change is belt-and-braces.
+- No section 23 logic changed. Section 3 (package manager caches) was
+  already non-destructive (`pnpm store prune`, `yarn cache clean`,
+  `npm cache clean`); none of these remove installed packages.
+
+---
+
 ## [4.4.1] — 2026-05-10  •  DOCUMENTATION RELEASE
 
 Documentation-only release. **No script behaviour changes.** A complete

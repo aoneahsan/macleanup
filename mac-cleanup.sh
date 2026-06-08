@@ -51,7 +51,7 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-SCRIPT_VERSION="4.4.1"
+SCRIPT_VERSION="4.4.2"
 SCRIPT_NAME="mac-cleanup"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%Y-%m-%d)"
@@ -126,6 +126,18 @@ CRITICAL_HOME_DIRS=(
   # Node version + package managers
   .nvm .fnm .n .tnvm .volta .asdf
   .npm .npm-packages .yarn .pnpm-store .pnpm
+  # pnpm setup target on macOS (PNPM_HOME default) — holds global bin
+  # shims, the content-addressable store, and the v11 global node_modules
+  # tree. Deleting anything under here breaks every `pnpm add -g` tool,
+  # corepack-managed yarn shims, and forces a full `pnpm setup` recovery.
+  Library/pnpm
+  # pnpm setup target on Linux (XDG default); harmless on macOS but kept
+  # so the same script is safe to run from a Linux home synced via Time
+  # Machine restore / migration assistant.
+  .local/share/pnpm .local/state/pnpm
+  # Corepack home (PATH'd via `corepack enable`). Holds vendored yarn /
+  # pnpm / npm binaries pinned per-project via package.json#packageManager.
+  .cache/node/corepack Library/Caches/node/corepack
   # Other language runtimes
   .bun .deno .rbenv .pyenv .rustup .rye .ruby
   .cargo .gradle .m2 .sbt .ivy2
