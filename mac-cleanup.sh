@@ -2899,7 +2899,7 @@ s24_large_stale() {
     ! -path "*/Virtual Machines/*" \
     ! -path "*/Parallels/*" \
     ! -path "*/VMware/*" \
-    "${_xpaths[@]}" \
+    "${_xpaths[@]+"${_xpaths[@]}"}" \
     -print 2>/dev/null > "$results" || true
 
   if [[ ! -s "$results" ]]; then
@@ -3480,7 +3480,7 @@ main() {
     step "Running explicit sections: $ONLY_SECTIONS"
     local s
     IFS=',' read -r -a _arr <<<"$ONLY_SECTIONS"
-    for s in "${_arr[@]}"; do
+    for s in "${_arr[@]+"${_arr[@]}"}"; do
       s="${s// /}"
       [[ "$s" =~ ^[0-9]+$ ]] || { warn "Skipping invalid section '$s'"; continue; }
       dispatch "$s"
@@ -3497,7 +3497,7 @@ main() {
       _filtered="$(apply_exclude "$_safe_csv")"
       step "Safe batch with --exclude: $_filtered"
       IFS=',' read -r -a _arr <<<"$_filtered"
-      for s in "${_arr[@]}"; do
+      for s in "${_arr[@]+"${_arr[@]}"}"; do
         s="${s// /}"
         [[ "$s" =~ ^[0-9]+$ ]] && dispatch "$s"
       done
