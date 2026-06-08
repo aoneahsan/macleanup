@@ -7,7 +7,7 @@
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.6.0-blue.svg)](#changelog)
+[![version](https://img.shields.io/badge/version-4.6.1-blue.svg)](#changelog)
 [![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 

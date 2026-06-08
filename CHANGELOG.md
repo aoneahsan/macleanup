@@ -7,6 +7,22 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.6.1] — 2026-06-08  •  PATCH
+
+### Fixed
+- **Dry-run now estimates how much space would be freed.** Previously a
+  `--dry-run` reported `freed_kb: 0` (it printed per-folder "would clear …"
+  notes but never tallied a total), so the desktop preview showed "0 B".
+  `clean_dir_contents` / `clean_dir_old` / `clean_dir_unused` and section 5
+  now measure the size of what they *would* delete and report it as the
+  estimate — the GUI preview shows a real number.
+- **`--json` reports list only this run's files.** It previously listed every
+  report present in the reports dir (including ones left from earlier runs the
+  same day); it now filters to files written during the current run
+  (mtime ≥ run start).
+
+---
+
 ## [4.6.0] — 2026-06-08  •  GUI PRIVILEGED OPS + UX
 
 ### Added

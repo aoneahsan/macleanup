@@ -58,7 +58,7 @@ fi
 # exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.6.0}"
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.6.1}"
 SCRIPT_NAME="mac-cleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -434,6 +434,13 @@ safe_rm_f() {
 
 # clean_dir_contents path
 # Removes everything inside path (but not the dir itself), tracks freed KB.
+# _sum_kb_nul — read NUL-delimited paths on stdin, echo the total size in KB.
+# Used by dry-run to ESTIMATE how much a delete would free without touching
+# disk. (`du -sk` per arg works for both files and directories.)
+_sum_kb_nul() {
+  xargs -0 du -sk 2>/dev/null | awk '{ s += $1 } END { print s + 0 }'
+}
+
 clean_dir_contents() {
   local d="$1" before
   [[ -z "$d" ]] && return 0
@@ -444,6 +451,7 @@ clean_dir_contents() {
   before=$(size_kb "$d")
   if (( DRY_RUN )); then
     note "[dry-run] would clear $(human_kb "$before") in $d"
+    track_freed "$before" 0   # estimate: the whole directory would be cleared
     return 0
   fi
   # Revalidate immediately before the wipe: reject a symlinked $d (its /* glob
@@ -465,16 +473,27 @@ clean_dir_old() {
   [[ ! -d "$d" ]] && return 0
   local before after
   before=$(size_kb "$d")
-  if (( DRY_RUN )); then
-    note "[dry-run] would prune files >${days}d in $d"
-    return 0
-  fi
-  if (( ${#globs[@]} == 0 )); then
-    find "$d" -type f -mtime "+$days" -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
-  else
-    local g name_args=()
+  # Build the -name OR-clause once (shared by the estimate + the real delete).
+  local name_args=()
+  if (( ${#globs[@]} > 0 )); then
+    local g
     for g in "${globs[@]}"; do name_args+=( -o -name "$g" ); done
     name_args=( "${name_args[@]:1}" )  # drop leading -o
+  fi
+  if (( DRY_RUN )); then
+    local est
+    if (( ${#name_args[@]} == 0 )); then
+      est=$(find "$d" -type f -mtime "+$days" -print0 2>/dev/null | _sum_kb_nul)
+    else
+      est=$(find "$d" -type f -mtime "+$days" \( "${name_args[@]}" \) -print0 2>/dev/null | _sum_kb_nul)
+    fi
+    note "[dry-run] would prune $(human_kb "$est") (>${days}d) from $d"
+    track_freed "$est" 0
+    return 0
+  fi
+  if (( ${#name_args[@]} == 0 )); then
+    find "$d" -type f -mtime "+$days" -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
+  else
     find "$d" -type f -mtime "+$days" \( "${name_args[@]}" \) -print0 2>/dev/null \
       | xargs -0 rm -f 2>/dev/null || true
   fi
@@ -505,11 +524,15 @@ clean_dir_unused() {
   local before after freed
   before=$(size_kb "$d")
   if (( DRY_RUN )); then
+    local est
     if (( days == 0 )); then
-      note "[dry-run] would full-wipe $d ($(human_kb "$before"))"
+      est="$before"
+      note "[dry-run] would full-wipe $d ($(human_kb "$est"))"
     else
-      note "[dry-run] would prune files unused (atime+mtime) >${days}d in $d"
+      est=$(find "$d" -mindepth 1 -type f -atime "+$days" -mtime "+$days" -print0 2>/dev/null | _sum_kb_nul)
+      note "[dry-run] would prune $(human_kb "$est") (>${days}d unused) from $d"
     fi
+    track_freed "$est" 0
     return 0
   fi
   if (( days == 0 )); then
@@ -1190,9 +1213,14 @@ emit_json() {
     [[ -n "$arr" ]] && arr+=","
     arr+="$s"
   done
+  # Only report files written by THIS run (mtime ≥ run start) — not stale
+  # reports left from earlier runs the same day.
+  local _rmt
   for r in "$ORPHAN_REPORT" "$UNUSED_APPS_REPORT" "$LARGE_FILES_REPORT" "$STALE_BUILD_REPORT" \
            "$LARGE_STALE_REPORT" "$LAUNCH_AUDIT_REPORT" "$DU_REPORT"; do
     [[ -f "$r" ]] || continue
+    _rmt=$(stat -f %m "$r" 2>/dev/null || echo 0)
+    (( _rmt >= START_EPOCH )) || continue
     [[ -n "$reps" ]] && reps+=","
     reps+="\"$(json_escape "$r")\""
   done
@@ -1658,25 +1686,28 @@ s05_user_caches() {
   local cache_root="$HOME/Library/Caches"
   if [[ -d "$cache_root" ]]; then
     info "Sweeping ~/Library/Caches (preserving Apple, browsers, password managers)…"
-    local before after
-    before=$(size_kb "$cache_root")
+    # Preserve Apple, all major browsers (handled in [19]), password managers,
+    # and the corepack cache — built from USER_CACHE_PRESERVE so the allowlist
+    # has a single source of truth. Each pattern becomes a `! -name P` predicate
+    # (AND of negations) — DO NOT introduce -o/grouping here or the allowlist
+    # would collapse and the sweep would delete everything.
+    local _preserve_args=() _pp
+    for _pp in "${USER_CACHE_PRESERVE[@]}"; do _preserve_args+=( ! -name "$_pp" ); done
     if (( DRY_RUN )); then
-      note "[dry-run] would prune non-Apple, non-browser, non-password-manager entries"
+      local est
+      est=$(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null | _sum_kb_nul)
+      note "[dry-run] would prune ~$(human_kb "$est") of non-Apple/browser/password-manager caches"
+      track_freed "$est" 0
     else
-      # Preserve Apple, all major browsers (handled in [19]), password managers,
-      # and the corepack cache — built from USER_CACHE_PRESERVE so the allowlist
-      # has a single source of truth. Each pattern becomes a `! -name P`
-      # predicate (AND of negations) — DO NOT introduce -o/grouping here or the
-      # allowlist would collapse and the sweep would delete everything.
-      local _preserve_args=() _pp
-      for _pp in "${USER_CACHE_PRESERVE[@]}"; do _preserve_args+=( ! -name "$_pp" ); done
+      local before after
+      before=$(size_kb "$cache_root")
       find "$cache_root" -mindepth 1 -maxdepth 1 \
         "${_preserve_args[@]}" \
         -exec rm -rf -- {} + 2>/dev/null || true
+      after=$(size_kb "$cache_root")
+      track_freed "$before" "$after"
+      ok "Cleared $(human_kb "$(( before - after ))") from $cache_root"
     fi
-    after=$(size_kb "$cache_root")
-    track_freed "$before" "$after"
-    ok "Cleared $(human_kb "$(( before - after ))") from $cache_root"
   else
     note "No ~/Library/Caches found."
   fi
