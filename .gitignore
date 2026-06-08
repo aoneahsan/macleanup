@@ -18,6 +18,8 @@ stale-build-*.txt
 # --- Personal / sensitive ---------------------------------------------------
 .env
 .env.*
+.npmrc
+*.npmrc
 *.pem
 *.p12
 *.keystore
@@ -26,6 +28,8 @@ secrets/
 credentials/
 *.private.*
 *.secret.*
+*.token
+*-token.txt
 
 # --- Editor / IDE ----------------------------------------------------------
 .idea/

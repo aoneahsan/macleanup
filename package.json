@@ -23,7 +23,7 @@
     "dry-run": "node bin/mac-cleanup.js --dry-run --all",
     "lint:bash": "bash -n mac-cleanup.sh && node -c bin/mac-cleanup.js",
     "version:check": "node -e \"const fs=require('fs');const v=require('./package.json').version;if(!fs.readFileSync('mac-cleanup.sh','utf8').includes('MAC_CLEANUP_VERSION:-'+v+'}')){console.error('version mismatch: package.json '+v+' is not the SCRIPT_VERSION fallback in mac-cleanup.sh');process.exit(1)}console.log('version parity OK: '+v)\"",
-    "prepublishOnly": "bash -n mac-cleanup.sh && node -c bin/mac-cleanup.js && test -x mac-cleanup.sh && test -x bin/mac-cleanup.js && yarn version:check"
+    "prepublishOnly": "bash -n mac-cleanup.sh && node -c bin/mac-cleanup.js && test -x mac-cleanup.sh && test -x bin/mac-cleanup.js && npm run --silent version:check"
   },
   "preferGlobal": true,
   "engines": {
