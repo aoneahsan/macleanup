@@ -58,7 +58,7 @@ fi
 # exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.5.1}"
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.6.0}"
 SCRIPT_NAME="mac-cleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -543,11 +543,26 @@ clean_dir_unused() {
   fi
 }
 
+# When invoked by the desktop GUI (which sets MACLEANUP_ASKPASS to a graphical
+# password helper), route sudo through that askpass so the user is prompted
+# ONCE per run via a native dialog — no TTY needed. sudo caches the credential
+# for the rest of the run, so all subsequent privileged steps are prompt-free.
+# Terminal users are unaffected (MACLEANUP_ASKPASS is unset → normal sudo).
+if [[ -n "${MACLEANUP_ASKPASS:-}" && -x "${MACLEANUP_ASKPASS:-}" ]]; then
+  export SUDO_ASKPASS="$MACLEANUP_ASKPASS"
+  sudo() { command sudo -A "$@"; }
+fi
+
 # require_sudo — returns 0 if we have (or got) sudo, 1 otherwise
 require_sudo() {
   if (( NO_SUDO )); then
     warn "Skipping (sudo disabled): $*"
     return 1
+  fi
+  # Dry-run previews never perform privileged work, so never prompt for a
+  # password during a preview — only a real run asks.
+  if (( DRY_RUN )); then
+    return 0
   fi
   if sudo -n true 2>/dev/null; then
     return 0

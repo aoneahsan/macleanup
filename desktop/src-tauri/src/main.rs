@@ -59,6 +59,28 @@ fn script_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
         .map_err(|e| format!("could not locate bundled script: {e}"))
 }
 
+/// Write (idempotently) a graphical sudo askpass helper to the app cache dir
+/// and return its path. When this is exported as MACLEANUP_ASKPASS, the CLI
+/// routes sudo through it, so privileged sections prompt ONCE per run via a
+/// native macOS password dialog (no Terminal needed). Returns None on failure
+/// — privileged sections then simply skip, exactly as before.
+fn ensure_askpass(app: &AppHandle) -> Option<std::path::PathBuf> {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = app.path().app_cache_dir().ok()?;
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = dir.join("macleanup-askpass.sh");
+    // The helper shows a password dialog and prints the entered password to
+    // stdout (what sudo --askpass expects); Cancel yields an empty string so
+    // sudo simply fails and the section is skipped.
+    let script = "#!/bin/bash\nosascript \
+-e 'try' \
+-e 'text returned of (display dialog \"macleanup needs administrator access to clean protected system files. Enter your macOS password to continue.\" with title \"macleanup\" default answer \"\" with hidden answer with icon caution)' \
+-e 'on error' -e 'return \"\"' -e 'end try' 2>/dev/null\n";
+    std::fs::write(&path, script).ok()?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).ok()?;
+    Some(path)
+}
+
 /// The app's own version (matches package.json / tauri.conf.json).
 #[tauri::command]
 fn app_version() -> String {
@@ -73,10 +95,16 @@ fn app_version() -> String {
 #[tauri::command]
 fn run_clean(app: AppHandle, args: RunArgs) -> Result<(), String> {
     let script = script_path(&app)?;
+    let askpass = ensure_askpass(&app);
     std::thread::spawn(move || {
         let mut cmd = Command::new("/bin/bash");
         // --json => JSON summary on stdout, human log on stderr (we stream it).
         cmd.arg(&script).arg("--json").arg("--no-color");
+        // Graphical one-prompt-per-run sudo for privileged sections.
+        if let Some(ap) = &askpass {
+            cmd.env("MACLEANUP_ASKPASS", ap);
+            cmd.env("SUDO_ASKPASS", ap);
+        }
         if args.all {
             cmd.arg("--all");
         } else if let Some(s) = args.sections.as_ref().filter(|s| !s.is_empty()) {

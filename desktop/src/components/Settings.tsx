@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { open } from '@tauri-apps/plugin-shell';
 import { appVersion } from '../lib/cli';
 import type { AppSettings } from '../hooks/useSettings';
+
+const FDA_URL = 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles';
 
 interface SettingsProps {
   settings: AppSettings;
@@ -92,6 +95,37 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             value={settings.largeFileSizeGb}
             onChange={(e) => onUpdate('largeFileSizeGb', Math.max(1, parseInt(e.target.value, 10) || 1))}
           />
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-section-title">System access</div>
+
+        <div className="settings-row">
+          <label className="settings-row-label">
+            <div className="settings-row-label-text">Administrator access</div>
+            <div className="settings-row-label-desc">
+              Cleaning system-level files (system caches, logs, periodic maintenance, DNS,
+              snapshots) asks for your macOS password <strong>once per run</strong> via a native
+              dialog. Previews never ask.
+            </div>
+          </label>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-row-label">
+            <div className="settings-row-label-text">Full Disk Access</div>
+            <div className="settings-row-label-desc">
+              For the deepest cleanups, grant macleanup Full Disk Access once in System Settings,
+              then relaunch the app.
+            </div>
+          </label>
+          <button
+            className="btn btn-secondary"
+            onClick={() => { void open(FDA_URL); }}
+          >
+            Open settings
+          </button>
         </div>
       </div>
 

@@ -7,6 +7,30 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.6.0] — 2026-06-08  •  GUI PRIVILEGED OPS + UX
+
+### Added
+- **One admin prompt per run for the desktop GUI.** When launched by the app,
+  the CLI routes `sudo` through a graphical askpass (`MACLEANUP_ASKPASS`), so
+  the privileged sections (6, 7, 9, 11, 13, 14, 20) now actually run from the
+  GUI and ask for your macOS password **once per run** via a native dialog.
+  They previously skipped silently (no terminal to prompt on). Terminal users
+  are unaffected — `sudo` behaves normally there.
+- **Desktop: Full Disk Access** one-tap deep-link + an "Administrator access"
+  explainer in Settings.
+
+### Changed
+- `require_sudo` no longer attempts elevation during `--dry-run` — previews
+  never prompt for a password; only a real run does.
+
+### Notes
+- The macOS app is still unsigned (no Apple Developer ID): first launch needs
+  right-click → Open once. The "password once, ever" experience (a signed
+  `SMAppService` privileged helper) is the future upgrade when a Developer ID
+  is available — code signing also removes the Gatekeeper prompt.
+
+---
+
 ## [4.5.1] — 2026-06-08  •  PATCH
 
 ### Fixed

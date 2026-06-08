@@ -1,6 +1,6 @@
 [package]
 name = "macleanup"
-version = "4.5.1"
+version = "4.6.0"
 description = "macleanup — native, safe-by-default macOS cleanup GUI"
 authors = ["Ahsan Mahmood <aoneahsan@gmail.com>"]
 license = "SEE LICENSE IN ../../LICENSE.md"
