@@ -1,6 +1,6 @@
-# Sections (0–26) — The Twenty-Seven Cleanup Sections
+# Sections (0–27) — The Twenty-Eight Cleanup Sections
 
-> Every cleanup operation `mac-cleanup` performs lives inside one of 27
+> Every cleanup operation `mac-cleanup` performs lives inside one of 28
 > numbered sections. This page is the complete reference: what each
 > section cleans, which paths it touches, whether it needs `sudo`, what
 > confirmations it asks for, and which CLI flags tune its behaviour.
@@ -46,8 +46,10 @@ once to build a full mental map.
 | [24](#section-24--large-stale-files) | Large stale files | — | Bulk move-to-Trash |
 | [25](#section-25--launchagents--launchdaemons-audit) | LaunchAgents / LaunchDaemons audit | sudo* | Per-item review |
 | [26](#section-26--disk-usage-report) | Disk usage report | — | Read-only |
+| [27](#section-27--macos-ui-maintenance-quicklook--font-caches) | macOS UI maintenance: QuickLook + font caches | sudo† | UI cache reset |
 
 \* Sudo only when removing items under `/Library/`.
+† Sudo only for the optional system-wide font-cache clear.
 
 ---
 
@@ -184,6 +186,23 @@ ZIPs on every build after each cleanup pass.
 - `~/.bundle/cache`
 - `~/.gem/cache`
 
+**Additional modern dev caches pruned (age-gated; cache _subpaths_ only, never
+the toolchain roots):**
+
+- `~/.bun/install/cache` (Bun)
+- `~/.ccache` (ccache)
+- `~/.cache/uv` (uv)
+- `~/.cache/deno` (Deno)
+- `~/.composer/cache` (Composer)
+- `~/.nvm/.cache` (nvm download cache)
+
+> These are explicit cache subdirectories only. The toolchain roots
+> themselves (`~/.bun`, `~/.nvm`, `~/.cache`, …) are in
+> `CRITICAL_HOME_DIRS` and are never entered, so installed binaries and
+> tool state are never touched. Caches that live under `~/Library/Caches`
+> (Deno, SwiftPM, Carthage, sccache) are already swept by Section 5 and so
+> are not repeated here.
+
 | Field | Value |
 |---|---|
 | Sudo required | No |
@@ -205,23 +224,43 @@ ZIPs on every build after each cleanup pass.
 
 ## Section 4 — Docker prune
 
-> Prunes all unused Docker containers, images, volumes, and networks.
+> Prunes unused Docker containers, images, networks, and build cache.
+> Volumes are **preserved by default** and only removed via a separate,
+> explicit confirmation (see below).
 
-**Action:** `docker system prune -a --volumes -f`
+**Default action:** `docker system prune -a -f`
+
+This **does not** include `--volumes`. Named-volume data — for example the
+only copy of a database for a stopped project — is left untouched, because
+that data is irreversible to recover. Images, containers, networks, and
+build cache are all recoverable (re-pulled or rebuilt), so they are pruned.
+
+**Optional volume action:** `docker volume prune -f`
+
+Offered **separately**, behind a literal-`yes` confirmation (you must type
+the word `yes`, not just `y`). This permanently deletes data in all unused
+named volumes and is **not** recoverable.
 
 | Field | Value |
 |---|---|
 | Sudo required | No |
-| Confirmations | **Required** — `[y/N]` (default No) |
-| Dry-run | Prints `[dry-run] docker system prune -a --volumes -f` |
+| Confirmations | **Required** — image/container prune asks `[y/N]` (default No); volume prune asks a separate literal-`yes` prompt |
+| Dry-run | Prints `[dry-run] docker system prune -a -f`, and (if you confirm volumes) `[dry-run] docker volume prune -f` |
 | Reports written | None |
 | CLI flags | [`--dry-run`](cli-reference.md#--dry-run) |
-| Safety rules | Mandatory confirmation; never auto-runs even with `--all --yes` |
+| Safety rules | Mandatory confirmation for both prunes. Volume prune **never runs unattended**: in batch mode (`--yes`) it is skipped with a note; interactively it runs only after you type `yes`. |
 | Skip conditions | Skipped if `docker` not installed; skipped if Docker daemon not running (you're prompted to start Docker Desktop) |
 
-**Heads up:** `-a --volumes` removes **everything not currently
-referenced by a running container** — including images you'd otherwise
-have to re-pull. On a developer machine this often reclaims 20–60 GB.
+**Heads up:** the default `-a` prune removes **every image and container
+not currently referenced by a running container** — including images you'd
+otherwise have to re-pull. On a developer machine this often reclaims
+20–60 GB. **Volumes are excluded from this**, so your stopped-project
+databases survive a default run.
+
+**Reachability with `--only 4 --yes`:** this prunes images, containers,
+networks, and build cache, but **will not** delete volumes — the batch-mode
+guard skips the volume step entirely. To remove volumes you must run
+Section 4 interactively and type `yes` at the volume prompt.
 
 ---
 
@@ -237,13 +276,21 @@ have to re-pull. On a developer machine this often reclaims 20–60 GB.
   windows not to reopen on relaunch)
 - `~/Library/Logs/DiagnosticReports`
 
-**Preserved (never deleted):**
+**Preserved (never deleted):** a maintained allowlist (`USER_CACHE_PRESERVE`,
+matched via `find ! -name`) so the patterns have a single source of truth.
 
 - `com.apple.*`
 - Browsers — `com.google.Chrome*`, `org.mozilla.firefox*`, `com.apple.Safari*`,
-  `com.brave.*`, `BraveSoftware*`, `com.microsoft.edgemac*`,
-  `com.operasoftware.Opera*`, `com.vivaldi.Vivaldi*`, `Company` (Arc)
-- Password managers — `1Password*`, `com.agilebits.*`, `Bitwarden*`
+  `com.brave.*`, `BraveSoftware*`, `Company` (Arc), `com.microsoft.edgemac*`,
+  `com.operasoftware.Opera*`, `com.operasoftware.OperaGX*`,
+  `com.vivaldi.Vivaldi*`, `com.thebrowser.Browser*`, `company.thebrowser.*`,
+  `com.duckduckgo.macos.browser*`, `com.kagi.kagimacOS*` (Orion),
+  `app.zen-browser.zen*` (Zen), `org.floorp.*` (Floorp),
+  `net.imput.chromium*`, `org.chromium.Chromium*`
+- Password managers — `1Password*`, `com.agilebits.*`, `Bitwarden*`,
+  `org.keepassxc.keepassxc*` (KeePassXC)
+- `node` — protects `~/Library/Caches/node/corepack`, a `CRITICAL_HOME_DIRS`
+  entry; deleting it would break every corepack-pinned yarn/pnpm.
 
 | Field | Value |
 |---|---|
@@ -346,14 +393,21 @@ have to re-pull. On a developer machine this often reclaims 20–60 GB.
 
 ## Section 10 — Empty Trash
 
-> Counts and (with explicit confirmation) empties `~/.Trash`.
+> Counts and (with explicit confirmation) empties `~/.Trash`, then the
+> per-volume trash on any mounted **external** volume.
 
-**Paths touched:** `~/.Trash/*`
+**Paths touched:**
+
+- `~/.Trash/*` — the home Trash
+- `/Volumes/*/.Trashes/<uid>/*` — the per-user trash on each mounted external
+  volume. The boot volume is skipped (same device id as `/`), read-only mounts
+  are skipped, and **each volume's trash gets its own confirmation** and size
+  count.
 
 | Field | Value |
 |---|---|
 | Sudo required | No |
-| Confirmations | **Required** — `[y/N]` (default No), with item count and total size shown |
+| Confirmations | **Required** — `[y/N]` (default No) per trash, with item count and total size shown |
 | Dry-run | Counts and reports, does not delete |
 | Reports written | None |
 | CLI flags | [`--dry-run`](cli-reference.md#--dry-run) |
@@ -451,24 +505,39 @@ is reclaimed lazily.
 ## Section 14 — Deep cache `/private/var/folders`
 
 > ⚠ **Requires reboot afterwards.** The deepest, riskiest cleanup in the
-> tool. Wipes per-user temp/cache directories under `/private/var/folders`.
+> tool. Performs a **full wipe of everything under `/private/var/folders`
+> to depth 3** — the `T` (temp), `C` (Darwin-user cache), and `0`
+> (per-boot-session) subtrees alike — not just temp files.
 
-**Action:** `sudo find /private/var/folders -mindepth 1 -maxdepth 3 -path '*/T/*' -delete`
+**Action:**
+
+```bash
+sudo find /private/var/folders -mindepth 1 -maxdepth 3 ! -type l -print0 \
+  | xargs -0 sudo rm -rf
+```
+
+This deletes **all** entries under `/private/var/folders` down to depth 3,
+excluding only symlinks (`! -type l`, so a link is never followed). It does
+**not** age-filter and is **not** limited to the `*/T/*` temp subtree —
+clearing the entire accumulated per-user state is the whole point of this
+nuclear, menu-only option, which is exactly why it demands a literal `yes`,
+`sudo`, and a reboot.
 
 | Field | Value |
 |---|---|
 | Sudo required | **Yes** (mandatory) |
 | Confirmations | **Critical** — must type literal `yes`. Anything else aborts |
-| Dry-run | Prints the command instead of executing |
+| Dry-run | Prints the full `find … \| xargs sudo rm -rf` command instead of executing |
 | Reports written | None |
 | CLI flags | [`--dry-run`](cli-reference.md#--dry-run), [`--no-sudo`](cli-reference.md#--no-sudo) |
-| Safety rules | Highest confirmation bar in the tool; never part of `--all`; reboot required afterwards |
+| Safety rules | Highest confirmation bar in the tool; never part of `--all`; menu-only / `--i-understand-deep` for batch; reboot required afterwards |
 | Skip conditions | Skipped if sudo unavailable; aborts on anything other than literal `yes` |
 
 > **Why a reboot is required:** Many running apps maintain mmap'd files
-> under `/private/var/folders/*/T/*`. Removing them while apps are
-> running causes incoherent state — apps will crash, freeze, or fail to
-> launch. **Reboot immediately after this section runs.**
+> under `/private/var/folders` (e.g. `*/T/*` temp and `*/C/*` caches).
+> Wiping the whole tree while apps are running causes incoherent state —
+> apps will crash, freeze, or fail to launch. **Reboot immediately after
+> this section runs.**
 
 ---
 
@@ -506,8 +575,18 @@ the contents.
 
 ## Section 16 — iOS / iPadOS device backups
 
-> Lists every iOS/iPadOS backup under `~/Library/Application Support/MobileSync/Backup`
+> Sweeps old iOS/iPadOS software-update downloads, then lists every
+> iOS/iPadOS backup under `~/Library/Application Support/MobileSync/Backup`
 > and offers per-item review.
+
+**Software-update downloads (`.ipsw`) — swept first, before the backups check:**
+
+- `~/Library/iTunes/iPhone Software Updates`
+- `~/Library/iTunes/iPad Software Updates`
+
+These are multi-GB and fully re-downloadable from Apple. They are pruned
+age-gated via `clean_dir_unused` using `--cache-age-days`, and are handled
+even when no device backup exists.
 
 **For each backup, displays:**
 
@@ -526,9 +605,9 @@ if that fails).
 | Confirmations | Optional `[y/N]` to start review; per-item `[y/N/q]` if reviewing |
 | Dry-run | Reports without deleting |
 | Reports written | None |
-| CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n), [`--dry-run`](cli-reference.md#--dry-run) |
-| Safety rules | Recent backups (< idle threshold) shown as `(recent)`, kept by default; report-only in batch mode unless `--yes` |
-| Skip conditions | Skips if backup directory missing or empty |
+| CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n) (highlight threshold), [`--cache-age-days N`](cli-reference.md#--cache-age-days-n) (`.ipsw` prune), [`--dry-run`](cli-reference.md#--dry-run) |
+| Safety rules | `--idle-days` only **highlights** idle backups — there is **no** automatic idle delete gate here; this is interactive-only and will delete any backup you confirm, recent or not. Recent backups (< idle threshold) are shown as `(recent)` and kept by default; report-only in batch mode unless `--yes` |
+| Skip conditions | Skips the backups list if the directory is missing or empty; `.ipsw` sweep skipped if those dirs are absent |
 
 > **Reminder:** iOS backups can be 50+ GB each. They restore the entire
 > device. Once deleted, you cannot restore — only re-back-up after
@@ -559,8 +638,8 @@ After deletions, empty year/month subdirectories are collapsed via
 | Confirmations | Optional `[y/N]` to start review; per-item `[y/N/q]` if reviewing |
 | Dry-run | Reports without deleting |
 | Reports written | None |
-| CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n), [`--dry-run`](cli-reference.md#--dry-run) |
-| Safety rules | Archives marked `(recent — likely keep)` survive by default; report-only in batch mode unless `--yes`; **archives are required for App Store re-signing** of historical builds |
+| CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n) (highlight threshold), [`--dry-run`](cli-reference.md#--dry-run) |
+| Safety rules | `--idle-days` only **highlights** idle archives — there is **no** automatic idle delete gate here; this is interactive-only and will delete any archive you confirm, recent or not. Archives marked `(recent — likely keep)` survive by default; report-only in batch mode unless `--yes`; **archives are required for App Store re-signing** of historical builds |
 | Skip conditions | Skips if archive directory missing or empty |
 
 ---
@@ -599,30 +678,40 @@ been touched recently.
 
 ## Section 19 — Browser caches
 
-> Wipes browser caches for Chrome, Firefox, Brave, Arc, and Edge. Shows
-> a Safari advisory (clear via Safari → Develop → Empty Caches).
+> Wipes HTTP/code caches for a broad set of Chromium- and Firefox-family
+> browsers, **iterating every profile** (not just `Default`). Shows a Safari
+> advisory (clear via Safari → Develop → Empty Caches).
 
-**Paths touched (per browser):**
+**Chromium-family browsers covered** (each handled by `clean_chromium_caches`,
+which clears the `~/Library/Caches/<bundle>` HTTP cache **plus every profile**
+— `Default`, `Profile 1…`, Guest/System Profile — touching only these cache
+subdirs: `Cache`, `Code Cache`, `GPUCache`, `DawnGraphiteCache`,
+`DawnWebGPUCache`, `Service Worker/CacheStorage`, `Service Worker/ScriptCache`;
+profile data, history, logins and extensions are left intact):
 
-- **Chrome:**
-  - `~/Library/Caches/com.google.Chrome`
-  - `~/Library/Application Support/Google/Chrome/Default/Cache`
-  - `~/Library/Application Support/Google/Chrome/Default/Code Cache`
-  - `~/Library/Caches/com.google.Chrome.helper`
-- **Firefox:**
-  - `~/Library/Caches/org.mozilla.firefox`
-  - `~/Library/Caches/Firefox`
-  - `~/Library/Application Support/Firefox/Profiles/*/cache2` (per profile)
-- **Brave:**
-  - `~/Library/Caches/BraveSoftware`
-  - `~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Cache`
-  - `~/Library/Application Support/BraveSoftware/Brave-Browser/Default/Code Cache`
-- **Arc:**
-  - `~/Library/Caches/Company/Arc`
-  - `~/Library/Caches/com.thebrowser.Browser`
-- **Edge:**
-  - `~/Library/Caches/com.microsoft.edgemac`
-  - `~/Library/Application Support/Microsoft Edge/Default/Cache`
+- **Chrome** (`com.google.Chrome`) and **Chrome Canary** (`com.google.Chrome.canary`)
+- **Brave** (`BraveSoftware`)
+- **Microsoft Edge** (`com.microsoft.edgemac`)
+- **Vivaldi** (`com.vivaldi.Vivaldi`)
+- **Chromium** (`org.chromium.Chromium`)
+- **Opera** (`com.operasoftware.Opera`) and **Opera GX** (`com.operasoftware.OperaGX`)
+- **DuckDuckGo** (`com.duckduckgo.macos.browser`)
+- **Arc** (`com.thebrowser.Browser`)
+- Plus the non-standard `~/Library/Caches/com.google.Chrome.helper` and
+  `~/Library/Caches/Company/Arc` cache dirs.
+
+**Firefox-family browsers covered** (top-level `~/Library/Caches/<id>` entry
+plus per-profile `cache2` under each profiles root):
+
+- **Firefox** (`org.mozilla.firefox`, `Firefox`)
+- **Firefox Developer Edition** (`org.mozilla.firefoxdeveloperedition`)
+- **Firefox Nightly** (`org.mozilla.nightly`)
+- **LibreWolf** (`org.mozilla.librewolf`)
+- **Floorp** (`org.floorp.Floorp`)
+- **Zen** (`app.zen-browser.zen`)
+- Per-profile `cache2` under `Firefox/Profiles`, `zen/Profiles`,
+  `Floorp/Profiles`, `LibreWolf/Profiles`.
+
 - **Safari:** advisory only (`Safari → Develop → Empty Caches` or `Settings → Privacy`)
 
 | Field | Value |
@@ -683,20 +772,28 @@ positives). Apple bundles are never flagged.
 
 **For each idle app, displays:**
 
-- App name, bundle ID, version
+- App name and bundle ID
 - Last-used date and days idle
 - App bundle size
 - **Companion-data size** — sum of:
-  - `~/Library/Application Support/{app_name, bundle_id}`
+  - `~/Library/Application Support/{bundle_id}`, `~/Library/Application Support/{app_name}`
   - `~/Library/Containers/{bundle_id}`
-  - `~/Library/Caches/{bundle_id, app_name}`
-  - `~/Library/Preferences/{bundle_id}.plist`
+  - `~/Library/Caches/{bundle_id}`, `~/Library/Caches/{app_name}`
   - `~/Library/Logs/{app_name}`
+  - `~/Library/Preferences/{bundle_id}.plist`
   - `~/Library/Saved Application State/{bundle_id}.savedState`
   - `~/Library/LaunchAgents/{bundle_id}.plist`
-  - `~/Library/HTTPStorages/{bundle_id}*`
+  - `~/Library/HTTPStorages/{bundle_id}`, `~/Library/HTTPStorages/{bundle_id}.binarycookies`
   - `~/Library/WebKit/{bundle_id}`
   - `~/Library/Group Containers/*{bundle_id}*`
+
+> The bundle-ID-confined paths above always belong to this app and are
+> removed with it. The **name-based** paths (`Application Support/{app_name}`,
+> `Caches/{app_name}`, `Logs/{app_name}`) are generic enough that a
+> different, still-installed app could share the folder name, so since 4.5.0
+> they are only included when the folder itself is idle for
+> `≥ --threshold` days (readable timestamp required); recent or
+> unknown-age name folders are kept.
 
 **Action options:**
 
@@ -926,6 +1023,38 @@ health) for a complete pre-cleanup baseline.
 
 ---
 
+## Section 27 — macOS UI maintenance: QuickLook + font caches
+
+> Resets regenerable macOS UI caches that commonly cause garbled fonts or
+> stale QuickLook previews. **Non-destructive** — everything here rebuilds
+> automatically on demand. **Menu / `--only` only — never part of `--all`.**
+
+**Actions:**
+
+- **QuickLook thumbnail cache** — `qlmanage -r cache` (no sudo). Regenerates
+  the next time you preview a file.
+- **User font cache** — `atsutil databases -removeUser` (no sudo). Clearing
+  fixes duplicate/garbled fonts in the current user scope.
+- **System font cache (optional)** — only if you confirm `[y/N]`: with sudo,
+  `sudo atsutil databases -remove`, followed by a note that a logout or
+  restart finalises the rebuild.
+
+| Field | Value |
+|---|---|
+| Sudo required | Only for the optional system font-cache clear (the QuickLook and user font-cache resets need no sudo) |
+| Confirmations | Optional `[y/N]` to also clear the **system** font cache (default No) |
+| Dry-run | Prints each command (`qlmanage -r cache`, `atsutil databases -removeUser`, and `sudo atsutil databases -remove`) instead of executing |
+| Reports written | None |
+| CLI flags | [`--dry-run`](cli-reference.md#--dry-run), [`--no-sudo`](cli-reference.md#--no-sudo) (affects only the optional system clear) |
+| Safety rules | Non-destructive — all caches regenerate on demand; **never run by `--all`** (menu / `--only` only); the system-wide clear is always opt-in behind its own confirmation |
+| Skip conditions | QuickLook step skipped if `qlmanage` is unavailable; font steps skipped if `atsutil` is unavailable |
+
+> **Note:** This section is **not** in the safe batch and is not one of the
+> deep-destructive sections either — it is simply menu- or `--only`-driven.
+> Run it with `mac-cleanup --only 27`.
+
+---
+
 ## Interactive multi-select syntax
 
 When a section asks **"Select items (1..N)"** you can type:
@@ -952,4 +1081,4 @@ Out-of-range or junk tokens are silently ignored. Used by sections 21
 
 ---
 
-_Sections reference for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_Sections reference for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

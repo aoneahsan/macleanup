@@ -1,7 +1,7 @@
 # mac-cleanup — Documentation
 
 > The complete reference for **mac-cleanup**, a comprehensive, safe-by-default
-> macOS cleanup & maintenance tool — one bash file, twenty-seven targeted
+> macOS cleanup & maintenance tool — one bash file, twenty-eight targeted
 > sections, zero install via `npx`.
 
 Welcome. This documentation set explains every feature, flag, profile,
@@ -11,7 +11,7 @@ safety rule and section that ships with `mac-cleanup`. If the
 - **Project:** [github.com/aoneahsan/macleanup](https://github.com/aoneahsan/macleanup)
 - **npm:** [npmjs.com/package/macleanup](https://www.npmjs.com/package/macleanup)
 - **Author:** [Ahsan Mahmood](author.md) · [aoneahsan.com](https://aoneahsan.com) · [LinkedIn](https://linkedin.com/in/aoneahsan) · [GitHub](https://github.com/aoneahsan)
-- **Current version:** `4.4.1`
+- **Current version:** `4.5.0`
 - **License:** Source-Available (see [LICENSE.md](../LICENSE.md))
 
 ---
@@ -48,7 +48,7 @@ is for you.
 ### Reference
 | Page | What it covers |
 |---|---|
-| [Sections (0–26)](sections.md) | Deep dive on every one of the 27 cleanup sections |
+| [Sections (0–27)](sections.md) | Deep dive on every one of the 28 cleanup sections |
 | [Profiles](profiles.md) | The 5 named bundles (`dev`, `minimal`, `cache-only`, `deep`, `audit`) |
 | [Safety Model](safety-model.md) | Two-condition rule, `CRITICAL_HOME_DIRS`, sudo handling, dry-run guarantees |
 | [Reports & Logs](reports-and-logs.md) | What gets written to `~/.mac-cleanup/` and how to read it |
@@ -74,7 +74,7 @@ is for you.
 |---|---|---|---|
 | Confirms before deleting | **always (per section)** | sometimes | never |
 | Tells you what each path is | **yes** | rarely | no |
-| Handles companion data when uninstalling apps | **yes (12 paths checked)** | partly | no |
+| Handles companion data when uninstalling apps | **yes (known per-app locations + Group Containers)** | partly | no |
 | Skips Apple-managed caches automatically | **yes** | yes | no |
 | Real `--dry-run` that never deletes a byte | **yes** | sometimes | no |
 | Source you can read in any editor | **yes (~3000 lines, 2 files)** | no | n/a |
@@ -104,7 +104,7 @@ or wire it into a [cron-friendly automation](examples-cookbook.md#unattended-cro
   generator, no JavaScript framework.
 - **Sections are independent.** You can jump to [Section 23 — Stale build
   artefacts](sections.md#section-23--stale-build-artefacts) without reading
-  any of the other 26.
+  any of the other 27.
 - **Every CLI flag is hyperlinked to its purpose** in the [CLI
   Reference](cli-reference.md).
 - **Safety guarantees are spelled out**, not implied. The [Safety
@@ -132,4 +132,4 @@ for more on how to support the project.
 
 ---
 
-> _Documentation last reviewed against `mac-cleanup` v4.4.1._
+> _Documentation last reviewed against `mac-cleanup` v4.5.0._

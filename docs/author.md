@@ -67,7 +67,7 @@ There are three categories of macOS cleanup software in the wild today:
 - **Auditable** like the gists (~3,000 lines of plain bash, two files).
 - **Safe-by-default** like the paid apps (every destructive op confirms,
   every section can be previewed via `--dry-run`).
-- **Comprehensive** like the paid apps (27 targeted sections).
+- **Comprehensive** like the paid apps (28 targeted sections).
 - **No telemetry, no network calls, no upsells** — unlike either.
 
 Read the [README](../README.md) "Why mac-cleanup" comparison table for
@@ -89,7 +89,7 @@ the side-by-side.
 | 2026-05 | **v4.3.2** — age-aware cache pruning (`--cache-age-days`, default 100). |
 | 2026-05 | **v4.3.3** — universal two-condition rule for non-cache deletes (`--idle-days`, default 100). |
 | 2026-05 | **v4.4.0** — `--feedback`, `--report-issue`, `--stats`, `--contact`, crash hint, branded welcome screen. |
-| 2026-05 | **v4.4.1** — documentation release: 13-page docs set under `docs/`. No script behaviour changes. |
+| 2026-05 | **v4.5.0** — documentation release: 13-page docs set under `docs/`. No script behaviour changes. |
 
 See [CHANGELOG.md](../CHANGELOG.md) for the full per-version detail.
 
@@ -230,7 +230,7 @@ A BibTeX-friendly form:
   title        = {mac-cleanup: A safe-by-default macOS cleanup and maintenance tool},
   year         = {2026},
   url          = {https://github.com/aoneahsan/macleanup},
-  note         = {Source-available, version 4.4.1}
+  note         = {Source-available, version 4.5.0}
 }
 ```
 
@@ -301,4 +301,4 @@ one fellow Mac developer.
 
 ---
 
-_Author & credits page for **mac-cleanup** v4.4.1._
+_Author & credits page for **mac-cleanup** v4.5.0._

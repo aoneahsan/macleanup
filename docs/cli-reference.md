@@ -9,7 +9,7 @@ regardless of how you invoke the tool — `npx macleanup`, the global
 parse the exact same arguments.
 
 For background on individual sections those flags affect, see
-[Sections (0–26)](sections.md). For curated workflows, see
+[Sections (0–27)](sections.md). For curated workflows, see
 [Examples Cookbook](examples-cookbook.md).
 
 ---
@@ -35,20 +35,23 @@ one section at a time, with confirmations for every destructive operation.
 | [`--exclude "L"`](#--exclude-l) | string | — | Skip the listed sections |
 | [`--profile NAME`](#--profile-name) | string | — | Run a named bundle |
 | [`--yes`, `-y`](#--yes--y) | switch | off | Auto-confirm prompts |
+| [`--i-understand-deep`](#--i-understand-deep) | switch | off | Allow deep sections (6,11,14,21,24) unattended (with `--yes`) |
 | [`--dry-run`](#--dry-run) | switch | off | Preview without deleting |
 | [`--no-sudo`](#--no-sudo) | switch | off | Skip every sudo section |
 | [`--quiet`](#--quiet) | switch | off | Suppress info chatter |
+| [`--json`](#--json) | switch | off | One-line JSON run summary on stdout (implies `--quiet`) |
 | [`--no-color`](#--no-color) | switch | auto | Disable ANSI colour |
 | [`--notify`](#--notify) | switch | off | macOS notification on completion |
 | [`--check-update`](#--check-update) | switch | off | Query npm for newer version |
 | [`--brew-autoremove`](#--brew-autoremove) | switch | off | Allow `brew autoremove` in section 3 |
 | [`--threshold N`](#--threshold-n) | int | 100 | Days idle for "unused apps" (sec 21) |
 | [`--cache-age-days N`](#--cache-age-days-n) | int | 100 | Cache age threshold (sec 1, 2, 3) |
-| [`--idle-days N`](#--idle-days-n) | int | 100 | Universal idle threshold (sec 12, 23) |
+| [`--idle-days N`](#--idle-days-n) | int | 100 | Idle threshold — delete gate (sec 12, 23) + highlight (sec 16, 17) |
 | [`--stale-build-days N`](#--stale-build-days-n) | int | 100 | Stale build artefact age (sec 23) |
 | [`--large-file-days N`](#--large-file-days-n) | int | 100 | Large unused file age (sec 24) |
 | [`--large-file-size-gb N`](#--large-file-size-gb-n) | int | 1 | Large file min size in GB (sec 24) |
 | [`--scan-roots "P1:P2:…"`](#--scan-roots-p1p2) | string | auto | Roots for sec 23 / 24 |
+| [`--exclude-path PATH`](#--exclude-path-path) | string (repeatable) | — | Never touch PATH/subtree in sec 23 / 24 |
 | [`--logs-dir PATH`](#--logs-dir-path) | string | `~/.mac-cleanup/logs` | Persistent logs dir |
 | [`--reports-dir PATH`](#--reports-dir-path) | string | `~/.mac-cleanup/reports` | Persistent reports dir |
 | [`--no-reports`](#--no-reports) | switch | off | Skip writing per-section reports |
@@ -57,8 +60,10 @@ one section at a time, with confirmations for every destructive operation.
 | [`--version`, `-V`](#--version--v) | switch | off | Print version and exit |
 | [`--contact`](#--contact) | switch | off | Print author contact card |
 | [`--feedback`](#--feedback) | switch | off | Open mail client with prefilled message |
-| [`--report-issue`](#--report-issue) | switch | off | Open pre-filled GitHub issue |
+| [`--report-issue`](#--report-issue), [`--report-bug`](#--report-issue) | switch | off | Open pre-filled GitHub issue |
 | [`--stats`](#--stats) | switch | off | Show run history at `~/.mac-cleanup` |
+| [`--prune-history [N]`](#--prune-history-n) | int | 90 | Delete logs+reports older than N days |
+| [`--uninstall-data`](#--uninstall-data) | switch | off | Remove the entire `~/.mac-cleanup` data dir |
 | [`-h`, `--help`](#-h---help) | switch | off | Show help and exit |
 
 ---
@@ -71,18 +76,30 @@ one section at a time, with confirmations for every destructive operation.
 --all
 ```
 
-Run **every safe section** without prompting per-section. Implies
+Run the **safe batch** without prompting per-section. Implies
 `BATCH_MODE=1`, which silences the per-section "Continue?" question.
 
-The deepest operations (section 14 `/private/var/folders` wipe, section
-21 app uninstall, section 16 iOS-backup deletion, section 17 Xcode-archive
-deletion, section 10 Trash empty) are **never auto-deleted by `--all`** —
-they remain report-only or interactive even when this flag is set, unless
-you also pass `--yes` to opt in.
+The safe batch (`SAFE_BATCH`) is exactly these sections — caches, logs,
+temp, and read-only reports:
+
+```
+0  3  5  7  8  9  15  18  22  26
+```
+
+> **Section 13 (periodic maintenance) was removed from `--all` in 4.5.0.**
+> It ran `sudo periodic` unattended, which is privileged system maintenance
+> rather than a cache/log/temp/report cleanup. It is no longer in the safe
+> batch — run it from the menu or with `--only 13`.
+
+`--all` (**even `--all --yes`**) **never runs the deep sections**. The
+deep-interactive set (section 6 system caches as root, 11 Time Machine
+snapshots, 14 `/private/var/folders` wipe, 21 app uninstall, 24 large stale
+files → Trash) is refused under `--all` unless you also pass
+[`--i-understand-deep`](#--i-understand-deep). `--yes` alone is not enough.
 
 ```bash
-mac-cleanup --all                 # batch mode, but still asks per destructive op
-mac-cleanup --all --yes           # full unattended cleanup
+mac-cleanup --all                 # safe batch, batch mode
+mac-cleanup --all --yes           # full unattended SAFE cleanup (no deep sections)
 mac-cleanup --all --dry-run       # preview the safe-batch
 ```
 
@@ -95,7 +112,7 @@ mac-cleanup --all --dry-run       # preview the safe-batch
 ```
 
 Run **only** the listed sections. `L` is a comma-separated list of section
-numbers (0–26). Whitespace is fine; out-of-range numbers are ignored.
+numbers (0–27). Whitespace is fine; out-of-range numbers are ignored.
 
 ```bash
 mac-cleanup --only 5                       # one section
@@ -103,7 +120,7 @@ mac-cleanup --only "1,2,3,4"               # the dev-cache quartet
 mac-cleanup --only 23 --stale-build-days 90 --dry-run
 ```
 
-Implies `BATCH_MODE=1`. See [Sections (0–26)](sections.md) for what each
+Implies `BATCH_MODE=1`. See [Sections (0–27)](sections.md) for what each
 number does.
 
 ---
@@ -165,15 +182,53 @@ Auto-confirm `[y/N]` prompts. Combine with `--all` for **fully unattended**
 runs. The literal-`yes` confirmation in section 14 (`/private/var/folders`)
 is **not** affected — that prompt has its own independent gate.
 
+`--yes` **alone never enables the deep-interactive sections** (6, 11, 14,
+21, 24) under `--only` / `--profile` / `--all`. Running one of those in batch
+also requires [`--i-understand-deep`](#--i-understand-deep). So
+`--only 21 --yes` (without `--i-understand-deep`) is **refused** in batch
+mode — the tool warns and skips the section. A `--dry-run` preview is always
+allowed.
+
 ```bash
-mac-cleanup --all --yes                # unattended safe batch
-mac-cleanup --only 21 --yes            # auto-uninstall every idle app it finds
+mac-cleanup --all --yes                # unattended safe batch (no deep sections)
+mac-cleanup --only 21 --yes --dry-run  # preview only — section 21 won't delete here
+mac-cleanup --only 21 --yes --i-understand-deep   # actually auto-uninstall idle apps
 ```
 
-> **Caveat for `--only 21 --yes`** — combined, this will move every app
-> idle ≥ 100 days (or your custom `--threshold`) to the Trash without
-> prompting. Read the [Section 21 reference](sections.md#section-21--apps-unused-n-days)
+> **Caveat for `--only 21 --yes --i-understand-deep`** — combined, this will
+> move every app idle ≥ 100 days (or your custom `--threshold`) to the Trash
+> without prompting. Read the
+> [Section 21 reference](sections.md#section-21--apps-unused-n-days)
 > before doing this on a production laptop.
+
+---
+
+### `--i-understand-deep`
+
+```
+--i-understand-deep
+```
+
+Required — **in addition to `--yes`** — to let the deepest, irreversible
+sections run unattended via `--only` / `--profile` / `--all`. The gated set is:
+
+- Section 6 — system caches wiped as root
+- Section 11 — Time Machine local snapshots deleted
+- Section 14 — `/private/var/folders` deep wipe
+- Section 21 — app uninstall + companion data
+- Section 24 — large stale files → Trash
+
+Without this flag, those sections are **refused** in batch mode (so a
+one-character typo of a section number can't trigger them) — the tool prints
+a warning and skips them. `--dry-run` previews are always allowed, since they
+cannot touch disk. This **replaces** any earlier notion that `--yes` alone
+runs deep sections: it does not, and `--all` (even `--all --yes`) never runs
+them.
+
+```bash
+mac-cleanup --only 14 --yes --i-understand-deep            # unattended deep wipe
+mac-cleanup --profile deep --yes --i-understand-deep       # full heavy sweep, unattended
+```
 
 ---
 
@@ -211,7 +266,8 @@ where you don't have admin rights, or when you want to verify that the
 non-privileged sections do their job alone.
 
 Sections that need sudo: 6, 7 (system logs portion), 9 (system updates
-portion), 11, 13, 14, 20, 25 (system LaunchAgents portion).
+portion), 11, 13, 14, 20, 25 (system LaunchAgents portion), and 27 (only
+the optional system font-cache clear).
 
 ```bash
 mac-cleanup --all --no-sudo            # safe batch, user-space only
@@ -230,6 +286,45 @@ combined with `--all --yes` for cron output.
 
 ```bash
 mac-cleanup --all --yes --quiet --notify
+```
+
+---
+
+### `--json`
+
+```
+--json
+```
+
+Emit a **one-line JSON run summary** on stdout. **All other output (the human
+session summary, logs, warnings) is redirected to stderr**, so stdout carries
+nothing but the single JSON object. Implies `--quiet`. Best paired with
+`--only` / `--all` for scripting and CI.
+
+The object has this shape:
+
+```json
+{
+  "tool": "mac-cleanup",
+  "version": "4.5.0",
+  "dry_run": false,
+  "freed_kb": 1048576,
+  "disk_free_delta_kb": 1310720,
+  "elapsed_s": 42,
+  "sections_done": [3, 5, 7],
+  "reports": ["/Users/you/.mac-cleanup/reports/orphans-2026-06-08.txt"],
+  "log_file": "/Users/you/.mac-cleanup/logs/mac-cleanup-2026-06-08.log"
+}
+```
+
+- `freed_kb` — total tracked KB freed this run.
+- `disk_free_delta_kb` — change in free space on `/` (clamped to ≥ 0).
+- `sections_done` — section numbers that completed.
+- `reports` — paths of any report `.txt` files that exist after the run.
+
+```bash
+mac-cleanup --only 3,5 --yes --json
+mac-cleanup --all --yes --json | jq .freed_kb
 ```
 
 ---
@@ -269,11 +364,16 @@ mac-cleanup --all --yes --notify --quiet
 ```
 
 Query the public npm registry for the latest published version of
-`macleanup`. Prints one of:
+`macleanup`. Prints one of these **tagged sentences** (not a bare
+`OK` / `WARN`):
 
-- **`OK`** — you're on the latest published version.
-- **`WARN`** — newer version available; suggests `npx macleanup@latest`.
-- (silent) — network failure (4-second connect timeout, 6-second total).
+- **`[ OK ]`** — "you are on the latest published version (X.Y.Z)".
+- **`[WARN]`** — "newer version available — installed X, latest Y", followed
+  by a `note` with the upgrade hint `npx macleanup@latest`.
+- **`[WARN]`-style note** — "Update check: registry returned no version
+  field." if the registry response is missing a `version`.
+- **(silent)** — on network failure. Connect timeout is 4 seconds, total
+  timeout 6 seconds; the run is never blocked.
 
 This is the **only** outbound network call the entire script can make,
 and it's strictly opt-in. **Zero user data is sent** — it's a single
@@ -366,22 +466,29 @@ mac-cleanup --only 3 --cache-age-days 0    # full wipe (old <4.3.2 behaviour)
 --idle-days 100
 ```
 
-**Universal idle threshold for non-cache deletes.** Used by section 12
-(Orphaned app data) and section 23 (Stale build artefacts).
+**Universal idle threshold for non-cache work.** It plays two distinct
+roles:
 
-This flag enforces the **two-condition rule** introduced in 4.3.3: an
-item is deleted only when **both** hold:
+- **Delete gate** in section 12 (Orphaned app data) and section 23 (Stale
+  build artefacts) — `--stale-build-days` defaults to this value. Here it
+  enforces the **two-condition rule** introduced in 4.3.3: an item is
+  deleted only when **both** hold:
+  1. It is **not in use** by any installed software/tool (the per-section
+     detection determines this).
+  2. It has been **untouched (atime AND mtime) for ≥ N days**.
+- **Highlight threshold** in section 16 (iOS / iPadOS backups) and section
+  17 (Xcode archives). There it does **not** gate deletion — it only flags
+  items idle ≥ N days with an `[idle ≥Nd]` marker (recent ones show
+  `(recent)`). Those sections are interactive-only and will delete any item
+  you confirm, recent or not.
 
-1. It is **not in use** by any installed software/tool (the per-section
-   detection determines this).
-2. It has been **untouched (atime AND mtime) for ≥ N days**.
-
-Default `100`. Pass `0` to disable condition (2) and revert to the 4.3.2
-behaviour where mtime alone gated deletion.
+Default `100`. In the gated sections, pass `0` to disable condition (2) and
+revert to the 4.3.2 behaviour where mtime alone gated deletion.
 
 ```bash
 mac-cleanup --only 12 --idle-days 30       # orphan scan, only items idle ≥ 30d
 mac-cleanup --only 23 --idle-days 0        # purely heuristic (no idle gate)
+mac-cleanup --only 16 --idle-days 180      # backups idle ≥ 180d highlighted
 ```
 
 See [Safety Model — The two-condition rule](safety-model.md#the-two-condition-rule)
@@ -458,6 +565,26 @@ mac-cleanup --only 23 --scan-roots "$HOME/repos:$HOME/code" --dry-run
 ```
 
 See [Recovery Guide](recovery-guide.md) for why this safety rail exists.
+
+---
+
+### `--exclude-path PATH`
+
+```
+--exclude-path "$HOME/Code/keep-this"
+```
+
+Never touch `PATH` **or anything under it** in the scanning sections 23
+(Stale build artefacts) and 24 (Large stale files). The flag is
+**repeatable** — pass it multiple times to protect several trees. Each entry
+is enforced as a literal-path plus subtree guard (`PATH` and `PATH/*`), in
+addition to the always-on `CRITICAL_HOME_DIRS` protection.
+
+```bash
+mac-cleanup --only 23 \
+  --exclude-path "$HOME/Code/active-project" \
+  --exclude-path "$HOME/Code/client-work" --dry-run
+```
 
 ---
 
@@ -542,11 +669,16 @@ refreshing without launching the menu.
 ```bash
 mac-cleanup --list
 # →
-# mac-cleanup v4.4.1 — section catalogue
+# mac-cleanup v4.5.0 — section catalogue
 #    [ 0] System health & process monitor
 #    [ 1] Xcode caches, DerivedData, simulators
 #    ...
+#    [26] Disk usage report (~/* and ~/Library/*)
+#    [27] macOS UI maintenance: QuickLook + font caches
 ```
+
+The catalogue runs 0–27 (28 sections). Section 27 (QuickLook + font caches)
+is menu / `--only` only — it is not part of the `--all` safe batch.
 
 ---
 
@@ -560,7 +692,7 @@ mac-cleanup --list
 Print version and exit.
 
 ```bash
-mac-cleanup --version          # macleanup 4.4.1
+mac-cleanup --version          # mac-cleanup 4.5.0
 ```
 
 ---
@@ -636,6 +768,44 @@ mac-cleanup --stats
 
 ---
 
+### `--prune-history [N]`
+
+```
+--prune-history          # default N = 90
+--prune-history 30
+```
+
+Delete **logs and reports older than N days** from `~/.mac-cleanup`
+(both the `logs/` and `reports/` subdirs), where `N` defaults to `90`. Files
+newer than N days are kept. Honours [`--dry-run`](#--dry-run) — with it, the
+files that *would* be removed are listed but nothing is deleted. This is a
+quick-exit command (it does not enter the menu or batch run).
+
+```bash
+mac-cleanup --prune-history 30 --dry-run   # preview what a 30-day prune removes
+mac-cleanup --prune-history                # actually prune anything older than 90d
+```
+
+---
+
+### `--uninstall-data`
+
+```
+--uninstall-data
+```
+
+Remove the **entire `~/.mac-cleanup` data directory** — logs, reports, and
+the first-run marker — after a literal-`yes` confirmation. Honours
+[`--dry-run`](#--dry-run) (prints what it would remove and exits). A
+quick-exit command.
+
+```bash
+mac-cleanup --uninstall-data --dry-run     # see what would be removed
+mac-cleanup --uninstall-data               # remove it (asks to confirm)
+```
+
+---
+
 ### `-h`, `--help`
 
 ```
@@ -648,15 +818,54 @@ exit. The output is similar to this page but condensed for terminal use.
 
 ---
 
+## Config file (`~/.mac-cleanuprc`)
+
+Defaults can be set in a config file so you don't have to repeat flags. The
+file is `~/.mac-cleanuprc` by default, or wherever `$MAC_CLEANUP_RC` points.
+It is read **before** the command line, so **explicit CLI flags always
+override it**.
+
+Format: simple `key=value` lines, one per line. Lines starting with `#` and
+blank lines are ignored. The file is parsed with `read` (never sourced or
+`eval`'d), only a whitelist of keys is honoured, and malformed lines warn
+and are skipped — a stray line can never brick the tool.
+
+Recognised keys:
+
+| Key | Type | Equivalent flag |
+|---|---|---|
+| `cache-age-days` | int | [`--cache-age-days`](#--cache-age-days-n) |
+| `idle-days` | int | [`--idle-days`](#--idle-days-n) |
+| `threshold` | int | [`--threshold`](#--threshold-n) |
+| `stale-build-days` | int | [`--stale-build-days`](#--stale-build-days-n) |
+| `large-file-days` | int | [`--large-file-days`](#--large-file-days-n) |
+| `large-file-size-gb` | int | [`--large-file-size-gb`](#--large-file-size-gb-n) |
+| `scan-roots` | string | [`--scan-roots`](#--scan-roots-p1p2) |
+| `quiet` | `1`/`true` | [`--quiet`](#--quiet) |
+| `notify` | `1`/`true` | [`--notify`](#--notify) |
+| `brew-autoremove` | `1`/`true` | [`--brew-autoremove`](#--brew-autoremove) |
+
+```ini
+# ~/.mac-cleanuprc
+cache-age-days = 60
+idle-days = 120
+large-file-size-gb = 2
+notify = true
+```
+
+---
+
 ## Environment variables
 
 Two env vars mirror the `--logs-dir` and `--reports-dir` flags. CLI flags
-take precedence if both are set.
+take precedence if both are set. (`MAC_CLEANUP_RC` additionally points the
+config-file loader at a non-default config path.)
 
 | Variable | Equivalent flag |
 |---|---|
 | `MAC_CLEANUP_LOGS_DIR` | `--logs-dir` |
 | `MAC_CLEANUP_REPORTS_DIR` | `--reports-dir` |
+| `MAC_CLEANUP_RC` | path to the config file (default `~/.mac-cleanuprc`) |
 
 ---
 
@@ -693,7 +902,7 @@ the underlying script.
 
 ## See also
 
-- [Sections (0–26)](sections.md) — what each section actually does
+- [Sections (0–27)](sections.md) — what each section actually does
 - [Profiles](profiles.md) — the five named bundles in detail
 - [Safety Model](safety-model.md) — the two-condition rule, sudo handling, dry-run guarantees
 - [Examples Cookbook](examples-cookbook.md) — recipe-style command compounds
@@ -701,4 +910,4 @@ the underlying script.
 
 ---
 
-_CLI reference for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_CLI reference for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

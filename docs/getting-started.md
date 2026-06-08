@@ -91,7 +91,7 @@ sections page](sections.md#section-5--user-caches) for what it actually does.
 When you launch `mac-cleanup` without flags, you'll see something like this:
 
 ```
-mac-cleanup v4.4.1
+mac-cleanup v4.5.0
 =====================================================
 
 Choose a section to run (or 'a' for the safe batch, 'q' to quit):
@@ -196,7 +196,7 @@ Cookbook — Unattended cron job](examples-cookbook.md#unattended-cron-job).
 - **[Installation](installation.md)** — for `npm install -g` or a direct
   git clone. Both have advantages over `npx`.
 - **[CLI Reference](cli-reference.md)** — every flag, with examples.
-- **[Sections (0–26)](sections.md)** — what each section actually does, what
+- **[Sections (0–27)](sections.md)** — what each section actually does, what
   paths it touches, and which flags tune it.
 - **[Safety Model](safety-model.md)** — the rules the script holds itself
   to. Read this before you run section 14 or section 21.

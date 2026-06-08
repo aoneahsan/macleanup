@@ -57,7 +57,10 @@ mac-cleanup --profile dev --cache-age-days 60 --yes   # tighter cache window
 
 - No sudo required.
 - Section 4 (Docker) confirms before pruning — even with `--yes` you'll
-  need it explicit if the daemon isn't running.
+  need it explicit if the daemon isn't running. The default prune
+  (`docker system prune -a -f`) **preserves named volumes**; volume
+  deletion is a separate literal-`yes` prompt that is skipped in batch
+  mode, so `--only 4 --yes` never deletes volume data.
 - Section 23 is heavily safety-hardened (`CRITICAL_HOME_DIRS` allowlist,
   refuses to scan all of `$HOME`). Read [Section 23 reference](sections.md#section-23--stale-build-artefacts).
 
@@ -266,9 +269,9 @@ mac-clean-monthly() {
 ## See also
 
 - [CLI Reference — `--profile`](cli-reference.md#--profile-name)
-- [Sections (0–26)](sections.md) — what each section does
+- [Sections (0–27)](sections.md) — what each section does
 - [Examples Cookbook](examples-cookbook.md) — recipe-style commands
 
 ---
 
-_Profiles guide for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_Profiles guide for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

@@ -7,15 +7,15 @@
 [![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.4.1-blue.svg)](#changelog)
+[![version](https://img.shields.io/badge/version-4.5.0-blue.svg)](#changelog)
 [![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 
-**One file. Zero dependencies. Twenty-seven targeted sections.
+**One file. Zero dependencies. Twenty-eight targeted sections.
 Every destructive action confirms before running.**
 
 [Quick start](#-quick-start) ·
-[Sections](#-the-twenty-seven-sections) ·
+[Sections](#-the-twenty-eight-sections) ·
 [Safety](#%EF%B8%8F-safety-model) ·
 [FAQ](#-faq) ·
 [Author](#-author)
@@ -33,7 +33,7 @@ little (and leave gigabytes of cruft). **mac-cleanup** sits in the middle:
 |---|---|---|---|
 | Confirms before deleting | sometimes | never | **always (per section)** |
 | Tells you what each path is | rarely | no | **yes** |
-| Handles companion data when uninstalling apps | partly | no | **yes (12 paths checked)** |
+| Handles companion data when uninstalling apps | partly | no | **yes (known per-app locations + Group Containers)** |
 | Skips Apple-managed caches | yes | no | **yes** |
 | Has a real `--dry-run` | sometimes | no | **yes** |
 | Open / inspectable source | no | n/a | **yes** |
@@ -121,7 +121,7 @@ self-attributing.
 
 ---
 
-## 🧭 The twenty-seven sections
+## 🧭 The twenty-eight sections
 
 | # | Section | Sudo? | Notes |
 |---|---|:-:|---|
@@ -144,7 +144,7 @@ self-attributing.
 | 16 | iOS / iPadOS device backups | — | Per-device review |
 | 17 | Xcode archives | — | Per-archive review |
 | 18 | Large files report | — | ≥500 MB in `$HOME` |
-| 19 | Browser caches (Chrome, Firefox, Brave, Arc, Edge) | — | |
+| 19 | Browser caches (Chrome/Canary, Brave, Edge, Vivaldi, Chromium, Opera/GX, DuckDuckGo, Arc; Firefox-family forks) | — | All profiles |
 | 20 | DNS / mDNS reset | sudo | |
 | 21 | Apps unused N+ days — **review or bulk uninstall** | — | Multi-select supported |
 | 22 | Purgeable space trigger | — | |
@@ -152,15 +152,17 @@ self-attributing.
 | 24 | **Large stale files** ≥N GB unused N+ days | — | New in 4.1 |
 | 25 | **LaunchAgents / LaunchDaemons audit** (orphaned login items) | sudo* | New in 4.1 |
 | 26 | **Disk-usage report** (`$HOME` & `~/Library`) | — | New in 4.1 |
+| 27 | **macOS UI maintenance**: QuickLook + font caches | sudo† | New in 4.5 · menu / `--only` only |
 
 \* Sudo only when removing items under `/Library/`.
+† Sudo only for the optional system-wide font-cache clear.
 
 ### Defaults you can override
 
 | Variable | Default | Flag |
 |---|---:|---|
 | Days an app must be idle to be flagged | 100 | `--threshold N` |
-| Universal idle threshold for non-cache deletes (sec 12, 23) | 100 | `--idle-days N` |
+| Idle threshold — delete gate (sec 12, 23) + idle highlight (sec 16, 17) | 100 | `--idle-days N` |
 | Days a cache file must be unused (sec 1, 2, 3) | 100 | `--cache-age-days N` |
 | Days a build dir must be untouched (sec 23) | 100 | `--stale-build-days N` |
 | Days a large file must be untouched (sec 24) | 100 | `--large-file-days N` |
@@ -169,13 +171,14 @@ self-attributing.
 
 ### The two-condition rule for non-cache deletes (4.3.3+)
 
-Anything that isn't pure regenerable cache — orphan app data, idle apps,
-stale `node_modules`, large unused files, iOS backups, Xcode archives —
-will only be **deleted automatically** when **both** conditions hold:
+The idle **delete gate** is enforced in four sections — **orphan app data
+(sec 12), idle apps (sec 21), stale `node_modules`/build artefacts (sec 23),
+and large unused files (sec 24)**. In those sections an item is only
+**deleted automatically** when **both** conditions hold:
 
 1. **Not used by any active software / tool.** The existing detection
-   (no installed-app match for orphan data, broken target binary for
-   LaunchAgents, no last-used signal for idle apps).
+   (no installed-app match for orphan data, no last-used signal — and not
+   running — for idle apps).
 2. **Not touched by you (atime AND mtime) for ≥ 100 days.** Configurable
    via `--idle-days N`. A Gradle distribution you invoke once a month
    keeps recent atime, so it survives. A node_modules whose IDE reads
@@ -183,6 +186,11 @@ will only be **deleted automatically** when **both** conditions hold:
 
 `--idle-days 0` disables the second condition entirely (back to the
 4.3.2 behaviour where mtime alone was enough).
+
+> **Sections 16 (iOS backups) and 17 (Xcode archives) are different.** There
+> `--idle-days` only **highlights** idle items with an `[idle ≥Nd]` / `(recent)`
+> flag — there is **no** automatic idle delete gate. Both are interactive-only
+> and will delete any item you confirm, recent or not.
 
 > **Cache age, by `atime` AND `mtime`** — `--cache-age-days 100` keeps any file
 > you've **opened OR modified** in the last 100 days, even if it was downloaded
@@ -228,6 +236,14 @@ mac-cleanup --profile dev --dry-run               # 1,2,3,4,23 → preview
 mac-cleanup --profile deep --exclude 14,17 --yes  # heavy sweep, skip a few
 mac-cleanup --all --notify --quiet                # OS notification on finish
 mac-cleanup --check-update                        # ask npm if newer exists
+
+# New in 4.5.0
+mac-cleanup --only 14 --yes --i-understand-deep   # allow a deep section unattended
+mac-cleanup --only 23 --exclude-path "$HOME/Code/keep"   # never touch this tree
+mac-cleanup --all --yes --json | jq .freed_kb     # one-line JSON run summary
+mac-cleanup --prune-history 30 --dry-run          # prune logs/reports >30d old
+mac-cleanup --uninstall-data                      # remove ~/.mac-cleanup (confirms)
+# Config: ~/.mac-cleanuprc (key=value) sets defaults; CLI flags override.
 ```
 
 ### Profiles
@@ -273,9 +289,13 @@ your machine. The design rules:
    You can recover for as long as the Trash isn't emptied.
 4. **System caches need explicit `sudo`.** If sudo isn't available the
    section is skipped, never silently bypassed.
-5. **The deepest sections** — `/private/var/folders` wipe, app uninstall,
-   iOS-backup deletion, Xcode-archive deletion, Trash empty — require a
-   typed `yes` and are never part of `--all`.
+5. **The deepest sections** — system caches as root (6), Time Machine
+   snapshots (11), `/private/var/folders` wipe (14), app uninstall (21),
+   large stale files → Trash (24) — are **never part of `--all`** (even
+   `--all --yes`). To run them unattended via `--only`/`--profile`/`--all`
+   you must add `--i-understand-deep` in addition to `--yes`; `--yes` alone
+   never enables them (dry-run previews always work). Otherwise pick them
+   from the interactive menu. (Section 14 also requires a typed `yes`.)
 6. **Logs are written to `logs/`** which is gitignored. Reports of
    orphaned data, unused apps, large files, and stale builds get their
    own dated `.txt` files there for later review.
@@ -514,11 +534,13 @@ indemnify the author against any claim arising from your use.
     <td valign="top">
       <b>Ahsan Mahmood</b><br/>
       Senior software engineer · macOS power user · maker of small sharp tools<br/><br/>
-      📧 <a href="mailto:aoneahsan@gmail.com">aoneahsan@gmail.com</a><br/>
-      🌐 <a href="https://aoneahsan.com">aoneahsan.com</a><br/>
-      💼 <a href="https://linkedin.com/in/aoneahsan">linkedin.com/in/aoneahsan</a><br/>
-      🐙 <a href="https://github.com/aoneahsan">github.com/aoneahsan</a><br/>
-      📱 +92 304 6619706<br/>
+      📧 Email: <a href="mailto:aoneahsan@gmail.com">aoneahsan@gmail.com</a><br/>
+      📱 Phone / WhatsApp: <a href="https://wa.me/923046619706">+92 304 6619706</a><br/>
+      🌐 Portfolio: <a href="https://aoneahsan.com">aoneahsan.com</a><br/>
+      💼 LinkedIn: <a href="https://linkedin.com/in/aoneahsan">linkedin.com/in/aoneahsan</a><br/>
+      🐙 GitHub: <a href="https://github.com/aoneahsan">github.com/aoneahsan</a><br/>
+      📦 npm: <a href="https://www.npmjs.com/~aoneahsan">npmjs.com/~aoneahsan</a><br/>
+      📍 Address: <a href="https://aoneahsan.com/address">aoneahsan.com/address</a><br/>
     </td>
   </tr>
 </table>

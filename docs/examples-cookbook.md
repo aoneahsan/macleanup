@@ -228,7 +228,11 @@ mac-cleanup --only 1 --cache-age-days 60
 mac-cleanup --only 4
 ```
 
-(Docker prune always confirms; no flag bypasses it.)
+(Docker prune always confirms; no flag bypasses it. The default prune is
+`docker system prune -a -f` and **preserves named volumes** — your
+stopped-project databases are safe. Volume deletion is a separate prompt
+that requires typing `yes` and is skipped entirely in batch mode, so
+`--only 4 --yes` never touches volumes.)
 
 ### Just clean package managers
 
@@ -300,7 +304,7 @@ mac-cleanup --profile cache-only --no-sudo --no-reports --yes --quiet
 ### Pin a specific version for reproducibility
 
 ```bash
-npx macleanup@4.4.1 --all --yes --quiet
+npx macleanup@4.5.0 --all --yes --quiet
 ```
 
 ### Same script, multiple workstations
@@ -311,7 +315,7 @@ If you operate a fleet, distribute a single shell wrapper:
 #!/usr/bin/env bash
 # /usr/local/bin/weekly-mac-clean
 set -euo pipefail
-exec npx macleanup@4.4.1 \
+exec npx macleanup@4.5.0 \
   --profile minimal \
   --yes --quiet --notify \
   --logs-dir /var/log/mac-cleanup \
@@ -406,9 +410,9 @@ diff -u ~/.mac-cleanup/reports/stale-build-$(date -v-7d +%Y-%m-%d).txt \
 
 - [CLI Reference](cli-reference.md) — every flag in detail
 - [Profiles](profiles.md) — the named bundles powering some recipes
-- [Sections (0–26)](sections.md) — what each section does
+- [Sections (0–27)](sections.md) — what each section does
 - [Safety Model](safety-model.md) — the rules behind `--dry-run` and `--yes`
 
 ---
 
-_Examples cookbook for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_Examples cookbook for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

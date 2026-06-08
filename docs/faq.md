@@ -89,14 +89,16 @@ the output, then re-run without `--dry-run` (or with `--profile minimal
 
 | | `--all` | `--profile deep` |
 |---|---|---|
-| Sections | All 27 | 14 (skips per-item review sections, skips section 14) |
-| Best for | Interactive single-machine use | Scripted monthly cleanup |
+| Sections | The 10-section **safe batch** only: `0, 3, 5, 7, 8, 9, 15, 18, 22, 26` | 14 sections: `0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 19, 23, 26` |
+| Best for | Unattended cache/log/temp/report sweep | Scripted monthly cleanup |
 | Confirmations | Per-section (unless `--yes`) | Per-section (unless `--yes`) |
-| Section 14 (reboot one) | Excluded | Excluded |
-| Section 21 (idle apps) | Per-item interactive even with `--yes` | Excluded |
+| Deep sections (6, 11, 14, 21, 24) | **Never** — even with `--yes`; need `--i-understand-deep` | Section 6 only, and still needs `--i-understand-deep` |
+| Section 13 (`periodic`) | Excluded (removed from `--all` in 4.5.0) | Excluded |
 
-`--all` is the menu equivalent of "I want to step through everything";
-`--profile deep` is the same idea but pre-trimmed for unattended use.
+`--all` runs only the safe batch — caches, logs, temp, and read-only
+reports — and never the deep sections. `--profile deep` is a wider,
+pre-trimmed list for unattended use, but its deep sections (6) still require
+`--i-understand-deep`.
 
 ### How do I run the same combination every week?
 
@@ -268,12 +270,12 @@ corepack enable && corepack prepare pnpm@latest --activate
 corepack enable && corepack prepare yarn@stable --activate
 
 # upgrade mac-cleanup itself
-npx macleanup@latest --version    # confirm 4.4.1+
+npx macleanup@latest --version    # confirm 4.5.0+
 ```
 
 The 4.3.1+ releases protect you from this happening again.
 
-### Is the 4.3.0 issue still possible in 4.4.1?
+### Is the 4.3.0 issue still possible in 4.5.0?
 
 No. The fix is twofold and permanent:
 
@@ -357,4 +359,4 @@ See [Author & Credits](author.md) for more.
 
 ---
 
-_FAQ for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_FAQ for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

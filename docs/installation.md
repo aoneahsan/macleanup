@@ -60,7 +60,7 @@ npm cache cleanup, every macOS restart. See [Reports & Logs](reports-and-logs.md
 ### Pinning a specific version with `npx`
 
 ```bash
-npx macleanup@4.4.1          # pin a version
+npx macleanup@4.5.0          # pin a version
 npx macleanup@latest         # always pull latest
 ```
 
@@ -74,7 +74,7 @@ Useful when you want to lock a CI/cron job to a known version.
   Node. Use the [git clone](#method-3--direct-git-checkout-no-node-required)
   method.
 - You're scripting it into **launchd / cron** — pin a version with
-  `npx macleanup@4.4.1` or use the global install for stability.
+  `npx macleanup@4.5.0` or use the global install for stability.
 
 ---
 
@@ -89,7 +89,7 @@ After install, two binaries are available in your PATH:
 ```bash
 mac-cleanup            # canonical name
 macleanup              # short alias
-mac-cleanup --version  # macleanup 4.4.1
+mac-cleanup --version  # mac-cleanup 4.5.0
 ```
 
 Both commands are identical entry points to the same script.
@@ -190,12 +190,12 @@ Whichever method you used, the same three commands confirm everything is
 wired correctly:
 
 ```bash
-mac-cleanup --version          # macleanup 4.4.1
-mac-cleanup --list             # prints all 27 sections
+mac-cleanup --version          # mac-cleanup 4.5.0
+mac-cleanup --list             # prints all 28 sections
 mac-cleanup --dry-run --all    # preview without touching disk
 ```
 
-If `--version` says something other than `4.4.1`, your install is on a
+If `--version` says something other than `4.5.0`, your install is on a
 different version — check [CHANGELOG.md](../CHANGELOG.md) for the
 differences, or run `npm install -g macleanup@latest` to upgrade.
 
@@ -288,7 +288,7 @@ auto-sent).
 
 - **[Getting Started](getting-started.md)** — your first-run walkthrough.
 - **[CLI Reference](cli-reference.md)** — every flag, with examples.
-- **[Sections (0–26)](sections.md)** — what each section actually does.
+- **[Sections (0–27)](sections.md)** — what each section actually does.
 
 ---
 

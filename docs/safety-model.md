@@ -44,38 +44,53 @@ If `sudo` isn't available — either because you don't have admin rights
 or because you passed `--no-sudo` — the section is **skipped entirely**,
 never silently bypassed. You'll see an explicit log line.
 
-### 5. The deepest sections are never auto-run
+### 5. The deepest sections are never auto-run — `--yes` alone is not enough
 
-These five operations are **never** part of `--all`, even with `--yes`:
+`--all` (even `--all --yes`) only ever runs the safe batch — caches, logs,
+temp, and read-only reports. It **never** runs the deep sections.
 
-- Section 14 — `/private/var/folders` wipe (requires literal `yes`)
-- Section 21 — App uninstall (per-item or bulk, both interactive)
-- Section 16 — iOS backup deletion (per-item interactive)
-- Section 17 — Xcode archive deletion (per-item interactive)
-- Section 10 — Empty Trash (one explicit confirmation)
+These five irreversible operations are the **deep-interactive** set
+(`DEEP_INTERACTIVE_SECTIONS = 6 11 14 21 24`):
 
-You must explicitly **select them from the menu** or pass them via
-`--only`/`--profile` plus `--yes`.
+- Section 6 — system caches wiped as root
+- Section 11 — Time Machine local snapshots deleted
+- Section 14 — `/private/var/folders` deep wipe (also requires literal `yes`)
+- Section 21 — app uninstall + companion data
+- Section 24 — large stale files → Trash
+
+They are **refused** under `--only` / `--profile` / `--all` in batch mode
+**unless you also pass [`--i-understand-deep`](cli-reference.md#--i-understand-deep)**
+(in addition to `--yes`). `--yes` **alone never enables them**. A `--dry-run`
+preview is always allowed (it cannot touch disk), so you can still see what
+they would do. Otherwise, **select them from the menu** where a human is
+present.
 
 ---
 
 ## The two-condition rule for non-cache deletes (4.3.3+)
 
-**Anything that isn't pure regenerable cache** — orphan app data, idle
-apps, stale `node_modules`, large unused files, iOS backups, Xcode
-archives — will only be **deleted automatically** when **both**
-conditions hold:
+The idle **delete gate** is enforced in four sections — **orphan app data
+(sec 12), idle apps (sec 21), stale build artefacts (sec 23), and large
+stale files (sec 24)**. In those sections an item will only become a
+deletion candidate when **both** conditions hold:
 
 1. **Not used by any active software / tool.**
    - For orphan data (sec 12): no installed-app match
-   - For LaunchAgents (sec 25): broken target binary
-   - For idle apps (sec 21): no last-used signal in 100 days
+   - For idle apps (sec 21): no last-used signal in 100 days, and not
+     currently running
 2. **Not touched by you (atime AND mtime) for ≥ 100 days.**
    - Configurable via [`--idle-days N`](cli-reference.md#--idle-days-n)
    - A Gradle distribution you invoke once a month keeps recent atime,
      so it survives
    - A `node_modules` whose IDE reads files for autocomplete keeps recent
      atime, so it survives
+
+> **Sections 16 (iOS backups) and 17 (Xcode archives) are different.**
+> `--idle-days` there only **highlights** idle items with an
+> `[idle ≥Nd]` / `(recent)` flag — there is **no** automatic idle delete
+> gate. Both are interactive-only and will delete any item you confirm,
+> recent or not. (LaunchAgents, sec 25, flags items by *broken target
+> binary*, not by idle age.)
 
 `--idle-days 0` disables the second condition entirely (back to the
 4.3.2 behaviour where mtime alone was enough). Use only if you really
@@ -157,14 +172,18 @@ the only section with that gate.
 
 `--yes` flips the **Standard** level to default-Yes. It does **not**
 bypass the **Critical** level. It does flip Per-item to auto-select-all
-in sections 21, 23, 24 — be aware.
+in sections 21, 23, 24 — be aware. And `--yes` **alone never enables the
+deep-interactive sections** (6, 11, 14, 21, 24) under `--only` / `--profile`
+/ `--all` — those additionally require
+[`--i-understand-deep`](cli-reference.md#--i-understand-deep).
 
 ---
 
 ## Sudo handling
 
 Sections needing sudo: 6, 7 (system portion), 9 (system portion), 11,
-13, 14, 20, 25 (system items only).
+13, 14, 20, 25 (system items only), and 27 (only the optional system
+font-cache clear).
 
 The script handles sudo as follows:
 
@@ -196,7 +215,7 @@ helpers are:
 | `clean_dir_old "path" days [glob…]` | Deletes files older than N days | Prints `[dry-run] would prune…` |
 | `clean_dir_unused "path" days` | atime+mtime gated prune | Prints `[dry-run] would prune…` |
 | `sudo_run cmd …` | Wraps a sudo command | Prints `[dry-run] sudo cmd …` |
-| `osascript_trash "path"` | Move to Trash via Finder | Prints `[dry-run] would Trash <path>` |
+| `osascript_trash "path"` | Move to Trash via Finder | Prints `[dry-run] move to Trash: <path>` |
 
 In addition, sections that produce reports (12, 21, 23, 24, 25) write
 the **report file** even in dry-run — so you can study the candidate
@@ -265,10 +284,10 @@ for one-line restore commands for `bun`, `pnpm`, `yarn`, `nvm`, `Volta`,
 ## See also
 
 - [CLI Reference](cli-reference.md) — every flag including the safety knobs
-- [Sections (0–26)](sections.md) — per-section safety notes
+- [Sections (0–27)](sections.md) — per-section safety notes
 - [Recovery Guide](recovery-guide.md) — if a 4.3.0 run broke a global tool
 - [SECURITY.md](../SECURITY.md) — vulnerability reporting
 
 ---
 
-_Safety model for **mac-cleanup** v4.4.1 by **[Ahsan Mahmood](author.md)**._
+_Safety model for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
