@@ -2,11 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Tauri serves the frontend; keep this lean. Port 5173 is the Tauri devUrl.
-// logLevel follows env per project convention.
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
-  logLevel: process.env.NODE_ENV === 'production' ? 'error' : 'info',
+  logLevel: 'info',
   server: {
     port: 5173,
     strictPort: true,

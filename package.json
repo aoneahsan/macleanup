@@ -3,8 +3,8 @@
   "version": "4.6.1",
   "description": "Comprehensive, safe-by-default macOS cleanup & maintenance tool — 28 sections, dry-run support, zero install via npx.",
   "bin": {
-    "macleanup": "bin/mac-cleanup.js",
-    "mac-cleanup": "bin/mac-cleanup.js"
+    "mac-cleanup": "bin/mac-cleanup.js",
+    "macleanup": "bin/mac-cleanup.js"
   },
   "main": "bin/mac-cleanup.js",
   "files": [
