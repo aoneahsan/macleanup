@@ -24,13 +24,13 @@ Next Eligible Update After: 2026-07-03
 | Docs URL | not provided (docs live in-repo under `docs/`) |
 | PyPI / Chrome / Play / App Store | N/A (this is a macOS CLI, not a mobile/browser/Python package) |
 | Platform constraint | `os: ["darwin"]`, `cpu: ["x64","arm64"]`, `engines.node >= 14`; macOS 11+, bash 3.2+ |
-| License | **Source-Available License v1.0** (`LICENSE.md`; `package.json` declares `"SEE LICENSE IN LICENSE.md"`). Read & run for personal/internal use; no modify/redistribute/sell. Honest note: the master JSON labels this `open-source`, but it is **source-available, NOT OSI open-source**. |
+| License | **MIT** (`LICENSE.md`; `package.json` declares `"MIT"`). Permissive OSI open source — use, modify, redistribute, sublicense, and sell, provided the copyright + license notice are kept. Matches the master JSON's `open-source` label. |
 | Author | Ahsan Mahmood — aoneahsan@gmail.com — https://aoneahsan.com |
 | Payment / Support URL | https://aoneahsan.com/payment?project-id=macleanup&project-identifier=macleanup |
 | Funding | `https://aoneahsan.com` (declared in `package.json` `funding`) |
 | Agent-Readable Pricing | N/A (free CLI; no paid tiers shipped on npm) |
 
-> **Asks for next refresh:** confirm whether a docs/marketing site URL should be recorded (the `web` and `docs` links are empty in the master JSON). Reconcile the master-JSON `license: open-source` value with the actual Source-Available License v1.0. Decide if/when the Tauri desktop GUI ships to a public channel (it currently lives in `desktop/` but is not published).
+> **Asks for next refresh:** confirm whether a docs/marketing site URL should be recorded (the `web` and `docs` links are empty in the master JSON). License is now **MIT** — the master JSON's `license: open-source` is accurate (no discrepancy). Decide if/when the Tauri desktop GUI ships to a public channel (it currently lives in `desktop/` but is not published).
 
 ---
 
@@ -81,6 +81,7 @@ Next Eligible Update After: 2026-07-03
 
 | Date | Type | Notes |
 | --- | --- | --- |
+| 2026-07-10 | Updated | Relicensed the project from the custom Source-Available License v1.0 to **MIT** across `LICENSE.md`, `package.json`, README/docs, and the script header (removed `NOTICE`). This resolves the prior master-JSON `open-source` vs source-available discrepancy — MIT is genuinely OSI open source. |
 | 2026-06-26 | Created | First portfolio file for MacLeanup. Facts sourced from `package.json` (v4.6.1), `README.md`, `CHANGELOG.md`, `LICENSE.md`, the `assets/logo/` SVGs, and the `desktop/` Tauri app. Identity table reconciled against the master JSON; license discrepancy (open-source vs source-available) flagged honestly. |
 
 ---
@@ -118,7 +119,7 @@ Give Mac developers and power users a single, safe, inspectable command to recla
 | Config | `~/.mac-cleanuprc` (key=value defaults), env vars (`MAC_CLEANUP_LOGS_DIR`, `MAC_CLEANUP_REPORTS_DIR`), CLI flags (flags override) |
 | Desktop GUI (in repo) | Tauri (Rust core + React + Vite + TypeScript), macOS system WebView (~5–10 MB `.app`), Firebase Auth + Firestore for a Google-sign-in free-run gate |
 | Quality gates | `bash -n` syntax check, `node -c`, version-parity check between `package.json` and the script's `MAC_CLEANUP_VERSION` fallback, `prepublishOnly` guard |
-| License | Source-Available License v1.0 |
+| License | MIT |
 
 ## Feature Catalog
 
@@ -142,7 +143,7 @@ Give Mac developers and power users a single, safe, inspectable command to recla
 - **Two files, everything else is documentation** — the entire tool is `mac-cleanup.sh` (~3,593 lines of bash) + a ~104-line Node spawner. You can read every line before you run it, which is the whole point.
 - **Zero-install, zero-trust delivery** — `npx macleanup` avoids curl-pipe-bash, a Homebrew tap, and any signing-key surface; npm fetches it, runs it, reclaims the cache, and your reports survive in `~/.mac-cleanup/`.
 - **`atime` AND `mtime`, not just `mtime`** — a Gradle distribution you invoke monthly, or a `node_modules` your IDE reads for autocomplete, keeps recent atime and survives every pass. This two-clock rule is the safety insight most cleaners miss.
-- **Honest license framing** — README explicitly states it is source-available, NOT OSI open source: read, run, learn — but no redistribute/modify.
+- **Permissive MIT license** — README states it plainly: read, run, learn, fork, redistribute, and build on it, with the copyright + license notice kept.
 - **Ships a built-in recovery guide** — the README documents how a 4.3.0 bug could break global toolchains and exactly how to restore bun/pnpm/yarn/nvm/Volta/brew, then explains the 4.3.1 allowlist fix. Owning and documenting a regression is rare.
 - **Deep sections are opt-in even when unattended** — `--yes` alone never enables the irreversible sections; you must add `--i-understand-deep`.
 - **Same flags everywhere** — identical interface across `npx`, the global `mac-cleanup` bin, and a raw `./mac-cleanup.sh` checkout.
@@ -159,7 +160,7 @@ Give Mac developers and power users a single, safe, inspectable command to recla
 
 ## Value & Potential
 
-MacLeanup pairs a sharply-scoped problem (macOS disk reclamation) with a trust-first engineering posture that reads well in portfolio and hiring conversations: a single auditable Bash engine, a zero-install npm delivery path, a documented safety model, and an honest source-available license. It is already shipped on npm at v4.6.1 with a 28-section feature surface and a detailed changelog. Growth paths are concrete: publishing the in-repo Tauri desktop GUI to a public channel, an optional docs/marketing site, and broader profile presets — all without changing the conservative core. Monetization, if any, routes through the GUI's sign-in gate and aoneahsan.com/payment rather than the free CLI.
+MacLeanup pairs a sharply-scoped problem (macOS disk reclamation) with a trust-first engineering posture that reads well in portfolio and hiring conversations: a single auditable Bash engine, a zero-install npm delivery path, a documented safety model, and a permissive MIT license. It is already shipped on npm at v4.6.1 with a 28-section feature surface and a detailed changelog. Growth paths are concrete: publishing the in-repo Tauri desktop GUI to a public channel, an optional docs/marketing site, and broader profile presets — all without changing the conservative core. Monetization, if any, routes through the GUI's sign-in gate and aoneahsan.com/payment rather than the free CLI.
 
 ## Resume / CV Bullets
 
@@ -171,7 +172,7 @@ MacLeanup pairs a sharply-scoped problem (macOS disk reclamation) with a trust-f
 
 ## LinkedIn / Portfolio Paragraph
 
-MacLeanup is a safe-by-default macOS cleanup & maintenance tool I built as a single, inspectable Bash engine (~3,593 lines, zero dependencies) and published to npm so anyone can run it with one command: `npx macleanup`. It covers 28 targeted sections — developer caches (Xcode, Gradle, npm/yarn/pnpm/brew/pip/pod/cargo/go), Docker prune, browser caches, stale `node_modules`, large dormant files, LaunchAgents audits, and more — and treats safety as the product: a real `--dry-run`, per-section confirmations, Trash-not-`rm` for apps, sudo-gated system sections, and a two-condition delete gate (untouched by both `atime` and `mtime` for 100+ days) so the tools and files you actually use survive every pass. There's no telemetry and no network calls; logs and reports stay on your machine. An in-repo native macOS GUI (Tauri) wraps the same script in `--json` mode without reimplementing a single delete. The license is honestly source-available — read it, run it, learn from it.
+MacLeanup is a safe-by-default macOS cleanup & maintenance tool I built as a single, inspectable Bash engine (~3,593 lines, zero dependencies) and published to npm so anyone can run it with one command: `npx macleanup`. It covers 28 targeted sections — developer caches (Xcode, Gradle, npm/yarn/pnpm/brew/pip/pod/cargo/go), Docker prune, browser caches, stale `node_modules`, large dormant files, LaunchAgents audits, and more — and treats safety as the product: a real `--dry-run`, per-section confirmations, Trash-not-`rm` for apps, sudo-gated system sections, and a two-condition delete gate (untouched by both `atime` and `mtime` for 100+ days) so the tools and files you actually use survive every pass. There's no telemetry and no network calls; logs and reports stay on your machine. An in-repo native macOS GUI (Tauri) wraps the same script in `--json` mode without reimplementing a single delete. It's MIT licensed — read it, run it, fork it, build on it.
 
 ## Social Content Angles (for ChatGPT content project)
 
@@ -181,7 +182,7 @@ MacLeanup is a safe-by-default macOS cleanup & maintenance tool I built as a sin
 - Designing a real `--dry-run` — routing every destructive call through a no-op helper.
 - Owning a regression in public: the 4.3.0 toolchain bug, the recovery guide, and the `CRITICAL_HOME_DIRS` fix.
 - Why I gate the scariest sections behind `--i-understand-deep` even when you pass `--yes`.
-- Source-available vs open source: being honest about what your license actually grants.
+- Choosing a license: why MIT maximizes adoption for a free developer tool while keeping the author protected by the AS-IS warranty disclaimer.
 - Wrapping a CLI in a Tauri GUI that reimplements nothing (the script's `--json` mode is the contract).
 - 28 cleanup sections, one bash file: how I keep it maintainable.
 - No telemetry by design: a system tool that makes zero network calls.
@@ -197,7 +198,7 @@ MacLeanup is a safe-by-default macOS cleanup & maintenance tool I built as a sin
 ## Known Constraints (honest framing)
 
 - **macOS only** — `os: ["darwin"]`, x64/arm64, macOS 11+, bash 3.2+. Not for Linux/Windows.
-- **Source-available, not OSI open source** — read & run for personal/internal use; no modify/redistribute/sell. The master JSON's `license: open-source` is imprecise and should be corrected to "source-available."
+- **MIT licensed** — permissive OSI open source: use, modify, redistribute, sublicense, and sell, keeping the copyright + license notice. The master JSON's `license: open-source` is now accurate.
 - **It runs `rm -rf` and `sudo`** — safe-by-default, but the user is responsible for verifying outputs; back up (Time Machine / `tmutil snapshot`) before any cleanup run.
 - **Section 14 needs a reboot** and a typed `yes`; the deepest sections require `--i-understand-deep` to run unattended.
 - **Desktop GUI is in-repo, not published** — the Tauri app under `desktop/` (with a Firebase sign-in gate) is built but not on a public download channel yet.
@@ -210,7 +211,7 @@ MacLeanup is a safe-by-default macOS cleanup & maintenance tool I built as a sin
 
 ## Top 20 Hashtags
 
-#MacLeanup #macOS #MacCleanup #DiskCleanup #CLI #Bash #DeveloperTools #npm #npx #MacApp #DevOps #SysAdmin #OpenSource #SourceAvailable #Tauri #NodeJS #MacOSdev #CleanMyMac #DiskSpace #BuildInPublic
+#MacLeanup #macOS #MacCleanup #DiskCleanup #CLI #Bash #DeveloperTools #npm #npx #MacApp #DevOps #SysAdmin #OpenSource #MITLicense #Tauri #NodeJS #MacOSdev #CleanMyMac #DiskSpace #BuildInPublic
 
 ---
 

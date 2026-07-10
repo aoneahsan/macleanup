@@ -4,6 +4,7 @@
   "version": "4.6.1",
   "type": "module",
   "description": "macleanup — native macOS GUI (Tauri) in front of the mac-cleanup CLI.",
+  "license": "MIT",
   "scripts": {
     "sync:script": "node scripts/sync-script.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",

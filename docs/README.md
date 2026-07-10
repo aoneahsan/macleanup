@@ -12,7 +12,7 @@ safety rule and section that ships with `mac-cleanup`. If the
 - **npm:** [npmjs.com/package/macleanup](https://www.npmjs.com/package/macleanup)
 - **Author:** [Ahsan Mahmood](author.md) · [aoneahsan.com](https://aoneahsan.com) · [LinkedIn](https://linkedin.com/in/aoneahsan) · [GitHub](https://github.com/aoneahsan)
 - **Current version:** `4.5.0`
-- **License:** Source-Available (see [LICENSE.md](../LICENSE.md))
+- **License:** MIT (see [LICENSE.md](../LICENSE.md))
 
 ---
 

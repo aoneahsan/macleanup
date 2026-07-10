@@ -30,7 +30,7 @@ See [Safety Model — What you remain responsible for](safety-model.md#what-you-
 
 ### What does it cost?
 
-Nothing. The tool is free for personal and internal-business use. See
+Nothing. The tool is free and MIT-licensed — use it however you like. See
 [LICENSE.md](../LICENSE.md). If it saves you time, [a GitHub star](https://github.com/aoneahsan/macleanup)
 is the kindest thank-you.
 
@@ -67,8 +67,8 @@ inside** the cache, so they survive every `npx` invocation.
 
 ### Is this OSI-approved open source?
 
-No — it's **source-available**. You can read, run, and learn from the
-source; you cannot redistribute or modify it. See
+Yes — it's **MIT licensed**. You can read, run, modify, redistribute, and
+even sell it, as long as you keep the copyright and license notice. See
 [LICENSE.md](../LICENSE.md).
 
 ---
@@ -114,10 +114,10 @@ Either:
 
 ### Can I add my own custom section?
 
-The license forbids modifying & redistributing the script. For your own
-**private use** you can fork and edit (the script is ~3,000 lines of
-straightforward bash, all sections are independent functions named
-`s00_health`, `s01_xcode`, etc.). For mainline features, [open an
+Absolutely — the MIT license lets you fork, edit, and redistribute
+freely (the script is ~3,000 lines of straightforward bash, all sections
+are independent functions named `s00_health`, `s01_xcode`, etc.). For
+mainline features, [open an
 issue](https://github.com/aoneahsan/macleanup/issues/new) describing
 the use case.
 
@@ -293,10 +293,10 @@ See [Safety Model — `CRITICAL_HOME_DIRS`](safety-model.md#critical_home_dirs--
 
 ### Can I include `mac-cleanup` in my own product / SaaS / public installer script?
 
-No. The license is **source-available**, not open source. You may
-**read** and **run** mac-cleanup on your own machines for personal or
-internal-business use. You may **not** modify, redistribute, or sell
-it. See [LICENSE.md](../LICENSE.md) for full terms.
+Yes. mac-cleanup is **MIT licensed**, so you're free to use, modify,
+redistribute, bundle, and even sell it — the only condition is that you
+keep the copyright and license notice in your copies. See
+[LICENSE.md](../LICENSE.md) for full terms.
 
 ### Can I contribute?
 

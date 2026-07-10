@@ -36,9 +36,9 @@ critical issues will be triaged ahead of feature work.
 
 - `rm`-ing files that the user explicitly selected and confirmed.
 - Permission errors when running without `sudo` on system paths.
-- Issues caused by the user editing the script (modification is not
-  permitted by the license, but obviously a forked / patched copy is on
-  the user, not on upstream).
+- Issues caused by the user editing the script (the MIT license lets you
+  modify freely, but a forked / patched copy is on the user, not on
+  upstream).
 - Bug reports for third-party tools the script invokes
   (`brew`, `npm`, `docker`, `xcrun`, `tmutil`, `mdls`, etc.).
 

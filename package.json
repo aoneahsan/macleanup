@@ -12,7 +12,6 @@
     "mac-cleanup.sh",
     "README.md",
     "LICENSE.md",
-    "NOTICE",
     "CHANGELOG.md",
     "SECURITY.md"
   ],
@@ -64,7 +63,7 @@
     "email": "aoneahsan@gmail.com",
     "url": "https://aoneahsan.com"
   },
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aoneahsan/macleanup.git"

@@ -103,7 +103,7 @@ Reports persist at ~/.mac-cleanup/reports/ so you can audit every run.
 
   npx macleanup --profile dev --dry-run
 
-Free. Source-available. Single bash file. No telemetry.
+Free. MIT-licensed. Single bash file. No telemetry.
 
 —
 Ahsan Mahmood
@@ -128,7 +128,7 @@ So I built one I can read.
 
 The whole codebase is one bash file, ~2,400 lines, zero binary blobs. You can audit every line before you run it. No closed-source executable, no Electron wrapper hiding what's actually doing the deleting.
 
-It's called macleanup. Free. Source-available.
+It's called macleanup. Free. MIT-licensed.
 
 🛡️ Safety design rules I committed to
 
@@ -154,7 +154,7 @@ Ahsan Mahmood
 aoneahsan.com  ·  linkedin.com/in/aoneahsan
 aoneahsan@gmail.com
 
-#macOS #InfoSec #DeveloperTools #Privacy #SourceAvailable
+#macOS #InfoSec #DeveloperTools #Privacy #MITLicense
 ~~~
 
 ---
@@ -243,7 +243,7 @@ The cost: no GUI. The benefit: trust by inspection, not trust by brand.
 
   npx macleanup --dry-run --all
 
-Free. Source-available. No telemetry. No upsell.
+Free. MIT-licensed. No telemetry. No upsell.
 
 —
 Ahsan Mahmood
@@ -284,7 +284,7 @@ I built macleanup section 25 specifically to find them.
 
   npx macleanup --only 25
 
-Free. Source-available. macOS only. No telemetry.
+Free. MIT-licensed. macOS only. No telemetry.
 
 —
 Ahsan Mahmood
@@ -392,7 +392,7 @@ That's a lot of sensitive data. Cleanup tools that include analytics report some
 
   npx macleanup
 
-Free. Source-available. Read every line. macOS 11+.
+Free. MIT-licensed. Read every line. macOS 11+.
 
 —
 Ahsan Mahmood
@@ -503,7 +503,7 @@ I'd done this dance maybe 30 times in my career. Every time I'd think "this shou
 
 Safe preview. Nothing gets deleted. You see exactly what's flagged across 27 sections. Decide from there.
 
-Free. Source-available. Made by one developer because I needed it.
+Free. MIT-licensed. Made by one developer because I needed it.
 
 —
 Ahsan Mahmood

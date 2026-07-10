@@ -178,8 +178,8 @@ That's all. No build step, no dependencies to update.
   `mac-cleanup.sh` (~3,000 lines of plain bash) in any editor.
 - **You want zero Node dependency.** A future Node breakage doesn't affect
   you — bash is a macOS system component.
-- **You want to fork it for personal use.** The source-available license
-  permits private use, including modifications you don't redistribute. See
+- **You want to fork it.** The MIT license lets you modify and
+  redistribute freely, as long as you keep the license notice. See
   [LICENSE.md](../LICENSE.md).
 
 ---

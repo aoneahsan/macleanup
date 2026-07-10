@@ -68,7 +68,7 @@ If you're a dev on Mac, you probably have GBs of node_modules + .gradle rotting 
 
   npx macleanup --profile dev --dry-run
 
-Finds them all (older than 100 days by default), shows sizes, lets you bulk-delete with one tick. Free, source-available, macOS only.
+Finds them all (older than 100 days by default), shows sizes, lets you bulk-delete with one tick. Free, open source (MIT), macOS only.
 
 — Ahsan
 linkedin.com/in/aoneahsan
@@ -176,7 +176,7 @@ Don't trust paid Mac cleaners with your file paths? Same.
 
 Zero network calls. Single bash file you can read in an hour. No analytics, no telemetry, no upsell. Reports stay local at ~/.mac-cleanup/.
 
-Free. Source-available. macOS only.
+Free. MIT-licensed. macOS only.
 
 — Ahsan
 aoneahsan@gmail.com

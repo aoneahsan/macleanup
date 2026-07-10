@@ -230,7 +230,7 @@ A BibTeX-friendly form:
   title        = {mac-cleanup: A safe-by-default macOS cleanup and maintenance tool},
   year         = {2026},
   url          = {https://github.com/aoneahsan/macleanup},
-  note         = {Source-available, version 4.5.0}
+  note         = {MIT licensed}
 }
 ```
 
@@ -238,13 +238,13 @@ A BibTeX-friendly form:
 
 ## License
 
-`mac-cleanup` is released under the **Source-Available License v1.0**.
-You may **read** and **run** the tool on your own machines for personal
-or internal-business use. You may **not** modify, redistribute, or
-sell it. The author offers it AS-IS with no warranty and is not liable
-for any data loss or damage.
+`mac-cleanup` is released under the **MIT License**. You may **use**,
+**copy**, **modify**, **redistribute**, **sublicense**, and **sell** it,
+provided the copyright and license notice are kept in all copies. The
+author offers it AS-IS with no warranty and is not liable for any data
+loss or damage.
 
-Full terms: [LICENSE.md](../LICENSE.md). Notice file: [NOTICE](../NOTICE).
+Full terms: [LICENSE.md](../LICENSE.md).
 
 ---
 

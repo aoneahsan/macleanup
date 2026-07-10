@@ -39,9 +39,8 @@ What it does:
 
 What it doesn't do:
 - No GUI. No Electron. No telemetry. No network calls (except an optional, manual `--check-update`).
-- No modification or redistribution under the license — it's source-available, not open-source by OSI definition.
 
-Tarball is 41 KB. Audit the source in an hour. The whole thing is two files plus the docs.
+MIT licensed — fork it, modify it, build on it. Tarball is 41 KB. Audit the source in an hour. The whole thing is two files plus the docs.
 
 Two technical decisions I'd particularly value feedback on:
 1. Pure-bash + Node-launcher-spawning-bash as a packaging shape. The npx ergonomics are great; the only real cost is a bash 3.2+ requirement (default macOS bash). Worth it?
@@ -53,9 +52,9 @@ Repo and license: https://github.com/aoneahsan/macleanup
 ### Show HN top-comment-ready answers (paste these as comments preemptively if appropriate)
 
 ~~~text
-Why source-available rather than MIT?
+Why MIT?
 
-Two reasons. First, this is a tool that runs `rm -rf` and `sudo` on the user's machine — I want a clear paper trail of who is responsible if something goes wrong, and a license that doesn't pretend modifications are also "mine." Second, it's a defence against repackaging into paid Mac-cleaner products; my LICENSE makes that explicitly disallowed. The trade-off I accepted: it doesn't qualify as OSI open-source, and people who only run OSI licenses will pass on it. That's fine.
+Because I want people to actually use it and build on it. It's a tool that runs `rm -rf` and `sudo`, so the MIT "AS IS, no warranty, not liable" disclaimer is exactly the protection I need — and it's the most court-tested one there is. Going permissive also means no corporate legal team has to think twice, contributors can fork freely, and the tool spreads further than a restrictive license would ever let it. If someone repackages it, they still have to keep my copyright notice — and I keep the name and the mindshare.
 ~~~
 
 ~~~text
@@ -75,7 +74,7 @@ Because requiring `brew install bash` would defeat the npx-zero-install pitch. T
 ### Body
 
 ~~~text
-[Disclosure: I'm the author. This is a free, source-available tool with no paid version, no upsell, no ads.]
+[Disclosure: I'm the author. This is a free, MIT-licensed tool with no paid version, no upsell, no ads.]
 
 I've been on a mission for a while to fix the "my Mac is full and I don't want to install yet another paid cleaner" problem. After cleaning up my Mac by hand way too many times, I finally scripted it. It's called **macleanup**.
 
@@ -98,7 +97,7 @@ That's it. npm fetches the package, runs the interactive menu, and reclaims its 
 **What's not in the box:**
 
 - No GUI, no Electron, no telemetry, no network calls (other than an optional, manual `--check-update`)
-- No modification or redistribution per the license — it's **source-available**, not OSI open-source. You can read it, run it, share the URL. You can't fork-and-republish.
+- **MIT licensed** — read it, run it, fork it, modify it, redistribute it, even ship it in a commercial product. Just keep the copyright and license notice.
 
 **Some specific use cases:**
 
@@ -123,7 +122,7 @@ Honest feedback wanted. If you find bugs, file an issue. If the tool deletes som
 
 ## 3. Reddit r/MacApps — alternate post
 
-- **Title**: `[Tool] macleanup — free, source-available macOS cleanup CLI you run with `npx macleanup``
+- **Title**: `[Tool] macleanup — free, MIT-licensed macOS cleanup CLI you run with `npx macleanup``
 - Slightly tighter version of the r/macOS post (this sub prefers concise)
 
 ### Body
@@ -146,7 +145,7 @@ Honest feedback wanted. If you find bugs, file an issue. If the tool deletes som
 
 `npx macleanup --dry-run --all`
 
-**Source-available** (you can read + run, can't redistribute or modify). Repo on GitHub, package on npm. Honest feedback welcome.
+**MIT licensed** (read, run, fork, modify, redistribute — keep the notice). Repo on GitHub, package on npm. Honest feedback welcome.
 ~~~
 
 ---
@@ -166,7 +165,7 @@ Author here. A few notes for context:
 - Total source is two files: a 2,400-line bash script and an 80-line Node launcher. Tarball is 41 KB. You can audit the whole thing in an hour.
 - Distribution via `npx macleanup` so users don't need to install anything. The Node launcher exists for that one purpose.
 - Persistent state lives at `~/.mac-cleanup/{logs,reports}/` so reports survive npx cache cleanup.
-- License is source-available, not OSI open-source. Personal/non-commercial use, no modifications, no redistribution. I picked this so the tool can't be repackaged into paid cleaner products without permission.
+- License is MIT — permissive OSI open source. Use, modify, redistribute, and even sell it, as long as the copyright and license notice are kept. I picked MIT to maximize adoption while the AS-IS disclaimer keeps me protected.
 - Zero network calls in the default code path. Optional, manual `--check-update` is the only exception and is opt-in via flag.
 
 Happy to answer any technical questions about the implementation, the trade-offs, or specific sections.
@@ -186,7 +185,7 @@ This is a small launch but a fun one.
 
 I'd cleaned up my Mac by hand maybe 30 times in my career — each time thinking "this should be a script." Last week I finally wrote it.
 
-It's called **macleanup**. Free, source-available, single bash file, 41 KB tarball.
+It's called **macleanup**. Free, MIT-licensed, single bash file, 41 KB tarball.
 
 **One command:**
 `npx macleanup`
@@ -202,7 +201,7 @@ It's called **macleanup**. Free, source-available, single bash file, 41 KB tarba
 
 **The lesson I keep relearning:** If you do something painful three times, automate it. If you do it ten times, package it. If you do it thirty times, ship it.
 
-Honest feedback welcome — both on the tool itself and on the launch shape (single npm package, source-available license, no GUI). Did I leave money on the table by not making it freemium? Probably. But that's a trade I made deliberately.
+Honest feedback welcome — both on the tool itself and on the launch shape (single npm package, MIT license, no GUI). Did I leave money on the table by not making it freemium? Probably. But that's a trade I made deliberately.
 
 **Try it:** `npx macleanup --dry-run --all`
 **Source:** github.com/aoneahsan/macleanup
@@ -220,7 +219,7 @@ Before posting any of these:
 1. [ ] `npm publish` has succeeded — `npx macleanup --version` returns `4.3.0` from a fresh terminal.
 2. [ ] GitHub repo is **public** with the personal-data scrub completed (re-init or `git filter-repo` per earlier conversation).
 3. [ ] README's badges resolve correctly (npm version badge, license badge).
-4. [ ] You have **at least one prepared answer** for each of: "Why source-available?", "Why bash?", "Why a dotfile location?", "Will you take PRs?", "Is this safe to run on my work Mac?"
+4. [ ] You have **at least one prepared answer** for each of: "Why MIT?", "Why bash?", "Why a dotfile location?", "Will you take PRs?", "Is this safe to run on my work Mac?"
 5. [ ] You're free to respond to comments for at least the first 4–6 hours after posting. HN/Reddit punish absent authors.
 6. [ ] Different posts go to different platforms on different days. Don't blast all five within an hour — it triggers spam filters and looks desperate.
 

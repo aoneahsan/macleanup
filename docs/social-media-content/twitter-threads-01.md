@@ -96,7 +96,7 @@ Try it (safe preview):
 
    npx macleanup --dry-run --all
 
-Free. Source-available. macOS 11+, Apple Silicon + Intel.
+Free. MIT-licensed. macOS 11+, Apple Silicon + Intel.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com
@@ -166,7 +166,7 @@ Sortable by size. Each row has the path, size, age in days. Audit before you del
 
 ### Tweet 6/6 — CTA
 ~~~text
-Free. Source-available. Single bash file you can read.
+Free. MIT-licensed. Single bash file you can read.
 
    npx macleanup --profile dev --dry-run
 
@@ -190,7 +190,7 @@ So I built one I can read.
 
 Single bash file. ~2,400 lines. Zero binaries. Audit every line before you run it.
 
-It's called macleanup. Free. Source-available.
+It's called macleanup. Free. MIT-licensed.
 
    npx macleanup
 
@@ -326,7 +326,7 @@ Start with the safe preview:
 
    npx macleanup --dry-run --all
 
-Free. Source-available. macOS 11+. No telemetry.
+Free. MIT-licensed. macOS 11+. No telemetry.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com  ·  linkedin.com/in/aoneahsan
@@ -406,7 +406,7 @@ If you've been burned by paid Mac cleaners, try the open alternative:
 
    npx macleanup --dry-run --all
 
-Free. Source-available. macOS 11+.
+Free. MIT-licensed. macOS 11+.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com  ·  linkedin.com/in/aoneahsan
@@ -472,7 +472,7 @@ Run the audit (read-only on this command — nothing gets deleted unless you opt
 
    npx macleanup --only 25
 
-Free. Source-available. macOS only.
+Free. MIT-licensed. macOS only.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com  ·  linkedin.com/in/aoneahsan
@@ -621,7 +621,7 @@ Mine is two files you can read:
 
    npx macleanup
 
-Free. Source-available. macOS 11+.
+Free. MIT-licensed. macOS 11+.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com  ·  linkedin.com/in/aoneahsan
@@ -683,7 +683,7 @@ Try it before your next Xcode reinstall:
 
    npx macleanup --only "1,17" --dry-run
 
-Free. Source-available. macOS 11+.
+Free. MIT-licensed. macOS 11+.
 
 By Ahsan Mahmood
 🔗 aoneahsan.com  ·  linkedin.com/in/aoneahsan

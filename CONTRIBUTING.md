@@ -1,9 +1,9 @@
 # Contributing to mac-cleanup
 
 Thank you for considering a contribution! Before you spend time on a
-patch, please read this short note — `mac-cleanup` ships under a
-**source-available** license (see [LICENSE.md](LICENSE.md)) and that
-shapes how contributions are accepted.
+patch, please read this short note — `mac-cleanup` ships under the
+**MIT** license (see [LICENSE.md](LICENSE.md)) and this covers how
+contributions are handled.
 
 ## What contributions look like
 
@@ -19,10 +19,9 @@ shapes how contributions are accepted.
 
 ## What contributions are NOT
 
-- A way to fork-and-republish under a new name. The license forbids it.
-- A way to add commercial / paid wrappers. Not permitted.
 - A blanket "open governance" promise. This is a single-author project
-  and will remain so.
+  and will remain so. (The MIT license means you're always free to fork
+  and take it in your own direction — but this repo stays author-led.)
 
 ## Pull-request guidelines
 
@@ -49,9 +48,9 @@ shapes how contributions are accepted.
 By submitting a PR you agree that:
 
 - The contribution is yours to license, or you have permission from the
-  rights holder to relicense.
-- Once merged, the contribution falls under the same source-available
-  license as the rest of the project.
+  rights holder to submit it.
+- Once merged, the contribution falls under the same **MIT** license as
+  the rest of the project.
 - The author may use, modify, sublicense, or remove your contribution
   without further compensation or attribution beyond an entry in
   CHANGELOG.md.

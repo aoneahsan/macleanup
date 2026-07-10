@@ -37,5 +37,5 @@ body:
       options:
         - label: I have searched existing issues and discussions.
           required: true
-        - label: I understand this project is source-available and that the maintainer is under no obligation to accept the feature.
+        - label: I understand this project is MIT-licensed and that the maintainer is under no obligation to accept the feature.
           required: true

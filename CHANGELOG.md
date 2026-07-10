@@ -7,6 +7,17 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **Relicensed to the MIT License.** mac-cleanup is now permissive open
+  source — you may use, copy, modify, redistribute, sublicense, and sell
+  it, as long as the copyright and license notice are kept. This replaces
+  the previous source-available license. Removed the `NOTICE` file (an
+  Apache-ism the MIT license doesn't use).
+
+---
+
 ## [4.6.1] — 2026-06-08  •  PATCH
 
 ### Fixed

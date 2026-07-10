@@ -12,9 +12,8 @@
 #  Address   : https://aoneahsan.com/address
 #  Repo      : https://github.com/aoneahsan/macleanup
 #  npm       : https://www.npmjs.com/package/macleanup
-#  Copyright : (c) 2024-2026 Ahsan Mahmood. All rights reserved.
-#  License   : Source-available, personal & non-commercial use only.
-#              No modification, no redistribution, no resale.
+#  Copyright : (c) 2024-2026 Ahsan Mahmood <aoneahsan@gmail.com>
+#  License   : MIT — free to use, copy, modify, and redistribute.
 #              See LICENSE.md for full terms. AS-IS, no warranty.
 #
 #  One self-contained interactive bash script. Every destructive action
@@ -659,7 +658,7 @@ write_branding_header() {
     printf '#  Address   : %s\n' "$AUTHOR_ADDRESS"
     printf '#  Repo      : %s\n' "$PROJECT_REPO"
     printf '#  npm pkg   : %s\n' "$PROJECT_NPM"
-    printf '#  License   : Source-Available v1.0 — personal use, no modification, no resale\n'
+    printf '#  License   : MIT — free to use, copy, modify, and redistribute\n'
     printf '#              Provided AS IS, no warranty. See LICENSE.md.\n'
     printf '#  Generated : %s\n' "$RUN_TIMESTAMP"
     printf '#  Host      : %s (%s)\n' "$(uname -n 2>/dev/null || echo '?')" "$(sw_vers -productVersion 2>/dev/null || echo '?')"

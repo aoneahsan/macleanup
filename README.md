@@ -8,7 +8,7 @@
 [![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
 [![version](https://img.shields.io/badge/version-4.6.1-blue.svg)](#changelog)
-[![license](https://img.shields.io/badge/license-Source--Available-orange.svg)](LICENSE.md)
+[![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 [![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
 
 **One file. Zero dependencies. Twenty-eight targeted sections.
@@ -397,9 +397,9 @@ If you opened the file recently (atime updated) it won't be flagged. Lower
 the threshold (`--large-file-days 30`) or use section 18 instead.
 
 **I want it to delete `~/Movies` after 30 days — can I add a section?**
-The license forbids modifying & redistributing the script. For your own
-private use you can fork and edit, just don't republish. For mainline
-features, open an issue describing the use case.
+Go for it — the MIT license lets you fork, edit, and even redistribute
+your changes. For mainline features, open an issue or PR describing the
+use case so everyone benefits.
 
 **Why does it ship as one file instead of `brew install`?**
 Single-file install means: no curl-pipe-bash, no signing-key surface, no
@@ -407,8 +407,9 @@ homebrew tap, you read every line before running. Drop it in `~/bin/` and
 you're done.
 
 **Is this OSI-approved open source?**
-No — it's **source-available**. You can read, run, and learn from the
-source; you cannot redistribute or modify it. See [LICENSE.md](LICENSE.md).
+Yes — it's **MIT licensed**. You can read, run, modify, redistribute, and
+even sell it, as long as you keep the copyright and license notice. See
+[LICENSE.md](LICENSE.md).
 
 **Do you collect any telemetry?**
 None. The script makes zero network calls. The Node launcher
@@ -509,21 +510,22 @@ data-leakage scenario), **please report it privately** to
 
 ## 🤝 Contributing
 
-This project is source-available, **not** open-source by OSI definition —
-contributions are welcome via issues and pull requests, but acceptance
-is at the author's sole discretion. See [CONTRIBUTING.md](CONTRIBUTING.md).
+This project is **MIT-licensed** open source — contributions are welcome
+via issues and pull requests, though acceptance is at the author's sole
+discretion. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
 ## 📜 License
 
-**Source-Available License v1.0** — see [LICENSE.md](LICENSE.md).
+**MIT License** — see [LICENSE.md](LICENSE.md).
 
-In one paragraph: you may **read** and **run** mac-cleanup on your own
-machines for personal or internal-business use. You may **not** modify,
-redistribute, or sell it. The author offers it AS-IS with no warranty
-and is not liable for any data loss or damage. By using it you agree to
-indemnify the author against any claim arising from your use.
+In one paragraph: you may **use**, **copy**, **modify**, **merge**,
+**publish**, **distribute**, **sublicense**, and **sell** copies of
+mac-cleanup, provided the copyright and license notice are kept in all
+copies. The software is offered **AS-IS with no warranty**, and the
+author is **not liable** for any data loss or damage arising from its
+use.
 
 ---
 

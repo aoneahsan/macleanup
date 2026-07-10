@@ -11,7 +11,7 @@
  *
  * Author : Ahsan Mahmood <aoneahsan@gmail.com>
  * Repo   : https://github.com/aoneahsan/macleanup
- * License: Source-Available (see LICENSE.md). AS IS, no warranty.
+ * License: MIT (see LICENSE.md). AS IS, no warranty.
  */
 'use strict';
 

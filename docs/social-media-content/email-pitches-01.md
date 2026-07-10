@@ -153,7 +153,7 @@ I just shipped a free macOS cleanup CLI: `npx macleanup`. Distinct from the exis
 • Real --dry-run mode (most cleaners fake it)
 • 27 sections including stale node_modules + LaunchAgents audit
 • Zero telemetry, zero network calls
-• Source-available (license terms in repo)
+• MIT licensed (license terms in repo)
 
 Mostly emailing because I think your audience would find the "cleanup tool you can audit" angle interesting. Happy to send you a 90-second walkthrough script if useful.
 
@@ -203,7 +203,7 @@ Hi {{first_name}},
 
 Long-time reader of {{newsletter}} — issue #{{N}} on {{topic}} was particularly good.
 
-Pitching a tool for the {{which segment — "tools" / "macOS" / "open source"}} section: `npx macleanup`. Free, source-available macOS cleanup CLI, single bash file, npx-distributable.
+Pitching a tool for the {{which segment — "tools" / "macOS" / "open source"}} section: `npx macleanup`. Free, MIT-licensed macOS cleanup CLI, single bash file, npx-distributable.
 
 Angle that I think readers would care about:
 • Trust by inspection (read every line) vs. trust by brand
