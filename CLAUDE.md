@@ -1,5 +1,14 @@
 # macleanup — Project Rules
 
+## Sub-agents & Skills — Main-Context-First (IRON-SOLID)
+Default/built-in sub-agents (`general-purpose`, `Explore`, `Plan`, `claude`, `fork`, …) do NOT have
+access to `/skills`, so delegating to them silently SKIPS the skills RULE #0 requires — a confirmed
+process failure. So: **do all skill-relevant work in the MAIN context** (where every matching Skill
+can be invoked); use a sub-agent ONLY when a **custom** agent exists in `.claude/agents/` for that
+job (and only within its scope); a default `Explore`/`Plan` agent is allowed ONLY for read-only,
+no-skill search/exploration; and when a relevant skill is missing, **download/enable/install it**
+rather than proceeding skill-less. (Owner directive 2026-07-11; full text in `~/.claude/CLAUDE.md`.)
+
 ## Source maps — disabled by default — RULE
 Never generate source maps for this project unless the owner (aoneahsan) explicitly requests them.
 Production / build / published output must ship WITHOUT source maps — no `.map` files and no
