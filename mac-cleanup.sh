@@ -57,7 +57,7 @@ fi
 # exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.6.2}"
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.6.3}"
 SCRIPT_NAME="mac-cleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"

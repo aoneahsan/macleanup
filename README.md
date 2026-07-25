@@ -31,7 +31,7 @@ It is a terminal tool for macOS only, with no telemetry and no network calls.
 
 | | |
 |---|---|
-| **Version** | `4.6.1` |
+| **Version** | `4.6.3` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
@@ -407,9 +407,7 @@ Which document answers which question:
 <a id="changelog"></a>
 ## 🔄 Changelog&nbsp;[#](#changelog)
 
-Latest release: **`4.6.1`** — dry-run now estimates the space a run would free, and `--json` reports only the
-files written by the current run.
-Full history: [CHANGELOG.md](https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md).
+Latest release: **`4.6.3`** — documentation only: the at-a-glance table above reported the previous version, because it is a static duplicate of `package.json`. Full history in the changelog.
 
 <a id="contributing"></a>
 ## 🤝 Contributing&nbsp;[#](#contributing)

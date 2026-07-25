@@ -7,6 +7,14 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.6.3] - 2026-07-25
+
+### Fixed
+
+- **The README stated the previous version.** The at-a-glance `Version` row is a static duplicate of
+  `package.json.version`, so it drifted the moment the version was bumped — it shipped stale in eight of the
+  fleet's packages at once. The row, and any native version string, now move with the release.
+
 ## [4.6.2] - 2026-07-25
 
 ### Changed
