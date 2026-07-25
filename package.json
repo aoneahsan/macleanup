@@ -1,7 +1,7 @@
 {
   "name": "macleanup",
-  "version": "4.6.1",
-  "description": "Comprehensive, safe-by-default macOS cleanup & maintenance tool — 28 sections, dry-run support, zero install via npx.",
+  "version": "4.6.2",
+  "description": "Safe-by-default macOS cleanup CLI — 28 sections, a real dry-run, zero install via npx.",
   "bin": {
     "mac-cleanup": "bin/mac-cleanup.js",
     "macleanup": "bin/mac-cleanup.js"
@@ -37,25 +37,16 @@
   ],
   "keywords": [
     "macos",
-    "mac",
     "cleanup",
     "maintenance",
     "disk-space",
     "cache",
-    "uninstall",
+    "cli",
     "developer-tools",
-    "node_modules",
+    "node-modules",
     "xcode",
     "homebrew",
-    "docker",
-    "system-cleanup",
-    "macos-tools",
-    "cli",
-    "bash",
-    "interactive",
     "dry-run",
-    "launchagents",
-    "stale-builds",
     "sysadmin"
   ],
   "author": {
@@ -78,6 +69,6 @@
   },
   "funding": {
     "type": "individual",
-    "url": "https://aoneahsan.com"
+    "url": "https://aoneahsan.com/payment?project-id=macleanup&project-identifier=macleanup"
   }
 }

@@ -1,563 +1,476 @@
 <div align="center">
 
-<img src="assets/logo/macleanup-wordmark.svg" width="420" alt="macleanup"/>
+<img src="https://raw.githubusercontent.com/aoneahsan/macleanup/main/assets/logo/macleanup-mark.svg" alt="macleanup logo" width="120" />
 
-### Comprehensive, safe-by-default macOS cleanup & maintenance — CLI + native macOS app.
+<h1>macleanup</h1>
 
-[![macOS](https://img.shields.io/badge/macOS-11%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
-[![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
-[![npm](https://img.shields.io/npm/v/macleanup.svg?logo=npm&label=npm)](https://www.npmjs.com/package/macleanup)
-[![version](https://img.shields.io/badge/version-4.6.1-blue.svg)](#changelog)
-[![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
-[![status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
+<p><strong>Safe-by-default macOS cleanup CLI — 28 sections, a real dry-run, zero install via npx.</strong></p>
 
-**One file. Zero dependencies. Twenty-eight targeted sections.
-Every destructive action confirms before running.**
+[![npm version](https://img.shields.io/npm/v/macleanup.svg)](https://www.npmjs.com/package/macleanup)
+[![downloads](https://img.shields.io/npm/dm/macleanup.svg)](https://www.npmjs.com/package/macleanup)
+[![license](https://img.shields.io/npm/l/macleanup.svg)](https://github.com/aoneahsan/macleanup/blob/main/LICENSE.md)
+[![node](https://img.shields.io/node/v/macleanup.svg)](https://nodejs.org)
+[![platform](https://img.shields.io/badge/platform-macOS%2011%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 
-[Quick start](#-quick-start) ·
-[Sections](#-the-twenty-eight-sections) ·
-[Safety](#%EF%B8%8F-safety-model) ·
-[Desktop app](desktop/) ·
-[FAQ](#-faq) ·
-[Author](#-author)
-
-<sub>Prefer a GUI? A tiny native macOS app (Tauri) wraps this CLI — see <a href="desktop/">desktop/</a>.</sub>
+[Docs](https://github.com/aoneahsan/macleanup/tree/main/docs) · [npm](https://www.npmjs.com/package/macleanup) · [GitHub](https://github.com/aoneahsan/macleanup) · [Changelog](https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md) · [Support](https://github.com/aoneahsan/macleanup/issues)
 
 </div>
 
----
+> [!IMPORTANT]
+> **This tool deletes files, and some of what it deletes cannot be recovered.** Most sections remove caches
+> that rebuild themselves, some move items to the Trash, and a few delete permanently — including emptying
+> the Trash itself, removing Time Machine local snapshots, iOS device backups, and Xcode archives.
+> Read [what it removes, and whether you can get it back](#what-it-removes-and-whether-you-can-get-it-back)
+> before your first run, and use `--dry-run` first. Back up before any cleanup tool.
 
-## ✨ Why mac-cleanup
+macleanup is a single bash script that reclaims disk space on macOS across 28 targeted areas — developer
+caches, browser caches, system logs, stale build artefacts, unused apps, and more. It is built for people who
+want to see exactly what will be deleted before a byte is removed: every destructive section confirms first,
+`--dry-run` never touches disk, and the whole tool is two readable files you can inspect before running.
+It is a terminal tool for macOS only, with no telemetry and no network calls.
 
-Most cleanup tools either delete too aggressively (and break things) or do too
-little (and leave gigabytes of cruft). **mac-cleanup** sits in the middle:
+| | |
+|---|---|
+| **Version** | `4.6.1` |
+| **License** | MIT |
+| **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
+| **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
+| **Install size** | ~70 kB packed · ~217 kB unpacked |
+| **Types** | None — this is a CLI, not a library |
+| **Status** | Stable · actively maintained |
 
-| | Typical cleaner apps | `rm -rf ~/Library` posts | **mac-cleanup** |
+<a id="table-of-contents"></a>
+## 🧭 Table of Contents&nbsp;[#](#table-of-contents)
+
+- [💡 Why macleanup](#why-macleanup)
+- [✨ Features](#features)
+- [📋 Requirements](#requirements)
+- [📦 Installation](#installation)
+- [🚀 Quick Start](#quick-start)
+- [🛠️ Usage](#usage)
+- [⚙️ Configuration](#configuration)
+- [💻 Command Line](#command-line)
+- [🧪 Examples](#examples)
+- [🎛️ Advanced Features](#advanced-features)
+- [🚑 Recovery & Troubleshooting](#recovery-troubleshooting)
+- [🚧 Limitations](#limitations)
+- [❓ FAQ](#faq)
+- [📚 Documentation](#documentation)
+- [🔄 Changelog](#changelog)
+- [🤝 Contributing](#contributing)
+- [🗂️ Repository](#repository)
+- [💬 Support](#support)
+- [📄 License](#license)
+- [👤 Author](#author)
+- [🔗 Links](#links)
+- [🏷️ Keywords](#keywords)
+
+<a id="why-macleanup"></a>
+## 💡 Why macleanup&nbsp;[#](#why-macleanup)
+
+Cleanup tools tend to sit at one of two extremes: a paid app that deletes on your behalf and does not tell you
+what it touched, or a blog post telling you to `rm -rf ~/Library` and hope. macleanup takes the middle
+position — it names every path before removing it, asks per section, and ships a dry-run that genuinely
+writes nothing.
+
+| | macleanup | Typical cleaner apps | `rm -rf` blog posts |
 |---|---|---|---|
-| Confirms before deleting | sometimes | never | **always (per section)** |
-| Tells you what each path is | rarely | no | **yes** |
-| Handles companion data when uninstalling apps | partly | no | **yes (known per-app locations + Group Containers)** |
-| Skips Apple-managed caches | yes | no | **yes** |
-| Has a real `--dry-run` | sometimes | no | **yes** |
-| Open / inspectable source | no | n/a | **yes** |
-| Costs money | yes | no | **no** |
+| Confirms before deleting | always, per section | sometimes | never |
+| Names each path it will touch | yes | rarely | no |
+| Dry-run that writes nothing | yes | sometimes | no |
+| Handles companion data when uninstalling an app | yes | partly | no |
+| Skips Apple-managed caches | yes | yes | no |
+| Source you can read before running | yes, two files | no | n/a |
+| Network calls or telemetry | none | usually | n/a |
 
-Run it interactively the first time, then use `--only` and `--dry-run` to
-script your favourite combinations.
+<a id="what-it-removes-and-whether-you-can-get-it-back"></a>
+### What it removes, and whether you can get it back
 
----
+Sections fall into three tiers. **Knowing which tier you are in is the whole safety model** — a per-section
+breakdown is in [Usage](#usage).
 
-## 🚀 Quick start — three ways to run
+| Tier | What happens | Recoverable? |
+|---|---|---|
+| **Rebuilds** | Caches, logs, temp files and build artefacts are removed from disk. The OS or your toolchain recreates them on next use. | Not from disk, but the data reappears — a rebuild or reinstall costs time, not information. |
+| **Moved to Trash** | Uninstalled apps and their companion data (section 21), orphaned app data (12), and large stale files (24) go to the Trash via Finder. | Yes, until you empty the Trash. |
+| **Permanently deleted** | Emptying the Trash (10), Time Machine local snapshots (11), iOS/iPadOS device backups (16), Xcode archives (17), LaunchAgent/Daemon plists (25), and pruned Docker **volumes** (4). | **No.** These are gone. |
 
-### 1. Zero-install via `npx` (easiest)
+Two behaviours are easy to miss, and both are real:
+
+> [!WARNING]
+> **`--profile minimal --yes` empties your Trash.** The `minimal` profile is sections `5,7,8,9,10`, and
+> section 10 is *Empty Trash*. It is not one of the sections gated behind `--i-understand-deep`, so `--yes`
+> auto-confirms it — including its "this is irreversible" prompt. Anything sitting in the Trash is gone.
+> Preview with `--profile minimal --dry-run` first.
+
+> [!WARNING]
+> **Denying the Automation permission silently downgrades safety.** Moving items to the Trash is done through
+> Finder via `osascript`. If macOS has not been granted Automation access (or you are on SSH/headless),
+> sections 21 and 12 fall back to deleting directly instead — so items you expected to find in the Trash were
+> never put there. macleanup warns on the app itself but the fallback is automatic for companion data.
+
+**Not the right tool when** — you want a GUI-first, set-and-forget cleaner; you are on Linux or Windows
+(macOS only, enforced); you need a programmatic Node API (there is none — see [Limitations](#limitations));
+or you want a guaranteed amount of space back. How much any section frees depends entirely on your machine,
+and macleanup does not estimate it in advance.
+
+<a id="features"></a>
+## ✨ Features&nbsp;[#](#features)
+
+- **28 targeted sections** — developer caches, browser caches, system caches and logs, temp files, Docker,
+  Time Machine snapshots, iOS backups, Xcode archives, stale build artefacts, unused apps, launch items.
+- **A dry-run that writes nothing** — every destructive call routes through helpers that no-op in dry mode.
+- **Per-section confirmation** — destructive work always prompts unless you explicitly pass `--yes`.
+- **A deep-section gate** — the five most dangerous sections refuse to run unattended without a second,
+  separate opt-in flag.
+- **Two-condition delete rule** — non-cache deletes require both "not in use by any tool" and "untouched for
+  N days" (by `atime` *and* `mtime`), so a dependency you use monthly survives.
+- **Profiles** — five named bundles (`dev`, `minimal`, `cache-only`, `deep`, `audit`) for common workflows.
+- **Read-only audit sections** — system health, orphan scan, large files, launch items and disk usage report
+  without deleting anything.
+- **Reports and logs on disk** — dated `.txt` reports and per-day logs under `~/.mac-cleanup/`, outside the
+  npx cache, so they survive every invocation.
+- **Machine-readable output** — `--json` prints a one-line run summary for scripting.
+- **No telemetry** — zero network calls; nothing is sent anywhere.
+
+<a id="requirements"></a>
+## 📋 Requirements&nbsp;[#](#requirements)
+
+| Requirement | Version | Why |
+|---|---|---|
+| macOS | 11 Big Sur or later | Apple Silicon and Intel. Enforced as Darwin-only; the tool exits on any other platform. |
+| bash | `3.2+` | The version Apple ships. Checked at startup and the script exits if it is older. |
+| Node.js | `>=14` | Only for the `npx` and `npm install -g` paths. The git-checkout path needs no Node at all. |
+| `sudo` | — | Required by some sections only. Without it those sections are skipped, never silently bypassed. |
+| Automation permission | — | Needed for the move-to-Trash behaviour. See the warning in [Why macleanup](#why-macleanup). |
+
+<a id="installation"></a>
+## 📦 Installation&nbsp;[#](#installation)
+
+```bash
+# Zero install — fetched into the npm cache, run, then reclaimed
+npx macleanup
+
+# Or install globally
+npm install -g macleanup
+
+# Or clone and run directly — no Node required
+git clone https://github.com/aoneahsan/macleanup.git
+cd macleanup && chmod +x mac-cleanup.sh && ./mac-cleanup.sh
+```
+
+The global install exposes two identical binaries, `mac-cleanup` and `macleanup`. Nothing is written outside
+`~/.mac-cleanup/` (logs and reports) until you confirm a section.
+
+<a id="quick-start"></a>
+## 🚀 Quick Start&nbsp;[#](#quick-start)
+
+Preview first. This writes nothing at all:
+
+```bash
+npx macleanup --dry-run --all
+```
+
+Then run the interactive menu and pick sections yourself:
 
 ```bash
 npx macleanup
 ```
 
-That's it. npm fetches the package into its cache, runs the interactive
-menu, and the cache is reclaimed afterwards. **Your reports and logs are
-never inside the cache** — they live at `~/.mac-cleanup/{logs,reports}/`
-and survive every `npx` invocation.
+<a id="usage"></a>
+## 🛠️ Usage&nbsp;[#](#usage)
+
+### The 28 sections
+
+`Tier` maps to [what it removes, and whether you can get it back](#what-it-removes-and-whether-you-can-get-it-back):
+**Report** deletes nothing · **Rebuilds** comes back on its own · **Trash** is recoverable until you empty it ·
+**Permanent** is not recoverable.
+
+| # | Section | Tier | Sudo | Notes |
+|---|---|---|:-:|---|
+| 0 | System health & process monitor | Report | — | Read-only diagnostic |
+| 1 | Xcode caches, DerivedData, simulators | Rebuilds | — | |
+| 2 | Android / Gradle caches | Rebuilds | — | |
+| 3 | Package-manager caches (npm, yarn, pnpm, brew, pip, pod, cargo, go, ruby, flutter) | Rebuilds | — | |
+| 4 | Docker prune | Rebuilds / **Permanent** | — | Images re-pull; **pruned volumes do not come back** |
+| 5 | User caches (`~/Library/Caches`, Saved State) | Rebuilds | — | Browsers preserved |
+| 6 | System caches (`/Library/Caches`) | Rebuilds | sudo | Deep-gated |
+| 7 | Logs (user + system) | Rebuilds | sudo | Old files only |
+| 8 | Temp files (`$TMPDIR`, `/tmp`, `~/tmp`) | Rebuilds | — | User-owned only |
+| 9 | Update caches | Rebuilds | sudo | |
+| 10 | Empty Trash | **Permanent** | — | Included in the `minimal` profile |
+| 11 | Time Machine local snapshots | **Permanent** | sudo | Deep-gated |
+| 12 | Orphaned app-data scan | Trash | — | Falls back to direct delete without Automation access |
+| 13 | System maintenance (`periodic`) | Rebuilds | sudo | Runs Apple's own scripts |
+| 14 | Deep cache `/private/var/folders` | Rebuilds | sudo | Deep-gated · **needs a reboot** · typed `yes` |
+| 15 | Installer leftovers report | Report | — | Advisory only |
+| 16 | iOS / iPadOS device backups | **Permanent** | — | Per-device review |
+| 17 | Xcode archives | **Permanent** | — | Per-archive review |
+| 18 | Large files report | Report | — | ≥500 MB in `$HOME` |
+| 19 | Browser caches | Rebuilds | — | Chromium and Firefox families, all profiles |
+| 20 | DNS / mDNS reset | Rebuilds | sudo | Flushes only; deletes nothing |
+| 21 | Unused apps — review or bulk uninstall | Trash | — | Deep-gated · falls back to direct delete without Automation access |
+| 22 | Purgeable space trigger | Report | — | Creates and removes one temp file |
+| 23 | Stale build artefacts (`node_modules`, `vendor`, `dist`, …) | Rebuilds | — | Deleted directly, **not** to Trash; reinstall to restore |
+| 24 | Large stale files ≥N GB unused N+ days | Trash | — | Deep-gated · Trash only, no direct-delete fallback |
+| 25 | LaunchAgents / LaunchDaemons audit | **Permanent** | sudo\* | Unloads then removes the `.plist` |
+| 26 | Disk-usage report | Report | — | `$HOME` and `~/Library` |
+| 27 | macOS UI maintenance — QuickLook + font caches | Rebuilds | sudo† | Menu or `--only` only |
+
+\* Sudo only when removing items under `/Library/`. † Sudo only for the optional system-wide font-cache clear.
+
+### Running a subset
 
 ```bash
-# Preview the safe-batch cleanup without touching anything
-npx macleanup --dry-run --all
-
-# Run one specific section
-npx macleanup --only 23 --stale-build-days 90 --dry-run
-
-# Show every section, then exit
-npx macleanup --list
+mac-cleanup --list                       # print every section, then exit
+mac-cleanup --only "5,7,8,9"             # run exactly these
+mac-cleanup --profile dev --dry-run      # preview a named bundle
+mac-cleanup --all --yes                  # unattended safe batch
 ```
 
-### 2. Global install via `npm`
+`--all` runs only the safe batch — sections `0 3 5 7 8 9 15 18 22 26`. Everything else is opt-in.
 
-```bash
-npm install -g macleanup
-mac-cleanup            # the bin name is just `mac-cleanup`
-mac-cleanup --version
-```
+### Interactive multi-select
 
-### 3. Direct git checkout (no Node required)
-
-```bash
-git clone https://github.com/aoneahsan/macleanup.git
-cd macleanup
-chmod +x mac-cleanup.sh
-./mac-cleanup.sh
-```
-
-> **Tip:** the first time you run a destructive section, pass `--dry-run`.
-> You'll see exactly which files would go without touching them.
-
-### Where do my reports + logs live?
-
-By default, **always** in your home directory — never in the npx cache:
-
-```
-~/.mac-cleanup/
-├── logs/
-│   └── mac-cleanup-YYYY-MM-DD.log
-└── reports/
-    ├── orphans-YYYY-MM-DD.txt
-    ├── unused-apps-YYYY-MM-DD.txt
-    ├── large-files-YYYY-MM-DD.txt
-    ├── stale-build-YYYY-MM-DD.txt
-    ├── large-stale-YYYY-MM-DD.txt
-    ├── launch-audit-YYYY-MM-DD.txt
-    └── disk-usage-YYYY-MM-DD.txt
-```
-
-Override either path with `--logs-dir PATH` and `--reports-dir PATH`, or
-set `MAC_CLEANUP_LOGS_DIR` / `MAC_CLEANUP_REPORTS_DIR` in the environment.
-
-Every report file starts with a credits header (tool version, author,
-repo URL, npm URL, run timestamp, host) so each artefact is
-self-attributing.
-
-| Default behaviour | How to change it |
-|---|---|
-| Logs persist forever in `~/.mac-cleanup/logs/` | Add `--cleanup-logs-on-finish` to delete this run's log on exit |
-| Reports written for every relevant section | Add `--no-reports` to skip every `.txt` report (logs still kept) |
-| Reports + logs go to `~/.mac-cleanup/` | Use `--logs-dir` / `--reports-dir` |
-
----
-
-## 🧭 The twenty-eight sections
-
-| # | Section | Sudo? | Notes |
-|---|---|:-:|---|
-| 0 | System health & process monitor | — | Read-only diagnostic |
-| 1 | Xcode caches, DerivedData, simulators | — | |
-| 2 | Android / Gradle caches | — | |
-| 3 | Package manager caches (npm, yarn, pnpm, brew, pip, pod, cargo, go, ruby, flutter) | — | |
-| 4 | Docker prune (containers/images/volumes) | — | Daemon must be running |
-| 5 | User caches (`~/Library/Caches`, Saved State) | — | Browsers preserved |
-| 6 | System caches (`/Library/Caches`) | sudo | |
-| 7 | Logs (user + system) | sudo | Old files only |
-| 8 | Temp files (`$TMPDIR`, `/tmp`, `~/tmp`) | — | User-owned only |
-| 9 | Update caches | sudo | |
-| 10 | Empty Trash | — | Asks first |
-| 11 | Time Machine local snapshots | sudo | |
-| 12 | Orphaned app-data scan | — | Interactive |
-| 13 | System maintenance (`periodic`) | sudo | |
-| 14 | Deep cache `/private/var/folders` ⚠ **needs reboot** | sudo | Strong confirm |
-| 15 | Installer leftovers report | — | Advisory only |
-| 16 | iOS / iPadOS device backups | — | Per-device review |
-| 17 | Xcode archives | — | Per-archive review |
-| 18 | Large files report | — | ≥500 MB in `$HOME` |
-| 19 | Browser caches (Chrome/Canary, Brave, Edge, Vivaldi, Chromium, Opera/GX, DuckDuckGo, Arc; Firefox-family forks) | — | All profiles |
-| 20 | DNS / mDNS reset | sudo | |
-| 21 | Apps unused N+ days — **review or bulk uninstall** | — | Multi-select supported |
-| 22 | Purgeable space trigger | — | |
-| 23 | **Stale build artefacts** N+ days (`node_modules`, `vendor`, `dist`, …) | — | New in 4.1 |
-| 24 | **Large stale files** ≥N GB unused N+ days | — | New in 4.1 |
-| 25 | **LaunchAgents / LaunchDaemons audit** (orphaned login items) | sudo* | New in 4.1 |
-| 26 | **Disk-usage report** (`$HOME` & `~/Library`) | — | New in 4.1 |
-| 27 | **macOS UI maintenance**: QuickLook + font caches | sudo† | New in 4.5 · menu / `--only` only |
-
-\* Sudo only when removing items under `/Library/`.
-† Sudo only for the optional system-wide font-cache clear.
-
-### Defaults you can override
-
-| Variable | Default | Flag |
-|---|---:|---|
-| Days an app must be idle to be flagged | 100 | `--threshold N` |
-| Idle threshold — delete gate (sec 12, 23) + idle highlight (sec 16, 17) | 100 | `--idle-days N` |
-| Days a cache file must be unused (sec 1, 2, 3) | 100 | `--cache-age-days N` |
-| Days a build dir must be untouched (sec 23) | 100 | `--stale-build-days N` |
-| Days a large file must be untouched (sec 24) | 100 | `--large-file-days N` |
-| Min size for the large-file scan (sec 24) | 1 GB | `--large-file-size-gb N` |
-| Scan roots for sections 23/24 | auto-detected | `--scan-roots "p1:p2"` |
-
-### The two-condition rule for non-cache deletes (4.3.3+)
-
-The idle **delete gate** is enforced in four sections — **orphan app data
-(sec 12), idle apps (sec 21), stale `node_modules`/build artefacts (sec 23),
-and large unused files (sec 24)**. In those sections an item is only
-**deleted automatically** when **both** conditions hold:
-
-1. **Not used by any active software / tool.** The existing detection
-   (no installed-app match for orphan data, no last-used signal — and not
-   running — for idle apps).
-2. **Not touched by you (atime AND mtime) for ≥ 100 days.** Configurable
-   via `--idle-days N`. A Gradle distribution you invoke once a month
-   keeps recent atime, so it survives. A node_modules whose IDE reads
-   files for autocomplete keeps recent atime, so it survives.
-
-`--idle-days 0` disables the second condition entirely (back to the
-4.3.2 behaviour where mtime alone was enough).
-
-> **Sections 16 (iOS backups) and 17 (Xcode archives) are different.** There
-> `--idle-days` only **highlights** idle items with an `[idle ≥Nd]` / `(recent)`
-> flag — there is **no** automatic idle delete gate. Both are interactive-only
-> and will delete any item you confirm, recent or not.
-
-> **Cache age, by `atime` AND `mtime`** — `--cache-age-days 100` keeps any file
-> you've **opened OR modified** in the last 100 days, even if it was downloaded
-> 6 months ago. A Gradle distribution you invoke once a month keeps recent
-> atime and survives every pass. Pass `--cache-age-days 0` to disable the
-> filter entirely (full wipe — old `<4.3.2` behaviour).
-
----
-
-## 🎛️ Command-line cheat sheet
-
-The same flags work with `npx`, the global `mac-cleanup` bin, or
-`./mac-cleanup.sh` — pick whichever invocation fits your workflow.
-
-```bash
-mac-cleanup                                       # interactive menu
-mac-cleanup --list                                # show every section
-mac-cleanup --version                             # print version
-
-mac-cleanup --dry-run --all                       # preview safe batch
-mac-cleanup --all --yes                           # unattended safe batch
-mac-cleanup --only "5,7,8,9"                      # explicit sections only
-mac-cleanup --only 23 --dry-run                   # one section, dry-run
-
-# Section-specific tuning
-mac-cleanup --only 21 --threshold 60
-mac-cleanup --only 23 --stale-build-days 30 \
-            --scan-roots "$HOME/repos:$HOME/code"
-mac-cleanup --only 24 --large-file-size-gb 2 --large-file-days 180
-
-# Logs / reports
-mac-cleanup --no-reports                          # don't write .txt reports
-mac-cleanup --cleanup-logs-on-finish              # delete this run's log at exit
-mac-cleanup --logs-dir /tmp/mc --reports-dir /tmp/mc-reports
-
-# Output controls
-mac-cleanup --no-color
-mac-cleanup --quiet --all --yes
-mac-cleanup --no-sudo                             # skip every sudo section
-
-# Profiles + exclude (4.3.0)
-mac-cleanup --profile dev --dry-run               # 1,2,3,4,23 → preview
-mac-cleanup --profile deep --exclude 14,17 --yes  # heavy sweep, skip a few
-mac-cleanup --all --notify --quiet                # OS notification on finish
-mac-cleanup --check-update                        # ask npm if newer exists
-
-# New in 4.5.0
-mac-cleanup --only 14 --yes --i-understand-deep   # allow a deep section unattended
-mac-cleanup --only 23 --exclude-path "$HOME/Code/keep"   # never touch this tree
-mac-cleanup --all --yes --json | jq .freed_kb     # one-line JSON run summary
-mac-cleanup --prune-history 30 --dry-run          # prune logs/reports >30d old
-mac-cleanup --uninstall-data                      # remove ~/.mac-cleanup (confirms)
-# Config: ~/.mac-cleanuprc (key=value) sets defaults; CLI flags override.
-```
-
-### Profiles
-
-Named bundles for common workflows — pick one with `--profile NAME`:
-
-| Profile | Sections it runs | When to use |
-|---|---|---|
-| `dev`        | 1, 2, 3, 4, 23 | Reclaim developer-tool cache + stale `node_modules` |
-| `minimal`    | 5, 7, 8, 9, 10 | Quick, mostly-safe weekly sweep |
-| `cache-only` | 3, 5, 6, 7, 9, 19 | Every cache layer; nothing else |
-| `deep`       | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 19, 23, 26 | Big monthly cleanup |
-| `audit`      | 0, 12, 18, 21, 25, 26 | Read-only diagnostics — safe |
-
-Combine with `--exclude` to subtract sections:
-`--profile deep --exclude 14,17` runs the deep preset minus those two.
-
-### Interactive multi-select syntax
-
-When a section asks **"Select items (1..N)"** you can type:
+When a section asks **"Select items (1..N)"**:
 
 | Input | Meaning |
 |---|---|
-| `all` (or `a`) | Every item |
-| `none` (or empty) | Nothing |
+| `all` or `a` | Every item |
+| `none` or empty | Nothing |
 | `1,3,5-7,12` | Items 1, 3, 5, 6, 7, 12 |
-| `7-3` | Reverse range — auto-swaps to 3..7 |
+| `7-3` | Reverse range — auto-swapped to 3..7 |
 
-Out-of-range or junk tokens are silently ignored.
+Out-of-range and junk tokens are ignored.
 
----
+<a id="configuration"></a>
+## ⚙️ Configuration&nbsp;[#](#configuration)
 
-## 🛡️ Safety model
+Defaults can be set in `~/.mac-cleanuprc` (or `$MAC_CLEANUP_RC`) as simple `key=value` lines. CLI flags
+always override the file.
 
-mac-cleanup is **safe by default** — but it is also **a tool that runs `rm
--rf` and `sudo`**, and you are responsible for verifying its outputs on
-your machine. The design rules:
+| Setting | Default | Flag |
+|---|---:|---|
+| Days an app must be idle to be flagged | 100 | `--threshold N` |
+| Idle delete gate (sections 12, 21, 23, 24); idle highlight (16, 17) | 100 | `--idle-days N` |
+| Days a cache file must be unused (sections 1, 2, 3) | 100 | `--cache-age-days N` |
+| Days a build directory must be untouched (section 23) | 100 | `--stale-build-days N` |
+| Days a large file must be untouched (section 24) | 100 | `--large-file-days N` |
+| Minimum size for the large-file scan (section 24) | 1 GB | `--large-file-size-gb N` |
+| Scan roots for sections 23 and 24 | auto-detected | `--scan-roots "p1:p2"` |
 
-1. **Destructive ops always prompt** unless you pass `--yes`.
-2. **`--dry-run` never deletes anything** — every destructive call routes
-   through helpers that no-op in dry mode.
-3. **Apps are moved to Trash** (via Finder) where possible, not `rm`-ed.
-   You can recover for as long as the Trash isn't emptied.
-4. **System caches need explicit `sudo`.** If sudo isn't available the
-   section is skipped, never silently bypassed.
-5. **The deepest sections** — system caches as root (6), Time Machine
-   snapshots (11), `/private/var/folders` wipe (14), app uninstall (21),
-   large stale files → Trash (24) — are **never part of `--all`** (even
-   `--all --yes`). To run them unattended via `--only`/`--profile`/`--all`
-   you must add `--i-understand-deep` in addition to `--yes`; `--yes` alone
-   never enables them (dry-run previews always work). Otherwise pick them
-   from the interactive menu. (Section 14 also requires a typed `yes`.)
-6. **Logs are written to `logs/`** which is gitignored. Reports of
-   orphaned data, unused apps, large files, and stale builds get their
-   own dated `.txt` files there for later review.
+Setting `--idle-days 0` or `--cache-age-days 0` disables that condition entirely.
 
-Even so: **back up before you run any cleanup tool**. A pinned Time
-Machine snapshot or `tmutil snapshot` is a good last line of defence.
+Logs and reports live in `~/.mac-cleanup/{logs,reports}/` — never inside the npx cache, so they survive every
+invocation. Override with `--logs-dir` / `--reports-dir`, or `MAC_CLEANUP_LOGS_DIR` / `MAC_CLEANUP_REPORTS_DIR`.
 
----
+<a id="command-line"></a>
+## 💻 Command Line&nbsp;[#](#command-line)
 
-## 🧪 Examples by goal
+```bash
+npx macleanup [options]
+mac-cleanup [options]        # after a global install
+```
 
-| Goal | One-liner |
+The command line is the entire public interface — there is no programmatic API.
+
+| Flag | What it does |
 |---|---|
-| **"What can I safely free up tonight?"** | `./mac-cleanup.sh --dry-run --all` |
-| **Reclaim dev space** | `./mac-cleanup.sh --only "1,2,3,4,23" --dry-run` |
-| **Find every `node_modules` >90d old** | `./mac-cleanup.sh --only 23 --stale-build-days 90 --dry-run` |
-| **Find dormant 2 GB+ files >6 mo old** | `./mac-cleanup.sh --only 24 --large-file-size-gb 2 --large-file-days 180 --dry-run` |
-| **Audit which login items are orphaned** | `./mac-cleanup.sh --only 25` |
-| **Pre-flight before reinstalling Xcode** | `./mac-cleanup.sh --only "1,17"` |
-| **CI / cron unattended sweep** | `./mac-cleanup.sh --all --yes --quiet` |
+| `--list` | Print every section and exit |
+| `--version` | Print the version |
+| `--dry-run` | Write nothing; show what would be removed |
+| `--all` | Run the safe batch |
+| `--only "5,7,8"` | Run exactly these sections |
+| `--profile NAME` | `dev`, `minimal`, `cache-only`, `deep` or `audit` |
+| `--exclude 14,17` | Subtract sections from `--all` or a profile |
+| `--exclude-path PATH` | Never scan or touch this tree |
+| `--yes` | Auto-confirm prompts. Does **not** unlock the deep sections |
+| `--i-understand-deep` | With `--yes`, allow sections 6, 11, 14, 21, 24 unattended |
+| `--no-sudo` | Skip every section that needs sudo |
+| `--threshold N` · `--idle-days N` · `--cache-age-days N` | Age thresholds — see [Configuration](#configuration) |
+| `--stale-build-days N` · `--large-file-days N` · `--large-file-size-gb N` | Section 23 and 24 thresholds |
+| `--scan-roots "p1:p2"` | Where sections 23 and 24 look |
+| `--logs-dir` · `--reports-dir` · `--no-reports` · `--cleanup-logs-on-finish` | Log and report handling |
+| `--prune-history N` | Prune logs and reports older than N days |
+| `--json` | One-line JSON run summary |
+| `--quiet` · `--no-color` · `--notify` | Output controls |
+| `--brew-autoremove` | Opt in to `brew autoremove` (off by default) |
+| `--check-update` | Ask npm whether a newer version exists |
+| `--stats` · `--contact` · `--feedback` · `--report-issue` | Run history and local-first support flags |
+| `--uninstall-data` | Remove `~/.mac-cleanup` (confirms first) |
 
----
+Full flag reference: [docs/cli-reference.md](https://github.com/aoneahsan/macleanup/blob/main/docs/cli-reference.md).
 
-## 🚑 Recovery — if 4.3.0 broke a global tool
+<a id="examples"></a>
+## 🧪 Examples&nbsp;[#](#examples)
 
-`v4.3.0` had a bug where section 23 (stale build artefacts) could enter
-toolchain manager directories like `~/.bun`, `~/.pnpm-store`,
-`~/.local/share/pnpm`, `~/.npm-packages`, `~/.volta` and remove
-`node_modules`-shaped folders inside them, breaking globally installed
-tools. Fixed in 4.3.1 with the new `CRITICAL_HOME_DIRS` allowlist —
-section 23 will now refuse to enter these paths regardless of mtime.
+| Goal | Command |
+|---|---|
+| See what tonight's cleanup would free | `mac-cleanup --dry-run --all` |
+| Reclaim developer-tool space | `mac-cleanup --profile dev --dry-run` |
+| Find every `node_modules` untouched 90+ days | `mac-cleanup --only 23 --stale-build-days 90 --dry-run` |
+| Find dormant 2 GB+ files older than 6 months | `mac-cleanup --only 24 --large-file-size-gb 2 --large-file-days 180 --dry-run` |
+| Audit orphaned login items | `mac-cleanup --only 25` |
+| Read-only health check | `mac-cleanup --profile audit` |
+| Unattended cron sweep | `mac-cleanup --all --yes --quiet` |
 
-If you ran 4.3.0 against `--scan-roots $HOME` (or a 4.3.0 with the silent
-$HOME fallback) and your global tools stopped working, here are the
-commands to restore the most common ones:
+More recipes: [docs/examples-cookbook.md](https://github.com/aoneahsan/macleanup/blob/main/docs/examples-cookbook.md).
 
-```bash
-# bun — single curl one-liner reinstalls it cleanly
-curl -fsSL https://bun.sh/install | bash
+<a id="advanced-features"></a>
+## 🎛️ Advanced Features&nbsp;[#](#advanced-features)
 
-# pnpm — corepack ships with Node 16+, no extra install needed
-corepack enable
-corepack prepare pnpm@latest --activate
-# then re-install your global pnpm packages, e.g.
-pnpm add -g typescript ts-node prettier eslint <other tools you had>
+- **Profiles** — `dev` (1,2,3,4,23) · `minimal` (5,7,8,9,10) · `cache-only` (3,5,6,7,9,19) ·
+  `deep` (0,1,2,3,4,5,6,7,8,9,17,19,23,26) · `audit` (0,12,18,21,25,26).
+  [Details](https://github.com/aoneahsan/macleanup/blob/main/docs/profiles.md).
+- **JSON output** — `--all --yes --json | jq .freed_kb` for scripting and dashboards.
+- **Toolchain allowlist** — section 23 refuses to enter `~/.bun`, `~/.pnpm-store`, `~/.volta` and similar
+  manager directories regardless of file age.
+- **Config file** — `~/.mac-cleanuprc` for persistent defaults.
+- **Desktop app** — a small native macOS GUI (Tauri) wrapping this same script lives in
+  [desktop/](https://github.com/aoneahsan/macleanup/tree/main/desktop). It reimplements no cleanup logic.
 
-# yarn — same path via corepack
-corepack prepare yarn@stable --activate
+<a id="recovery-troubleshooting"></a>
+## 🚑 Recovery & Troubleshooting&nbsp;[#](#recovery-troubleshooting)
 
-# nvm + Node — if ~/.nvm is intact, just re-source:
-source "$HOME/.nvm/nvm.sh"
-nvm use --lts        # or whichever version
+| Symptom | Cause | Fix |
+|---|---|---|
+| Items were deleted instead of going to the Trash | macOS Automation permission not granted, or a headless/SSH session | Grant your terminal Automation access for Finder in System Settings → Privacy & Security |
+| "No large stale files found" but Finder shows a big file | Section 24 needs **both** `atime` and `mtime` older than the threshold | Lower `--large-file-days`, or use section 18 instead |
+| Section 23 exits asking for `--scan-roots` | It found none of the standard dev folders and will not silently scan `$HOME` | Pass `--scan-roots "$HOME/code:$HOME/repos"` |
+| A deep section is skipped under `--yes` | `--yes` alone never unlocks sections 6, 11, 14, 21, 24 | Add `--i-understand-deep`, or run it from the interactive menu |
+| Free space did not change after section 14 | `/private/var/folders` needs a reboot to take effect | Reboot |
+| A global tool broke after a **v4.3.0** run | A fixed bug let section 23 enter toolchain manager directories | Upgrade to 4.3.1+ and follow the [recovery guide](https://github.com/aoneahsan/macleanup/blob/main/docs/recovery-guide.md) |
 
-# global npm packages — npm caches the list itself; if you have a recent
-# npm-shrinkwrap, re-install from it. Otherwise list manually:
-npm install -g typescript prettier serve <whatever you had>
+More symptoms: [docs/troubleshooting.md](https://github.com/aoneahsan/macleanup/blob/main/docs/troubleshooting.md).
 
-# Volta / asdf / fnm / Deno / rbenv / pyenv / rustup — re-run their installers:
-curl https://get.volta.sh | bash
-curl https://raw.githubusercontent.com/asdf-vm/asdf/master/bin/install | sh
-curl -fsSL https://fnm.vercel.app/install | bash
-curl -fsSL https://deno.land/install.sh | sh
-```
+<a id="limitations"></a>
+## 🚧 Limitations&nbsp;[#](#limitations)
 
-If a brew-installed formula was uninstalled by `brew autoremove` (this
-happened if you ran 4.3.0 in `--all` mode and one of your tools'
-dependencies was treated as "no longer needed"), `brew autoremove` is
-no longer in the default flow as of 4.3.1 — but to restore what got
-removed:
+- **macOS only.** Darwin is enforced; the tool exits immediately anywhere else.
+- **No programmatic API.** The CLI is the whole interface. Requiring the package from Node is not a supported
+  use — the entry point launches the tool rather than exporting anything.
+- **No undo.** macleanup has no restore command. The Trash is your only rollback, and only for the tier that
+  uses it.
+- **It cannot tell you in advance how much space you will get back.** `--dry-run` estimates the run it is
+  about to perform; nothing predicts a number before that.
+- **Permission-dependent safety.** Without Automation access, the move-to-Trash guarantee does not hold.
+- **Heuristics, not certainty.** The orphaned-app-data matcher and the unused-app detector are heuristics.
+  Review what they list; that is why both are interactive.
+- **`sudo` sections are genuinely privileged.** They run as root against system paths. Read the prompt.
+- **Not audited by a third party.** It is MIT-licensed and two files long — read it before you run it.
 
-```bash
-# show recently uninstalled formulae from brew's history
-brew log
-# re-install whichever of them you still want
-brew install node python openssl <whatever>
-```
+<a id="faq"></a>
+## ❓ FAQ&nbsp;[#](#faq)
 
-> **Going forward:** `brew autoremove` is now opt-in via `--brew-autoremove`.
-> Section 23 has a hard allowlist refusing to touch toolchain dirs and no
-> longer falls back to scanning `$HOME` silently — if it can't find one of
-> the standard dev folders (`~/Projects`, `~/Code`, `~/Developer`, `~/dev`,
-> `~/repos`, `~/work`, `~/Documents`, `~/Desktop`, `~/Downloads`) it
-> errors out and asks you to pass `--scan-roots`.
+**Will this break my Mac?**
+Not if you read each prompt. The riskiest section is 14 (`/private/var/folders`), which needs a reboot
+afterwards, requires a typed `yes`, and is excluded from `--all`.
 
----
+**Does it collect any telemetry?**
+No. The script makes zero network calls, and the Node launcher only spawns bash. The one exception is opt-in:
+`--check-update` asks the npm registry whether a newer version exists.
 
-## ❓ FAQ
-
-**Will this brick my Mac?**
-Not if you read each prompt and stay away from section 14 (`/private/var/folders`)
-unless you intend to reboot. Sections marked “sudo + REBOOT” are explicit.
-
-**It says "no large stale files found" — but Finder shows me a 5 GB file!**
-Section 24 requires both `atime` AND `mtime` to be older than the threshold.
-If you opened the file recently (atime updated) it won't be flagged. Lower
-the threshold (`--large-file-days 30`) or use section 18 instead.
-
-**I want it to delete `~/Movies` after 30 days — can I add a section?**
-Go for it — the MIT license lets you fork, edit, and even redistribute
-your changes. For mainline features, open an issue or PR describing the
-use case so everyone benefits.
-
-**Why does it ship as one file instead of `brew install`?**
-Single-file install means: no curl-pipe-bash, no signing-key surface, no
-homebrew tap, you read every line before running. Drop it in `~/bin/` and
-you're done.
-
-**Is this OSI-approved open source?**
-Yes — it's **MIT licensed**. You can read, run, modify, redistribute, and
-even sell it, as long as you keep the copyright and license notice. See
-[LICENSE.md](LICENSE.md).
-
-**Do you collect any telemetry?**
-None. The script makes zero network calls. The Node launcher
-(`bin/mac-cleanup.js`) only spawns bash — no analytics, no phone-home,
-no remote requests. Logs and reports stay on your machine in
-`~/.mac-cleanup/`.
-
-**What does `npx` actually run?**
-`npx macleanup` downloads the published package from the
-npm registry into npm's cache, runs `bin/mac-cleanup.js` (which spawns
-the bundled `mac-cleanup.sh` via `bash`), and lets npm reclaim the
-cache afterwards. Your reports and logs are written to
-`~/.mac-cleanup/` and are **never inside** the cache, so they survive.
+**What does `npx macleanup` actually run?**
+It downloads the published package into npm's cache and runs `bin/mac-cleanup.js`, which spawns the bundled
+`mac-cleanup.sh` through bash. Your logs and reports go to `~/.mac-cleanup/`, never the cache, so they survive.
 
 **Can I read the source before running it?**
-Yes — and you should. The whole tool is two files: `mac-cleanup.sh`
-(2,400 lines of plain bash) and `bin/mac-cleanup.js` (≈80 lines of
-plain Node). Open them in any editor.
+Yes, and you should. The tool is two files: `mac-cleanup.sh` (about 3,600 lines of bash) and
+`bin/mac-cleanup.js` (about 100 lines of Node).
 
----
+**Why one bash file instead of a Homebrew formula?**
+A single file means no curl-pipe-bash, no tap to trust, and no signing surface — you can read every line
+before it runs.
 
-## 📚 Repository layout
+**Can I add my own section?**
+Yes — MIT lets you fork and modify freely. For a mainline feature, open an issue describing the use case.
 
-```
-macleanup/
-├── mac-cleanup.sh   ← the script (read it!)
-├── bin/
-│   └── mac-cleanup.js   ← tiny Node launcher used by `npx`
-├── package.json     ← npm metadata (publishes as macleanup)
-├── README.md
-├── LICENSE.md
-├── NOTICE
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── SECURITY.md
-└── .gitignore
+<a id="documentation"></a>
+## 📚 Documentation&nbsp;[#](#documentation)
 
-# At runtime, every invocation reads/writes here (NOT inside the repo):
-~/.mac-cleanup/
-├── logs/            ← per-day session logs (preserved by default)
-└── reports/         ← per-section report .txt files (always preserved)
-```
+Which document answers which question:
 
----
+| Document | Read it when |
+|---|---|
+| [Getting started](https://github.com/aoneahsan/macleanup/blob/main/docs/getting-started.md) | first run — the menu explained |
+| [Installation](https://github.com/aoneahsan/macleanup/blob/main/docs/installation.md) | choosing between the three install paths |
+| [CLI reference](https://github.com/aoneahsan/macleanup/blob/main/docs/cli-reference.md) | you need the exact flag |
+| [Sections 0–27](https://github.com/aoneahsan/macleanup/blob/main/docs/sections.md) | you want to know precisely what one section touches |
+| [Profiles](https://github.com/aoneahsan/macleanup/blob/main/docs/profiles.md) | picking a named bundle |
+| [Safety model](https://github.com/aoneahsan/macleanup/blob/main/docs/safety-model.md) | you want the guarantees spelled out |
+| [Reports & logs](https://github.com/aoneahsan/macleanup/blob/main/docs/reports-and-logs.md) | reading what a run wrote |
+| [Examples cookbook](https://github.com/aoneahsan/macleanup/blob/main/docs/examples-cookbook.md) | you have a goal, not a flag |
+| [Recovery guide](https://github.com/aoneahsan/macleanup/blob/main/docs/recovery-guide.md) | a v4.3.0 run broke a toolchain |
+| [Troubleshooting](https://github.com/aoneahsan/macleanup/blob/main/docs/troubleshooting.md) | something behaved unexpectedly |
+| [FAQ](https://github.com/aoneahsan/macleanup/blob/main/docs/faq.md) | the questions people ask first |
 
-## 🔄 Changelog
+<a id="changelog"></a>
+## 🔄 Changelog&nbsp;[#](#changelog)
 
-See [CHANGELOG.md](CHANGELOG.md) for the full history. Highlights:
+Latest release: **`4.6.1`** — dry-run now estimates the space a run would free, and `--json` reports only the
+files written by the current run.
+Full history: [CHANGELOG.md](https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md).
 
-- **4.2.0** (2026-05) — `npx macleanup` zero-install support
-  via a tiny Node launcher. Persistent logs + reports moved to
-  `~/.mac-cleanup/{logs,reports}/`. Branded credits header now embedded
-  in every log file and every report. New `--logs-dir`,
-  `--reports-dir`, `--no-reports`, `--cleanup-logs-on-finish` flags.
-  Sections 25 (launch-items) and 26 (du-report) now also write `.txt`
-  reports.
-- **4.1.0** (2026-05) — Sections 23 (stale build artefacts), 24 (large
-  stale files), 25 (LaunchAgents audit), 26 (disk-usage report). New
-  `--scan-roots`, `--list`, `--version`, `--no-color` flags. Multi-select
-  in section 21. Hardened path quoting; bash-version + macOS preflight.
-- **4.0.0** (2026-04) — Single-file rewrite of the modular split.
+<a id="contributing"></a>
+## 🤝 Contributing&nbsp;[#](#contributing)
 
----
+Fork and open a pull request — see
+[CONTRIBUTING.md](https://github.com/aoneahsan/macleanup/blob/main/CONTRIBUTING.md) for setup, standards and
+how to request collaborator access. `main` is protected: every change lands through a reviewed PR.
 
-## 💬 Get help, give feedback, report bugs
+Security issues go privately to [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com), not a public issue — see
+[SECURITY.md](https://github.com/aoneahsan/macleanup/blob/main/SECURITY.md).
 
-Three flags, all local-first — nothing is auto-sent. You review every
-prefilled message before clicking Submit / Send.
+<a id="repository"></a>
+## 🗂️ Repository&nbsp;[#](#repository)
 
-```bash
-mac-cleanup --contact         # show the author contact card
-mac-cleanup --feedback        # open mail client with prefilled message
-mac-cleanup --report-issue    # open a pre-filled GitHub issue
-                              # (env info gathered locally, last 50 log
-                              #  lines copied to clipboard if available)
-mac-cleanup --stats           # show your run history at ~/.mac-cleanup
+```text
+mac-cleanup.sh   the tool — all cleanup logic lives here (published)
+bin/             Node launcher that spawns the script for npx (published)
+docs/            the manual
+desktop/         optional native macOS GUI (Tauri), separate package
+assets/logo/     SVG logo masters
 ```
 
-There's also a one-time **welcome screen** the first time you run the
-tool on a machine. Marker file at `~/.mac-cleanup/.welcomed`; delete it
-to see the welcome again.
+Only `mac-cleanup.sh`, `bin/`, and the four root Markdown files ship in the npm tarball. At runtime every
+invocation reads and writes `~/.mac-cleanup/{logs,reports}/`, never the repository.
 
-If something exits with an error, the script automatically prints a
-hint pointing at `--report-issue` so you don't have to remember the
-flag name. **No automatic crash submission** — you always choose what
-to share.
+<a id="support"></a>
+## 💬 Support&nbsp;[#](#support)
 
----
+Questions and bugs: [open an issue](https://github.com/aoneahsan/macleanup/issues). The CLI can prefill one
+for you with `--report-issue`; you review it before anything is sent.
 
-## 🛡️ Security
+If macleanup saves you time, you can support its maintenance at
+[aoneahsan.com/payment](https://aoneahsan.com/payment?project-id=macleanup&project-identifier=macleanup).
 
-If you find a security issue (path-traversal, accidental `rm -rf`,
-data-leakage scenario), **please report it privately** to
-<aoneahsan@gmail.com> rather than opening a public issue. See
-[SECURITY.md](SECURITY.md) for details.
+<a id="license"></a>
+## 📄 License&nbsp;[#](#license)
 
----
+MIT © Ahsan Mahmood — see
+[LICENSE.md](https://github.com/aoneahsan/macleanup/blob/main/LICENSE.md). Provided as-is, without warranty;
+the author is not liable for data loss arising from its use.
 
-## 🤝 Contributing
+<a id="author"></a>
+## 👤 Author&nbsp;[#](#author)
 
-This project is **MIT-licensed** open source — contributions are welcome
-via issues and pull requests, though acceptance is at the author's sole
-discretion. See [CONTRIBUTING.md](CONTRIBUTING.md).
+**Ahsan Mahmood** — [aoneahsan.com](https://aoneahsan.com) · [GitHub](https://github.com/aoneahsan) ·
+[LinkedIn](https://linkedin.com/in/aoneahsan) · [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com)
 
----
+<a id="links"></a>
+## 🔗 Links&nbsp;[#](#links)
 
-## 📜 License
+| | |
+|---|---|
+| Documentation | https://github.com/aoneahsan/macleanup/tree/main/docs |
+| npm | https://www.npmjs.com/package/macleanup |
+| Repository | https://github.com/aoneahsan/macleanup |
+| Issues | https://github.com/aoneahsan/macleanup/issues |
+| Changelog | https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md |
+| Desktop app | https://github.com/aoneahsan/macleanup/tree/main/desktop |
+| Support the project | https://aoneahsan.com/payment?project-id=macleanup&project-identifier=macleanup |
 
-**MIT License** — see [LICENSE.md](LICENSE.md).
+<a id="keywords"></a>
+## 🏷️ Keywords&nbsp;[#](#keywords)
 
-In one paragraph: you may **use**, **copy**, **modify**, **merge**,
-**publish**, **distribute**, **sublicense**, and **sell** copies of
-mac-cleanup, provided the copyright and license notice are kept in all
-copies. The software is offered **AS-IS with no warranty**, and the
-author is **not liable** for any data loss or damage arising from its
-use.
-
----
-
-## 👤 Author
-
-<table>
-  <tr>
-    <td valign="top" width="140">
-      <img src="https://github.com/aoneahsan.png" width="120" alt="Ahsan Mahmood" style="border-radius:50%"/>
-    </td>
-    <td valign="top">
-      <b>Ahsan Mahmood</b><br/>
-      Senior software engineer · macOS power user · maker of small sharp tools<br/><br/>
-      📧 Email: <a href="mailto:aoneahsan@gmail.com">aoneahsan@gmail.com</a><br/>
-      📱 Phone / WhatsApp: <a href="https://wa.me/923046619706">+92 304 6619706</a><br/>
-      🌐 Portfolio: <a href="https://aoneahsan.com">aoneahsan.com</a><br/>
-      💼 LinkedIn: <a href="https://linkedin.com/in/aoneahsan">linkedin.com/in/aoneahsan</a><br/>
-      🐙 GitHub: <a href="https://github.com/aoneahsan">github.com/aoneahsan</a><br/>
-      📦 npm: <a href="https://www.npmjs.com/~aoneahsan">npmjs.com/~aoneahsan</a><br/>
-      📍 Address: <a href="https://aoneahsan.com/address">aoneahsan.com/address</a><br/>
-    </td>
-  </tr>
-</table>
-
-If mac-cleanup saved you time, the kindest thank-you is a ⭐ on the
-[GitHub repo](https://github.com/aoneahsan/macleanup) and a share
-with a fellow Mac developer.
-
----
-
-<div align="center">
-
-Made with ❤️ and a lot of care.
-
-</div>
+*macos · cleanup · maintenance · disk-space · cache · cli · developer-tools · node-modules · xcode · homebrew · dry-run · sysadmin*

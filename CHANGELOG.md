@@ -1,20 +1,46 @@
 # Changelog
 
-All notable changes to **mac-cleanup** are documented here. Versions follow
+All notable changes to **macleanup** are documented here. Versions follow
 [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`.
 
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
-## [Unreleased]
+## [4.6.2] - 2026-07-25
 
 ### Changed
-- **Relicensed to the MIT License.** mac-cleanup is now permissive open
+- **Relicensed to the MIT License.** macleanup is now permissive open
   source — you may use, copy, modify, redistribute, sublicense, and sell
   it, as long as the copyright and license notice are kept. This replaces
   the previous source-available license. Removed the `NOTICE` file (an
   Apache-ism the MIT license doesn't use).
+- **README rewritten to the canonical package pattern.** It now opens with a
+  real `<h1>` (it previously had no top-level heading at all), carries
+  explicit heading anchors so section links work on npmjs.com, and uses
+  absolute URLs throughout — every relative link in the old README was dead
+  when npm rendered the file outside the repository.
+- **Destructive behaviour is now stated up front.** A new tier table
+  separates what rebuilds itself, what goes to the Trash, and what is
+  deleted permanently, and the per-section table carries a matching tier
+  column. Two behaviours that were previously undocumented are called out:
+  `--profile minimal --yes` empties the Trash (section 10 is in that profile
+  and is not gated behind `--i-understand-deep`), and denying macOS
+  Automation access makes sections 21 and 12 delete directly instead of
+  moving items to the Trash.
+- **`description` shortened and aligned with the README tagline** so npm's
+  listing and the repository agree.
+- **`keywords` trimmed** from 21 to 12 real search terms, mirrored in the
+  README.
+
+### Fixed
+- **`funding` now points at the project-scoped support URL**
+  (`aoneahsan.com/payment?project-id=macleanup&project-identifier=macleanup`)
+  rather than the bare portfolio homepage, so `npm fund` attributes support
+  to this package.
+- **Removed stale claims from the README.** It documented a `NOTICE` file
+  that no longer exists, and described the script as "2,400 lines" and the
+  launcher as "≈80 lines" when they are ~3,600 and ~104 respectively.
 
 ---
 
