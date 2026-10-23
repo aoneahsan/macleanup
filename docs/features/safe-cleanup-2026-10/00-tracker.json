@@ -22,6 +22,7 @@
   "runHistory": [
     "2026-10-23: inspected current source and reproduced the unsafe control paths by reading the exact profile, dispatch, and Finder fallback branches.",
     "2026-10-23: syntax and version checks passed; unattended Trash invocation refused; minimal profile omitted Trash; simulated Finder failures never called direct deletion.",
-    "2026-10-23: ran package-cache cleanup on this Mac, preserving user files and agent configuration; npm cache shrank from about 9 GB to 3.5 GB."
+    "2026-10-23: ran package-cache cleanup on this Mac, preserving user files and agent configuration; npm cache shrank from about 9 GB to 3.5 GB.",
+    "2026-10-23: fixed a verification finding: a refused deep section was incorrectly marked complete in the session summary."
   ]
 }

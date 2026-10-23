@@ -13,6 +13,7 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 - The `minimal` profile no longer includes Empty Trash. Section 10 now requires
   `--i-understand-deep` in unattended runs, in addition to `--yes`.
+- Refused deep sections no longer appear as completed in the session summary.
 - Orphan data and app uninstalls no longer fall back to permanent deletion when
   Finder cannot move an item to the Trash. The affected item stays in place.
 

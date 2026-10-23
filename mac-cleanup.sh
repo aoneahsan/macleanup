@@ -3412,7 +3412,6 @@ dispatch() {
      && [[ "$DEEP_INTERACTIVE_SECTIONS" == *" $n "* ]]; then
     warn "Section $n is interactive-only; refusing to auto-run it under --only/--profile/--all."
     note "Run it from the menu, or pass --i-understand-deep to allow it (with --yes) unattended."
-    mark_done "$n"
     return 0
   fi
   case "$1" in
