@@ -3406,12 +3406,12 @@ dispatch() {
   local n="$1"
   # Enforce the "human-present" safety contract: deep destructive sections are
   # refused under batch mode unless the operator explicitly opted in with
-  # --i-understand-deep. Dry-run is allowed through (it cannot touch disk) so
-  # previews still work. The interactive menu (BATCH_MODE=0) is unaffected.
-  if (( BATCH_MODE && ! DRY_RUN && ! DEEP_OPT_IN )) \
+  # both --yes and --i-understand-deep. Dry-run is allowed through (it cannot
+  # touch disk) so previews still work. The interactive menu is unaffected.
+  if (( BATCH_MODE && ! DRY_RUN && ( ! DEEP_OPT_IN || ! ASSUME_YES ) )) \
      && [[ "$DEEP_INTERACTIVE_SECTIONS" == *" $n "* ]]; then
     warn "Section $n is interactive-only; refusing to auto-run it under --only/--profile/--all."
-    note "Run it from the menu, or pass --i-understand-deep to allow it (with --yes) unattended."
+    note "Run it from the menu, or pass both --yes and --i-understand-deep to allow it unattended."
     return 0
   fi
   case "$1" in
