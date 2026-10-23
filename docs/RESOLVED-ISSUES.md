@@ -2,7 +2,7 @@
 
 ### ISSUE-001 — Section 10 (Empty Trash) is permanently destructive but not deep-gated, so `--profile minimal --yes` empties the Trash unattended
 
-**Resolved:** 2026-10-23 · unreleased main branch safety fix
+**Resolved:** 2026-10-23 · released in 4.7.0
 
 **Affected version:** 4.6.1 (present since profiles were added in 4.3.0)
 **Severity:** High — irreversible data loss with no second opt-in.
@@ -42,7 +42,7 @@ is at least not a surprise.
 
 ### ISSUE-002 — Denying macOS Automation access silently downgrades sections 21 and 12 from move-to-Trash to permanent delete
 
-**Resolved:** 2026-10-23 · unreleased main branch safety fix
+**Resolved:** 2026-10-23 · released in 4.7.0
 
 **Affected version:** 4.6.1
 **Severity:** High — the documented safety guarantee ("apps are moved to Trash, you can recover") stops

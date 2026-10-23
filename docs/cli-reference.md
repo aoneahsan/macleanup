@@ -306,7 +306,7 @@ The object has this shape:
 ```json
 {
   "tool": "mac-cleanup",
-  "version": "4.6.3",
+  "version": "4.7.0",
   "dry_run": false,
   "freed_kb": 1048576,
   "disk_free_delta_kb": 1310720,
@@ -669,7 +669,7 @@ refreshing without launching the menu.
 ```bash
 mac-cleanup --list
 # →
-# mac-cleanup v4.6.3 — section catalogue
+# mac-cleanup v4.7.0 — section catalogue
 #    [ 0] System health & process monitor
 #    [ 1] Xcode caches, DerivedData, simulators
 #    ...
@@ -692,7 +692,7 @@ is menu / `--only` only — it is not part of the `--all` safe batch.
 Print version and exit.
 
 ```bash
-mac-cleanup --version          # mac-cleanup 4.6.3
+mac-cleanup --version          # mac-cleanup 4.7.0
 ```
 
 ---
