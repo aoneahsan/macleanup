@@ -1,7 +1,7 @@
 {
   "task": "Safe cleanup for the owner's 2019 MacBook Pro",
   "lastUpdated": "2026-10-23",
-  "status": "inProgress",
+  "status": "complete",
   "plan": {
     "scope": "Fix confirmed irreversible-deletion and temp-pruning bugs, run only reviewed temporary-cache cleanup, and align affected reference documentation.",
     "codePaths": ["mac-cleanup.sh", "package.json", "README.md", "docs/REPORTED-ISSUES.md", "docs/RESOLVED-ISSUES.md"],
@@ -23,13 +23,13 @@
     "verification": ["bash -n mac-cleanup.sh", "node -c bin/mac-cleanup.js", "yarn version:check", "unattended deep-gate checks", "isolated temp-pruning fixture", "npm pack --dry-run --json", "npm view macleanup version", "git diff --check"],
     "success": "npm serves macleanup 4.7.0 with the safety fixes; source and published documentation state the same behavior; GitHub main matches the release.",
     "rollback": "A published npm version cannot be safely overwritten; if verification finds a defect, publish a corrective version and document it. Local preparation can be reverted before publication.",
-    "unresolved": "The refreshed FilesHub token authenticates as aoneahsan from this repository; publishing may still require a registry 2FA or stage-only step."
+    "unresolved": "None."
   },
   "subTasks": [
     {"id": "safety-code", "status": "complete"},
     {"id": "verification", "status": "complete"},
     {"id": "local-cleanup", "status": "complete"},
-    {"id": "docs-and-release", "status": "inProgress"}
+    {"id": "docs-and-release", "status": "complete"}
   ],
   "runHistory": [
     "2026-10-23: inspected current source and reproduced the unsafe control paths by reading the exact profile, dispatch, and Finder fallback branches.",
@@ -38,6 +38,7 @@
     "2026-10-23: fixed a verification finding: a refused deep section was incorrectly marked complete in the session summary.",
     "2026-10-23: full-diff review found that the deep gate accepted --i-understand-deep without --yes; both flags are now required for unattended execution. npm publication remains pending registry authentication.",
     "2026-10-23: review found that section 8 erased all of ~/tmp and could recursively delete newer files inside an old temp directory; pruning now targets only top-level regular files at least 2 days old in system temp locations. An isolated fixture preserved recent and nested files.",
-    "2026-10-23: prepared version 4.7.0; FilesHub npm token verified against the registry from the project directory, and the seven-file npm archive passed the release check."
+    "2026-10-23: prepared version 4.7.0; FilesHub npm token verified against the registry from the project directory, and the seven-file npm archive passed the release check.",
+    "2026-10-23: npm accepted 4.7.0; the live registry archive SHA-1 matched the publish output, the archive contained the safety fixes, and the latest dist-tag pointed to 4.7.0."
   ]
 }
