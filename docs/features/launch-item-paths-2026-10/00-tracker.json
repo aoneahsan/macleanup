@@ -1,0 +1,17 @@
+{
+  "task": "Preserve spaces in LaunchAgent target paths during section 25 audit",
+  "status": "implementationVerifiedAwaitingRelease",
+  "lastUpdated": "2026-10-23",
+  "runHistory": ["2026-10-23: Confirmed a Google updater path with spaces was truncated by section 25, preserved structured plist values, skipped ambiguous raw strings, and verified a real dry run lists only two genuinely stale system Zoom agents."],
+  "scope": "Fix a verified false positive in the read-only launch-item audit; do not remove any launch item or other user data.",
+  "paths": ["mac-cleanup.sh:s25_launchitems", "docs/features/launch-item-paths-2026-10/00-tracker.json"],
+  "schemaChanges": "None. Existing report columns and CLI flags remain unchanged.",
+  "order": ["Confirm the true Program/ProgramArguments values of flagged plists", "Preserve structured plist target strings exactly", "Skip ambiguous unstructured strings fallback", "Run syntax and a real dry-run section 25 audit", "Review diff and release a patch only after documentation and content approvals"],
+  "edgeCases": ["Valid Program path contains spaces", "ProgramArguments[0] path contains spaces", "Malformed plist forces strings fallback", "Missing target path itself contains spaces", "No launch items exist"],
+  "security": "The audit is read-only for verification; no plist is unloaded, removed or modified. Never print credential-bearing plist content.",
+  "verification": ["bash -n mac-cleanup.sh", "section 25 --dry-run --no-sudo --no-reports shows GoogleUpdater as present and three actually missing targets", "git diff --check"],
+  "success": "An existing target with spaces is no longer reported missing; truly missing targets remain visible; no launch item is deleted.",
+  "rollback": "Revert the script commit; a published npm package needs a new patch version rather than unpublishing.",
+  "evidence": "On this Mac, the previous audit falsely reported the existing GoogleUpdater target by truncating its path at 'Application Support'. After the fix, GoogleUpdater is absent from the stale list, while the genuinely missing Atlas and two Zoom targets remained. The Atlas user LaunchAgent was then booted out and archived without deletion; a second audit lists only the two system Zoom plists.",
+  "unresolved": "Release awaits project Story Bible and public-copy publication gates."
+}

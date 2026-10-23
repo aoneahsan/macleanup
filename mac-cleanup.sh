@@ -3081,13 +3081,14 @@ s25_launchitems() {
       [[ -z "$target" && -n "$first_arg" && "$first_arg" != "(null)" ]] && target="$first_arg"
     fi
     if [[ -z "$target" ]]; then
-      # Fallback: grep raw plist bytes for a /-rooted path
+      # Fallback: grep raw plist bytes for a /-rooted path. Unlike a
+      # structured plist value, a raw string with spaces could be either a
+      # pathname or a command plus arguments; do not guess and misreport it.
       target=$(strings "$plist" 2>/dev/null \
         | awk '/^\/[^ ]+/ && length($0) < 256 {print; exit}' || true)
+      [[ "$target" == *' '* ]] && continue
     fi
     [[ -z "$target" ]] && continue
-    # Strip any trailing arg-list noise
-    target="${target%% *}"
     if [[ "$target" == /* && ! -e "$target" ]]; then
       stale_path+=("$plist")
       stale_label+=("${label:-?}")
