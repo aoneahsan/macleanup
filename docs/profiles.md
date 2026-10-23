@@ -84,7 +84,7 @@ mac-cleanup --profile minimal --yes
 |---|---|
 | [5](sections.md#section-5--user-caches) | `~/Library/Caches` (preserves Apple, browsers, password managers) |
 | [7](sections.md#section-7--logs) | User log files > 7 days |
-| [8](sections.md#section-8--temp-files) | Temp files > 1 day in `$TMPDIR`, `/tmp`, `~/tmp` |
+| [8](sections.md#section-8--temp-files) | Top-level user-owned temp files at least 2 days old in `$TMPDIR` and `/tmp`; leaves `~/tmp` alone |
 | [9](sections.md#section-9--update-caches) | `~/Library/Updates` |
 
 **Safety notes:**

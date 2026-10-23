@@ -349,14 +349,13 @@ matched via `find ! -name`) so the patterns have a single source of truth.
 
 ## Section 8 — Temp files
 
-> Removes user-owned temp files older than 1 day from `$TMPDIR`, `/tmp`,
-> and `~/tmp`.
+> Removes user-owned temp files at least 2 days old from `$TMPDIR` and `/tmp`.
+> The home folder `~/tmp` is left alone because it may contain files kept deliberately.
 
 **Paths touched:**
 
-- `$TMPDIR/*` — user-owned, > 1 day
-- `/tmp/*` — user-owned, > 1 day
-- `~/tmp/*` — entire directory cleared (if it exists)
+- Top-level `$TMPDIR/*` files — user-owned, at least 2 days old
+- Top-level `/tmp/*` files (the `/private/tmp` target) — user-owned, at least 2 days old
 
 | Field | Value |
 |---|---|
@@ -365,7 +364,7 @@ matched via `find ! -name`) so the patterns have a single source of truth.
 | Dry-run | Prints `[dry-run] would prune …` per directory |
 | Reports written | None |
 | CLI flags | [`--dry-run`](cli-reference.md#--dry-run) |
-| Safety rules | Only files **owned by current user** are removed (safe against shared `/tmp`) |
+| Safety rules | Only top-level regular files **owned by current user** and at least 2 days old are removed; directories and all nested contents are preserved |
 | Skip conditions | Gracefully handles missing directories |
 
 ---

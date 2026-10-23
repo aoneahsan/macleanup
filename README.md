@@ -193,7 +193,7 @@ npx macleanup
 | 5 | User caches (`~/Library/Caches`, Saved State) | Rebuilds | — | Browsers preserved |
 | 6 | System caches (`/Library/Caches`) | Rebuilds | sudo | Deep-gated |
 | 7 | Logs (user + system) | Rebuilds | sudo | Old files only |
-| 8 | Temp files (`$TMPDIR`, `/tmp`, `~/tmp`) | Rebuilds | — | User-owned only |
+| 8 | Temp files (`$TMPDIR`, `/tmp`) | Rebuilds | — | Top-level user-owned files at least 2 days old; leaves `~/tmp` alone |
 | 9 | Update caches | Rebuilds | sudo | |
 | 10 | Empty Trash | **Permanent** | — | Deep-gated in batch mode; excluded from `minimal` |
 | 11 | Time Machine local snapshots | **Permanent** | sudo | Deep-gated |

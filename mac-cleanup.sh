@@ -1240,7 +1240,7 @@ SECTION_CATALOGUE=(
   "5|User caches (~/Library/Caches, Saved State, DiagnosticReports)"
   "6|System caches (/Library/Caches) — sudo"
   "7|Logs (user + system)"
-  "8|Temp files (\$TMPDIR, /tmp, ~/tmp)"
+  "8|Temp files (\$TMPDIR, /tmp)"
   "9|Update caches"
   "10|Empty Trash"
   "11|Time Machine local snapshots — sudo"
@@ -1776,24 +1776,21 @@ s08_temp() {
   local user_tmp="${TMPDIR%/}"
   if [[ -n "$user_tmp" && -d "$user_tmp" ]]; then
     if (( DRY_RUN )); then
-      note "[dry-run] would prune $user_tmp (user-owned, >1d)"
+      note "[dry-run] would prune top-level files in $user_tmp (user-owned, at least 2d old)"
     else
-      find "$user_tmp" -mindepth 1 -user "$(id -un)" ! -type s ! -type p -mtime +1 \
-        -exec rm -rf -- {} + 2>/dev/null || true
+      find "$user_tmp" -mindepth 1 -maxdepth 1 -type f -user "$(id -un)" -mtime +1 \
+        -delete 2>/dev/null || true
       ok "Pruned old user temp files"
     fi
   fi
-  if [[ -d /tmp ]]; then
+  if [[ -d /private/tmp ]]; then
     if (( DRY_RUN )); then
-      note "[dry-run] would prune /tmp (user-owned, >1d)"
+      note "[dry-run] would prune top-level files in /tmp (user-owned, at least 2d old)"
     else
-      find /tmp -mindepth 1 -user "$(id -un)" ! -type s ! -type p -mtime +1 \
-        -exec rm -rf -- {} + 2>/dev/null || true
+      find /private/tmp -mindepth 1 -maxdepth 1 -type f -user "$(id -un)" -mtime +1 \
+        -delete 2>/dev/null || true
       ok "Pruned old /tmp entries (user-owned)"
     fi
-  fi
-  if [[ -d "$HOME/tmp" ]]; then
-    clean_dir_contents "$HOME/tmp"
   fi
   mark_done 8; press_enter
 }
@@ -3368,7 +3365,7 @@ show_menu() {
   LBL[5]="User caches (~/Library/Caches, Saved State, DiagnosticReports)"
   LBL[6]="System caches (/Library/Caches) — sudo"
   LBL[7]="Logs (user + system)"
-  LBL[8]="Temp files (\$TMPDIR, /tmp, ~/tmp)"
+  LBL[8]="Temp files (\$TMPDIR, /tmp)"
   LBL[9]="Update caches"
   LBL[10]="Empty Trash"
   LBL[11]="Time Machine local snapshots — sudo"
