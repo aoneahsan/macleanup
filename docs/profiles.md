@@ -12,7 +12,7 @@ remember.
 | Profile | Section list | When to use |
 |---|---|---|
 | [`dev`](#profile-dev)        | `1, 2, 3, 4, 23` | Reclaim developer-tool caches and stale `node_modules` |
-| [`minimal`](#profile-minimal)    | `5, 7, 8, 9, 10` | Quick weekly sweep, mostly safe |
+| [`minimal`](#profile-minimal)    | `5, 7, 8, 9` | Quick weekly sweep without emptying Trash |
 | [`cache-only`](#profile-cache-only) | `3, 5, 6, 7, 9, 19` | Every cache layer; nothing else |
 | [`deep`](#profile-deep)       | `0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 19, 23, 26` | Big monthly cleanup |
 | [`audit`](#profile-audit)      | `0, 12, 18, 21, 25, 26` | Read-only diagnostics — safe |
@@ -68,8 +68,7 @@ mac-cleanup --profile dev --cache-age-days 60 --yes   # tighter cache window
 
 ## Profile `minimal`
 
-Sections **5, 7, 8, 9, 10** — User caches + logs + temp + update caches
-+ Trash.
+Sections **5, 7, 8, 9** — User caches + logs + temp + update caches.
 
 The quick weekly housekeeping profile. Touches only user-space, only
 short-lived data. Safe to run every Monday morning.
@@ -87,14 +86,13 @@ mac-cleanup --profile minimal --yes
 | [7](sections.md#section-7--logs) | User log files > 7 days |
 | [8](sections.md#section-8--temp-files) | Temp files > 1 day in `$TMPDIR`, `/tmp`, `~/tmp` |
 | [9](sections.md#section-9--update-caches) | `~/Library/Updates` |
-| [10](sections.md#section-10--empty-trash) | Empty Trash (asks first) |
 
 **Safety notes:**
 
 - No sudo required for any of these (system log/system update portions
   of sections 7 and 9 silently skip without sudo).
-- Section 10 (Trash) requires explicit `[y/N]` confirmation even with
-  `--yes`. Pass `--all --yes` if you want it auto-emptied.
+- Section 10 (Trash) is excluded. Run it from the interactive menu, or use
+  `--only 10 --yes --i-understand-deep` for an intentional unattended run.
 
 ---
 
@@ -251,7 +249,7 @@ combination repeatedly, just shell-alias it:
 
 ```bash
 # in ~/.zshrc / ~/.bash_profile
-alias mac-clean-week='mac-cleanup --only "5,7,8,9,10" --yes --quiet --notify'
+alias mac-clean-week='mac-cleanup --only "5,7,8,9" --yes --quiet --notify'
 alias mac-clean-dev='mac-cleanup --only "1,2,3,4,23" --cache-age-days 60 --yes'
 alias mac-clean-audit='mac-cleanup --only "0,12,18,21,25,26"'
 ```
@@ -274,4 +272,4 @@ mac-clean-monthly() {
 
 ---
 
-_Profiles guide for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Profiles guide for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._

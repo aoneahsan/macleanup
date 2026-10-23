@@ -98,16 +98,13 @@ breakdown is in [Usage](#usage).
 Two behaviours are easy to miss, and both are real:
 
 > [!WARNING]
-> **`--profile minimal --yes` empties your Trash.** The `minimal` profile is sections `5,7,8,9,10`, and
-> section 10 is *Empty Trash*. It is not one of the sections gated behind `--i-understand-deep`, so `--yes`
-> auto-confirms it — including its "this is irreversible" prompt. Anything sitting in the Trash is gone.
-> Preview with `--profile minimal --dry-run` first.
+> **Emptying the Trash requires a separate opt-in in batch mode.** The `minimal` profile is sections
+> `5,7,8,9`; it leaves the Trash alone. Section 10 is available from the interactive menu, or with
+> `--only 10 --yes --i-understand-deep` for an intentional unattended run.
 
 > [!WARNING]
-> **Denying the Automation permission silently downgrades safety.** Moving items to the Trash is done through
-> Finder via `osascript`. If macOS has not been granted Automation access (or you are on SSH/headless),
-> sections 21 and 12 fall back to deleting directly instead — so items you expected to find in the Trash were
-> never put there. macleanup warns on the app itself but the fallback is automatic for companion data.
+> **Finder Automation access is required for moves to the Trash.** If macOS denies it, or Finder is
+> unavailable in a headless session, sections 12 and 21 leave the affected app or data in place and warn.
 
 **Not the right tool when** — you want a GUI-first, set-and-forget cleaner; you are on Linux or Windows
 (macOS only, enforced); you need a programmatic Node API (there is none — see [Limitations](#limitations));
@@ -198,9 +195,9 @@ npx macleanup
 | 7 | Logs (user + system) | Rebuilds | sudo | Old files only |
 | 8 | Temp files (`$TMPDIR`, `/tmp`, `~/tmp`) | Rebuilds | — | User-owned only |
 | 9 | Update caches | Rebuilds | sudo | |
-| 10 | Empty Trash | **Permanent** | — | Included in the `minimal` profile |
+| 10 | Empty Trash | **Permanent** | — | Deep-gated in batch mode; excluded from `minimal` |
 | 11 | Time Machine local snapshots | **Permanent** | sudo | Deep-gated |
-| 12 | Orphaned app-data scan | Trash | — | Falls back to direct delete without Automation access |
+| 12 | Orphaned app-data scan | Trash | — | Leaves data in place if Finder cannot move it |
 | 13 | System maintenance (`periodic`) | Rebuilds | sudo | Runs Apple's own scripts |
 | 14 | Deep cache `/private/var/folders` | Rebuilds | sudo | Deep-gated · **needs a reboot** · typed `yes` |
 | 15 | Installer leftovers report | Report | — | Advisory only |
@@ -209,7 +206,7 @@ npx macleanup
 | 18 | Large files report | Report | — | ≥500 MB in `$HOME` |
 | 19 | Browser caches | Rebuilds | — | Chromium and Firefox families, all profiles |
 | 20 | DNS / mDNS reset | Rebuilds | sudo | Flushes only; deletes nothing |
-| 21 | Unused apps — review or bulk uninstall | Trash | — | Deep-gated · falls back to direct delete without Automation access |
+| 21 | Unused apps — review or bulk uninstall | Trash | — | Deep-gated · leaves app and data in place if Finder move fails |
 | 22 | Purgeable space trigger | Report | — | Creates and removes one temp file |
 | 23 | Stale build artefacts (`node_modules`, `vendor`, `dist`, …) | Rebuilds | — | Deleted directly, **not** to Trash; reinstall to restore |
 | 24 | Large stale files ≥N GB unused N+ days | Trash | — | Deep-gated · Trash only, no direct-delete fallback |
@@ -285,7 +282,7 @@ The command line is the entire public interface — there is no programmatic API
 | `--exclude 14,17` | Subtract sections from `--all` or a profile |
 | `--exclude-path PATH` | Never scan or touch this tree |
 | `--yes` | Auto-confirm prompts. Does **not** unlock the deep sections |
-| `--i-understand-deep` | With `--yes`, allow sections 6, 11, 14, 21, 24 unattended |
+| `--i-understand-deep` | With `--yes`, allow sections 6, 10, 11, 14, 21, 24 unattended |
 | `--no-sudo` | Skip every section that needs sudo |
 | `--threshold N` · `--idle-days N` · `--cache-age-days N` | Age thresholds — see [Configuration](#configuration) |
 | `--stale-build-days N` · `--large-file-days N` · `--large-file-size-gb N` | Section 23 and 24 thresholds |
@@ -319,7 +316,7 @@ More recipes: [docs/examples-cookbook.md](https://github.com/aoneahsan/macleanup
 <a id="advanced-features"></a>
 ## 🎛️ Advanced Features&nbsp;[#](#advanced-features)
 
-- **Profiles** — `dev` (1,2,3,4,23) · `minimal` (5,7,8,9,10) · `cache-only` (3,5,6,7,9,19) ·
+- **Profiles** — `dev` (1,2,3,4,23) · `minimal` (5,7,8,9) · `cache-only` (3,5,6,7,9,19) ·
   `deep` (0,1,2,3,4,5,6,7,8,9,17,19,23,26) · `audit` (0,12,18,21,25,26).
   [Details](https://github.com/aoneahsan/macleanup/blob/main/docs/profiles.md).
 - **JSON output** — `--all --yes --json | jq .freed_kb` for scripting and dashboards.
@@ -334,10 +331,10 @@ More recipes: [docs/examples-cookbook.md](https://github.com/aoneahsan/macleanup
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Items were deleted instead of going to the Trash | macOS Automation permission not granted, or a headless/SSH session | Grant your terminal Automation access for Finder in System Settings → Privacy & Security |
+| Finder could not move an item to the Trash | macOS Automation permission not granted, or a headless/SSH session | The item remains in place; grant your terminal Automation access for Finder in System Settings → Privacy & Security |
 | "No large stale files found" but Finder shows a big file | Section 24 needs **both** `atime` and `mtime` older than the threshold | Lower `--large-file-days`, or use section 18 instead |
 | Section 23 exits asking for `--scan-roots` | It found none of the standard dev folders and will not silently scan `$HOME` | Pass `--scan-roots "$HOME/code:$HOME/repos"` |
-| A deep section is skipped under `--yes` | `--yes` alone never unlocks sections 6, 11, 14, 21, 24 | Add `--i-understand-deep`, or run it from the interactive menu |
+| A deep section is skipped under `--yes` | `--yes` alone never unlocks sections 6, 10, 11, 14, 21, 24 | Add `--i-understand-deep`, or run it from the interactive menu |
 | Free space did not change after section 14 | `/private/var/folders` needs a reboot to take effect | Reboot |
 | A global tool broke after a **v4.3.0** run | A fixed bug let section 23 enter toolchain manager directories | Upgrade to 4.3.1+ and follow the [recovery guide](https://github.com/aoneahsan/macleanup/blob/main/docs/recovery-guide.md) |
 

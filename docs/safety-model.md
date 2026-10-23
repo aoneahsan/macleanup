@@ -33,10 +33,10 @@ executing. No exceptions.
 
 ### 3. Apps are moved to Trash, not `rm`-ed
 
-Section 21 (uninstall idle apps) and section 24 (large stale files) move
+Sections 12 (orphan data), 21 (uninstall idle apps), and 24 (large stale files) move
 selected items to **the macOS Trash via Finder AppleScript**
 (`osascript_trash`), not `rm -rf`. You can recover until you empty the
-Trash. Falls back to `rm -rf` only if AppleScript fails.
+Trash. If Finder cannot move an item, the tool leaves it in place and warns.
 
 ### 4. System caches need explicit `sudo`
 
@@ -49,10 +49,11 @@ never silently bypassed. You'll see an explicit log line.
 `--all` (even `--all --yes`) only ever runs the safe batch — caches, logs,
 temp, and read-only reports. It **never** runs the deep sections.
 
-These five irreversible operations are the **deep-interactive** set
-(`DEEP_INTERACTIVE_SECTIONS = 6 11 14 21 24`):
+These six higher-risk operations are the **deep-interactive** set
+(`DEEP_INTERACTIVE_SECTIONS = 6 10 11 14 21 24`):
 
 - Section 6 — system caches wiped as root
+- Section 10 — Trash emptied permanently
 - Section 11 — Time Machine local snapshots deleted
 - Section 14 — `/private/var/folders` deep wipe (also requires literal `yes`)
 - Section 21 — app uninstall + companion data
@@ -173,7 +174,7 @@ the only section with that gate.
 `--yes` flips the **Standard** level to default-Yes. It does **not**
 bypass the **Critical** level. It does flip Per-item to auto-select-all
 in sections 21, 23, 24 — be aware. And `--yes` **alone never enables the
-deep-interactive sections** (6, 11, 14, 21, 24) under `--only` / `--profile`
+deep-interactive sections** (6, 10, 11, 14, 21, 24) under `--only` / `--profile`
 / `--all` — those additionally require
 [`--i-understand-deep`](cli-reference.md#--i-understand-deep).
 
@@ -290,4 +291,4 @@ for one-line restore commands for `bun`, `pnpm`, `yarn`, `nvm`, `Volta`,
 
 ---
 
-_Safety model for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Safety model for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._

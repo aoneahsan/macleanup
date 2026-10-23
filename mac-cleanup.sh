@@ -835,7 +835,7 @@ ${BOLD}Options${NC}
                               refresh atime — failing safe — and Finder/Time
                               Machine restores can reset it).
   --i-understand-deep         Allow the deepest, irreversible sections
-                              (6, 11, 14, 21, 24) to run unattended under
+                              (6, 10, 11, 14, 21, 24) to run unattended under
                               --only / --profile / --all when combined with
                               --yes. WITHOUT this flag they are refused in
                               batch mode (a one-char typo of a section number
@@ -893,7 +893,7 @@ EOF
 profile_sections() {
   case "$1" in
     dev)        printf '1,2,3,4,23' ;;
-    minimal)    printf '5,7,8,9,10' ;;
+    minimal)    printf '5,7,8,9' ;;
     cache-only) printf '3,5,6,7,9,19' ;;
     deep)       printf '0,1,2,3,4,5,6,7,8,9,17,19,23,26' ;;
     audit)      printf '0,12,18,21,25,26' ;;
@@ -2043,18 +2043,15 @@ s12_orphaned() {
       read -r reply || reply=""
       case "$reply" in
         [yY]|[yY][eE][sS])
-          # Move to Trash first so a mis-matched orphan (the matcher is a
-          # heuristic) stays recoverable; fall back to the guarded safe_rm_rf
-          # when Finder/Trash is unavailable (headless/SSH).
+          # Orphan matching is a heuristic. A Finder failure must leave the
+          # candidate in place rather than turn a recoverable action into a
+          # permanent delete.
           if (( DRY_RUN )); then note "[dry-run] would move to Trash: $c"
           elif osascript_trash "$c"; then
             TOTAL_FREED_KB=$(( TOTAL_FREED_KB + sz_kb ))
             ok "Moved to Trash"
-          elif safe_rm_rf "$c"; then
-            TOTAL_FREED_KB=$(( TOTAL_FREED_KB + sz_kb ))
-            ok "Deleted"
           else
-            warn "Failed to delete $c"
+            warn "Could not move $c to Trash; left it in place. Check Finder Automation access."
           fi ;;
         [qQ]) info "Stopped at $i."; break ;;
         *) note "Skipped" ;;
@@ -2587,29 +2584,23 @@ s21_unused_apps() {
     local app_path="$1" app_name="$2" app_size_kb="$3"
     local dp kb
     if (( DRY_RUN )); then
-      note "[dry-run] would move $app_path to Trash and rm ${#_data_paths[@]} data path(s)"
+      note "[dry-run] would move $app_path and ${#_data_paths[@]} data path(s) to Trash"
       return 0
     fi
     if osascript_trash "$app_path"; then
       ok "Moved $app_name to Trash"
       TOTAL_FREED_KB=$(( TOTAL_FREED_KB + app_size_kb ))
     else
-      warn "Finder move failed; trying guarded rm"
-      if safe_rm_rf "$app_path"; then
-        ok "Removed $app_name"
-        TOTAL_FREED_KB=$(( TOTAL_FREED_KB + app_size_kb ))
-      else
-        warn "Could not remove $app_path (permission?)"
-      fi
+      warn "Could not move $app_path to Trash; left app and data in place. Check Finder Automation access."
+      return 1
     fi
-    # Companion data → Trash first (recoverable if a name-match was wrong),
-    # falling back to the guarded safe_rm_rf when Finder is unavailable.
+    # Companion data must also remain recoverable if a name-match was wrong.
     for dp in "${_data_paths[@]+"${_data_paths[@]}"}"; do
       kb=$(size_kb "$dp")
-      if osascript_trash "$dp" || safe_rm_rf "$dp"; then
+      if osascript_trash "$dp"; then
         TOTAL_FREED_KB=$(( TOTAL_FREED_KB + kb ))
       else
-        warn "Could not remove $dp"
+        warn "Could not move $dp to Trash; left it in place. Check Finder Automation access."
       fi
     done
   }
@@ -3287,10 +3278,10 @@ SAFE_BATCH=(0 3 5 7 8 9 15 18 22 26)
 # /--all even with --yes. They require a logged-in human at the menu, OR the
 # explicit --i-understand-deep opt-in (which --yes alone does NOT set). The set
 # is space-padded for a substring membership test.
-#   6  system caches wiped as root      11 Time Machine local snapshots
-#   14 /private/var/folders deep wipe    21 app uninstall + companion data
-#   24 large stale files → Trash
-DEEP_INTERACTIVE_SECTIONS=" 6 11 14 21 24 "
+#   6  system caches wiped as root      10 Trash emptied permanently
+#   11 Time Machine local snapshots      14 /private/var/folders deep wipe
+#   21 app uninstall + companion data   24 large stale files → Trash
+DEEP_INTERACTIVE_SECTIONS=" 6 10 11 14 21 24 "
 
 run_all_safe() {
   step "Running safe-batch sections: ${SAFE_BATCH[*]}"

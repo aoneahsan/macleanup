@@ -92,7 +92,7 @@ the output, then re-run without `--dry-run` (or with `--profile minimal
 | Sections | The 10-section **safe batch** only: `0, 3, 5, 7, 8, 9, 15, 18, 22, 26` | 14 sections: `0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 19, 23, 26` |
 | Best for | Unattended cache/log/temp/report sweep | Scripted monthly cleanup |
 | Confirmations | Per-section (unless `--yes`) | Per-section (unless `--yes`) |
-| Deep sections (6, 11, 14, 21, 24) | **Never** — even with `--yes`; need `--i-understand-deep` | Section 6 only, and still needs `--i-understand-deep` |
+| Deep sections (6, 10, 11, 14, 21, 24) | **Never** — even with `--yes`; need `--i-understand-deep` | Section 6 only, and still needs `--i-understand-deep` |
 | Section 13 (`periodic`) | Excluded (removed from `--all` in 4.5.0) | Excluded |
 
 `--all` runs only the safe batch — caches, logs, temp, and read-only
@@ -107,7 +107,7 @@ Either:
 1. **Use a profile** if one matches: `mac-cleanup --profile minimal --yes`
 2. **Shell-alias it:**
    ```bash
-   alias mac-clean-week='mac-cleanup --only "5,7,8,9,10" --yes --quiet --notify'
+   alias mac-clean-week='mac-cleanup --only "5,7,8,9" --yes --quiet --notify'
    ```
 3. **Cron / launchd** for fully automated. See
    [Examples Cookbook — Unattended cron job](examples-cookbook.md#unattended-cron-job).

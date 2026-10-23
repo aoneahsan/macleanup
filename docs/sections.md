@@ -802,15 +802,15 @@ positives). Apple bundles are never flagged.
 - `[N]o` — skip
 - With `--yes`: auto-selects all
 
-**Uninstall:** Apps are **moved to Trash** (via Finder AppleScript
-`osascript_trash`) when possible — recoverable until you empty the Trash.
-Falls back to `rm -rf` if AppleScript fails.
+**Uninstall:** Apps and companion data are **moved to Trash** (via Finder AppleScript
+`osascript_trash`) — recoverable until you empty the Trash. If Finder cannot move
+the app, the tool leaves the app and companion data in place.
 
 | Field | Value |
 |---|---|
 | Sudo required | No |
 | Confirmations | Action menu `[R/B/N]`; bulk has a final confirmation |
-| Dry-run | Prints `[dry-run] would move X to Trash and rm N data path(s)` |
+| Dry-run | Prints `[dry-run] would move X and N data path(s) to Trash` |
 | Reports written | `~/.mac-cleanup/reports/unused-apps-YYYY-MM-DD.txt` |
 | CLI flags | [`--threshold N`](cli-reference.md#--threshold-n), [`--dry-run`](cli-reference.md#--dry-run) |
 | Safety rules | Apple bundles never flagged; under-flag when no signal; apps moved to Trash (recoverable); report-only in batch mode unless `--yes` |
@@ -1081,4 +1081,4 @@ Out-of-range or junk tokens are silently ignored. Used by sections 21
 
 ---
 
-_Sections reference for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Sections reference for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._

@@ -35,7 +35,7 @@ one section at a time, with confirmations for every destructive operation.
 | [`--exclude "L"`](#--exclude-l) | string | — | Skip the listed sections |
 | [`--profile NAME`](#--profile-name) | string | — | Run a named bundle |
 | [`--yes`, `-y`](#--yes--y) | switch | off | Auto-confirm prompts |
-| [`--i-understand-deep`](#--i-understand-deep) | switch | off | Allow deep sections (6,11,14,21,24) unattended (with `--yes`) |
+| [`--i-understand-deep`](#--i-understand-deep) | switch | off | Allow deep sections (6,10,11,14,21,24) unattended (with `--yes`) |
 | [`--dry-run`](#--dry-run) | switch | off | Preview without deleting |
 | [`--no-sudo`](#--no-sudo) | switch | off | Skip every sudo section |
 | [`--quiet`](#--quiet) | switch | off | Suppress info chatter |
@@ -154,7 +154,7 @@ common workflows; combine with `--exclude` to subtract sections.
 | Profile | Sections | When to use |
 |---|---|---|
 | `dev`        | `1,2,3,4,23`                          | Reclaim developer-tool caches + stale `node_modules` |
-| `minimal`    | `5,7,8,9,10`                          | Quick weekly sweep, mostly safe |
+| `minimal`    | `5,7,8,9`                             | Quick weekly sweep without emptying Trash |
 | `cache-only` | `3,5,6,7,9,19`                        | Every cache layer; nothing else |
 | `deep`       | `0,1,2,3,4,5,6,7,8,9,17,19,23,26`    | Big monthly cleanup |
 | `audit`      | `0,12,18,21,25,26`                    | Read-only diagnostics — safe |
@@ -182,7 +182,7 @@ Auto-confirm `[y/N]` prompts. Combine with `--all` for **fully unattended**
 runs. The literal-`yes` confirmation in section 14 (`/private/var/folders`)
 is **not** affected — that prompt has its own independent gate.
 
-`--yes` **alone never enables the deep-interactive sections** (6, 11, 14,
+`--yes` **alone never enables the deep-interactive sections** (6, 10, 11, 14,
 21, 24) under `--only` / `--profile` / `--all`. Running one of those in batch
 also requires [`--i-understand-deep`](#--i-understand-deep). So
 `--only 21 --yes` (without `--i-understand-deep`) is **refused** in batch
@@ -306,7 +306,7 @@ The object has this shape:
 ```json
 {
   "tool": "mac-cleanup",
-  "version": "4.5.0",
+  "version": "4.6.3",
   "dry_run": false,
   "freed_kb": 1048576,
   "disk_free_delta_kb": 1310720,
@@ -669,7 +669,7 @@ refreshing without launching the menu.
 ```bash
 mac-cleanup --list
 # →
-# mac-cleanup v4.5.0 — section catalogue
+# mac-cleanup v4.6.3 — section catalogue
 #    [ 0] System health & process monitor
 #    [ 1] Xcode caches, DerivedData, simulators
 #    ...
@@ -692,7 +692,7 @@ is menu / `--only` only — it is not part of the `--all` safe batch.
 Print version and exit.
 
 ```bash
-mac-cleanup --version          # mac-cleanup 4.5.0
+mac-cleanup --version          # mac-cleanup 4.6.3
 ```
 
 ---
@@ -910,4 +910,4 @@ the underlying script.
 
 ---
 
-_CLI reference for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_CLI reference for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._

@@ -7,6 +7,15 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## Unreleased
+
+### Fixed
+
+- The `minimal` profile no longer includes Empty Trash. Section 10 now requires
+  `--i-understand-deep` in unattended runs, in addition to `--yes`.
+- Orphan data and app uninstalls no longer fall back to permanent deletion when
+  Finder cannot move an item to the Trash. The affected item stays in place.
+
 ## [4.6.3] - 2026-07-25
 
 ### Fixed

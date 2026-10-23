@@ -270,7 +270,7 @@ If you don't want to grant the permission:
 
 ```bash
 mac-cleanup --all --yes               # skip the --notify flag
-# section 21 will fall back to rm -rf instead of osascript_trash
+# section 21 leaves the app and its data in place if Finder cannot move them
 ```
 
 ---
@@ -418,4 +418,4 @@ For private security issues, email <aoneahsan@gmail.com>. See
 
 ---
 
-_Troubleshooting guide for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Troubleshooting guide for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._
