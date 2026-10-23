@@ -118,7 +118,7 @@ and macleanup does not estimate it in advance.
   Time Machine snapshots, iOS backups, Xcode archives, stale build artefacts, unused apps, launch items.
 - **A dry-run that writes nothing** — every destructive call routes through helpers that no-op in dry mode.
 - **Per-section confirmation** — destructive work always prompts unless you explicitly pass `--yes`.
-- **A deep-section gate** — the five most dangerous sections refuse to run unattended without a second,
+- **A deep-section gate** — six high-risk sections refuse to run unattended without a second,
   separate opt-in flag.
 - **Two-condition delete rule** — non-cache deletes require both "not in use by any tool" and "untouched for
   N days" (by `atime` *and* `mtime`), so a dependency you use monthly survives.
