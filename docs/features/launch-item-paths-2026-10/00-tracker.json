@@ -1,12 +1,13 @@
 {
   "task": "Correct launch-item path matching and require explicit batch removal opt-in",
-  "status": "releasePreparedAwaitingApproval",
+  "status": "published",
   "lastUpdated": "2026-10-26",
   "runHistory": [
     "2026-10-23: Confirmed a Google updater path with spaces was truncated by section 25, preserved structured plist values, skipped ambiguous raw strings, and verified a real dry run lists only two genuinely stale system Zoom agents.",
     "2026-10-26: Owner approved Story Bible GATE 1 and content map GATE 2; prepared package and documentation version 4.7.1, mapped README links to the live HTTPS manual, and verified syntax and version parity. Publication awaits GATE 4.",
     "2026-10-26: Full-diff review found --yes alone auto-selected every stale launch item in section 25. Changed batch audit to report-only unless both --yes and --i-understand-deep are supplied; updated public safety copy and added isolated HOME verification.",
-    "2026-10-26: Corrected an initially misplaced guard after the disposable fixture test exposed it. Retested yes-only, deep-only, both-flag dry-run, and interactive menu assume-yes; fixture survived every safety case."
+    "2026-10-26: Corrected an initially misplaced guard after the disposable fixture test exposed it. Retested yes-only, deep-only, both-flag dry-run, and interactive menu assume-yes; fixture survived every safety case.",
+    "2026-10-26: Owner approved publication. Commit 7e02218 reached public main; npm registry serves macleanup@4.7.1 with SHA e49091cc329da5051db9200babbba685d7e06f4e. No real user or system plist was deleted."
   ],
   "scope": "Correct the path-with-spaces false positive and prevent --yes alone from removing any launch item in batch mode.",
   "paths": [
@@ -53,5 +54,5 @@
   "success": "Existing paths with spaces are not falsely reported; truly missing targets remain visible; --yes alone never removes section 25 candidates.",
   "rollback": "Revert the script commit; a published npm package needs a new patch version rather than unpublishing.",
   "evidence": "On this Mac, the previous audit falsely reported the existing GoogleUpdater target by truncating its path at 'Application Support'. After the fix, GoogleUpdater is absent from the stale list, while the genuinely missing Atlas and two Zoom targets remained. The Atlas user LaunchAgent was then booted out and archived without deletion; a second audit lists only the two system Zoom plists.",
-  "unresolved": "Story Bible GATE 1 and content map GATE 2 were approved on 2026-10-26. Reviewed public release copy awaits GATE 4 before npm publication and GitHub push."
+  "unresolved": "Two genuinely stale system Zoom plists remain under /Library and require owner-authorized sudo for removal; the audit does not delete them automatically."
 }
