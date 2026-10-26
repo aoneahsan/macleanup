@@ -62,7 +62,7 @@ These six higher-risk operations are the **deep-interactive** set
 They are **refused** under `--only` / `--profile` / `--all` in batch mode
 **unless you also pass [`--i-understand-deep`](cli-reference.md#--i-understand-deep)**
 (in addition to `--yes`). `--yes` **alone never enables them**. A `--dry-run`
-preview is always allowed (it cannot touch disk), so you can still see what
+preview is always allowed (it deletes nothing but can write logs and reports), so you can still see what
 they would do. Otherwise, **select them from the menu** where a human is
 present.
 
@@ -230,7 +230,8 @@ For symmetry — these are explicit non-features:
 
 - **No telemetry, no phone-home.** The script makes zero network calls
   by default. The opt-in `--check-update` is the only network call, and
-  it sends no user data.
+  it sends no cleanup paths or reports. npm still receives normal request
+  metadata, such as your IP address.
 - **No automatic crash submission.** If the script errors, it prints a
   hint pointing at `--report-issue`. You decide whether to share.
 - **No silent destruction.** Every destructive operation logs what it

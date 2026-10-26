@@ -35,7 +35,7 @@ one section at a time, with confirmations for every destructive operation.
 | [`--exclude "L"`](#--exclude-l) | string | — | Skip the listed sections |
 | [`--profile NAME`](#--profile-name) | string | — | Run a named bundle |
 | [`--yes`, `-y`](#--yes--y) | switch | off | Auto-confirm prompts |
-| [`--i-understand-deep`](#--i-understand-deep) | switch | off | Allow deep sections (6,10,11,14,21,24) unattended (with `--yes`) |
+| [`--i-understand-deep`](#--i-understand-deep) | switch | off | With `--yes`, allow deep sections (6,10,11,14,21,24) and section 25 removal in batch mode |
 | [`--dry-run`](#--dry-run) | switch | off | Preview without deleting |
 | [`--no-sudo`](#--no-sudo) | switch | off | Skip every sudo section |
 | [`--quiet`](#--quiet) | switch | off | Suppress info chatter |
@@ -306,7 +306,7 @@ The object has this shape:
 ```json
 {
   "tool": "mac-cleanup",
-  "version": "4.7.0",
+  "version": "4.7.1",
   "dry_run": false,
   "freed_kb": 1048576,
   "disk_free_delta_kb": 1310720,
@@ -669,7 +669,7 @@ refreshing without launching the menu.
 ```bash
 mac-cleanup --list
 # →
-# mac-cleanup v4.7.0 — section catalogue
+# mac-cleanup v4.7.1 — section catalogue
 #    [ 0] System health & process monitor
 #    [ 1] Xcode caches, DerivedData, simulators
 #    ...
@@ -692,7 +692,7 @@ is menu / `--only` only — it is not part of the `--all` safe batch.
 Print version and exit.
 
 ```bash
-mac-cleanup --version          # mac-cleanup 4.7.0
+mac-cleanup --version          # mac-cleanup 4.7.1
 ```
 
 ---

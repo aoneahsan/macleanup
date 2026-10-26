@@ -11,7 +11,7 @@ safety rule and section that ships with `mac-cleanup`. If the
 - **Project:** [github.com/aoneahsan/macleanup](https://github.com/aoneahsan/macleanup)
 - **npm:** [npmjs.com/package/macleanup](https://www.npmjs.com/package/macleanup)
 - **Author:** [Ahsan Mahmood](author.md) · [aoneahsan.com](https://aoneahsan.com) · [LinkedIn](https://linkedin.com/in/aoneahsan) · [GitHub](https://github.com/aoneahsan)
-- **Current published version:** `4.7.0`
+- **Current documented version:** `4.7.1`
 - **License:** MIT (see [LICENSE.md](../LICENSE.md))
 
 ---
@@ -29,7 +29,7 @@ deleted from their Mac** before a single byte is removed. That includes:
 - **Sysadmins / SREs** who want a scriptable, auditable, dry-run-first
   cleanup pass for fleet machines or cron.
 - **Anyone reclaiming disk space** after Xcode, simulators, virtual machines,
-  iOS backups, browser caches, or runaway log files quietly ate 40 GB.
+  iOS backups, browser caches, or runaway log files have grown.
 
 If you have ever typed `du -sh ~/Library/Caches/*` and felt sad, this tool
 is for you.
@@ -132,4 +132,4 @@ for more on how to support the project.
 
 ---
 
-> _Documentation reviewed against macleanup v4.7.0._
+> _Documentation reviewed against macleanup v4.7.1. The maintained web manual is at [macleanup-docs.aoneahsan.com](https://macleanup-docs.aoneahsan.com)._

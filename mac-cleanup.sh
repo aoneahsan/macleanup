@@ -17,7 +17,7 @@
 #              See LICENSE.md for full terms. AS-IS, no warranty.
 #
 #  One self-contained interactive bash script. Every destructive action
-#  confirms before running. `--dry-run` reports without touching disk.
+#  confirms before running. `--dry-run` deletes nothing but writes logs/reports.
 #  Logs + reports persist at ~/.mac-cleanup/{logs,reports}/ across runs.
 #
 #  Quick start
@@ -57,7 +57,7 @@ fi
 # exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.7.0}"
+SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.7.1}"
 SCRIPT_NAME="mac-cleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -837,7 +837,9 @@ ${BOLD}Options${NC}
   --i-understand-deep         Allow the deepest, irreversible sections
                               (6, 10, 11, 14, 21, 24) to run unattended under
                               --only / --profile / --all when combined with
-                              --yes. WITHOUT this flag they are refused in
+                              --yes. Also permits section 25 to remove stale
+                              launch items in batch mode. WITHOUT this flag
+                              the deep sections are refused in
                               batch mode (a one-char typo of a section number
                               can't trigger them). --yes alone never enables
                               them. Dry-run previews are always allowed.
@@ -3119,14 +3121,22 @@ s25_launchitems() {
   done
   if (( _have_report )); then info "Saved report to $LAUNCH_AUDIT_REPORT"; fi
 
-  if (( BATCH_MODE && ! ASSUME_YES )); then
-    note "Batch mode: report-only."
+  # --yes auto-selects every item in multi_select. Keep the audit report-only
+  # in batch unless removal has the same two-flag opt-in as deep sections.
+  if (( BATCH_MODE && ( ! ASSUME_YES || ! DEEP_OPT_IN ) )); then
+    note "Batch mode: report-only. To remove stale launch items unattended, pass both --yes and --i-understand-deep."
     mark_done 25; press_enter; return 0
   fi
 
   warn "Removing a system launch item under /Library may need sudo."
   warn "Unloading + deleting prevents the orphaned item from running again."
-  local selected; selected=$(multi_select "${#stale_path[@]}")
+  local selected
+  if (( BATCH_MODE )); then
+    selected=$(multi_select "${#stale_path[@]}")
+  else
+    # The menu's assume-yes toggle must not silently select every plist.
+    selected=$(ASSUME_YES=0 multi_select "${#stale_path[@]}")
+  fi
   if [[ -z "$selected" ]]; then
     note "Nothing selected."
     mark_done 25; press_enter; return 0

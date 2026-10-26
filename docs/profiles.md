@@ -185,11 +185,11 @@ benefit from your eyes — run them separately.
 
 ## Profile `audit`
 
-Sections **0, 12, 18, 21, 25, 26** — read-only diagnostics + report-only
-sections.
+Sections **0, 12, 18, 21, 25, 26** — diagnostics and optional per-item review.
 
-Pure-information mode. Nothing is deleted unless you also pass `--yes`
-to the per-item review sections.
+The batch run reports section 25 candidates without removing them unless
+both `--yes` and `--i-understand-deep` are passed. The interactive menu lets
+you select individual launch items for permanent removal.
 
 ```bash
 mac-cleanup --profile audit                    # interactive review of orphans/apps/launch items
@@ -204,7 +204,7 @@ mac-cleanup --profile audit --dry-run          # report-only, no review
 | 12 | Orphaned app data scan | Per-item review (or report-only in batch) |
 | 18 | Large files report | Read-only |
 | 21 | Apps unused N+ days | Per-item review (or report-only in batch) |
-| 25 | LaunchAgents / LaunchDaemons audit | Per-item review (or report-only in batch) |
+| 25 | LaunchAgents / LaunchDaemons audit | Per-item review; report-only in batch unless both `--yes` and `--i-understand-deep` are passed |
 | 26 | Disk usage report | Read-only |
 
 **When to use:**

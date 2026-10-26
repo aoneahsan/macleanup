@@ -474,7 +474,7 @@ is reclaimed lazily.
 | Field | Value |
 |---|---|
 | Sudo required | No |
-| Confirmations | Optional `[y/N]` to start review; per-item `[y/N/q]` if reviewing |
+| Confirmations | Numbered item selection in the interactive menu; Enter selects none. Both batch opt-in flags select all candidates |
 | Dry-run | Prints `[dry-run] would delete …` for each selected item |
 | Reports written | `~/.mac-cleanup/reports/orphans-YYYY-MM-DD.txt` |
 | CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n), [`--dry-run`](cli-reference.md#--dry-run) |
@@ -976,9 +976,10 @@ keeps recent atime and survives.
 - `/Library/LaunchDaemons/*.plist` (sudo)
 
 **Detection:** For each plist, extract `Label`, `Program`, or
-`ProgramArguments[0]` via `plutil`. Fallback: grep raw plist bytes for
-the first `/`-rooted path. If the target binary doesn't exist, the
-launch item is orphaned.
+`ProgramArguments[0]` via `plutil`, preserving spaces in the structured
+program path. If that fails, examine a raw absolute-path string only when it
+is unambiguous; a raw string containing spaces is skipped. An item appears in
+the review list only when the resulting absolute target path does not exist.
 
 **Action:** Per-item `[y/N/q]` review. If selected:
 
@@ -991,8 +992,8 @@ launch item is orphaned.
 | Confirmations | Optional `[y/N]` to start review; per-item `[y/N/q]` if reviewing |
 | Dry-run | Prints `[dry-run] launchctl unload + rm …` |
 | Reports written | `~/.mac-cleanup/reports/launch-audit-YYYY-MM-DD.txt` |
-| CLI flags | [`--dry-run`](cli-reference.md#--dry-run), [`--no-sudo`](cli-reference.md#--no-sudo) (system items skipped if no sudo) |
-| Safety rules | Unloads before deletion (prevents zombie launch); report-only in batch mode unless `--yes` |
+| CLI flags | [`--dry-run`](cli-reference.md#--dry-run), [`--no-sudo`](cli-reference.md#--no-sudo) (system removal skipped without sudo; read-only audit still lists system items) |
+| Safety rules | Unloads before deletion (prevents zombie launch); report-only in batch mode unless both `--yes` and `--i-understand-deep` are passed |
 | Skip conditions | Skips if no launch items found |
 
 **Why orphan launch items matter:** They cause slow login (the system

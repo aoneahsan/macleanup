@@ -68,7 +68,8 @@ There are three categories of macOS cleanup software in the wild today:
 - **Safe-by-default** like the paid apps (every destructive op confirms,
   every section can be previewed via `--dry-run`).
 - **Comprehensive** like the paid apps (28 targeted sections).
-- **No telemetry, no network calls, no upsells** — unlike either.
+- **No telemetry or upsells; no network calls by default.** The optional
+  version check contacts npm.
 
 Read the [README](../README.md) "Why mac-cleanup" comparison table for
 the side-by-side.

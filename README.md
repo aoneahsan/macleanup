@@ -12,7 +12,7 @@
 [![node](https://img.shields.io/node/v/macleanup.svg)](https://nodejs.org)
 [![platform](https://img.shields.io/badge/platform-macOS%2011%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
 
-[Docs](https://github.com/aoneahsan/macleanup/tree/main/docs) · [npm](https://www.npmjs.com/package/macleanup) · [GitHub](https://github.com/aoneahsan/macleanup) · [Changelog](https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md) · [Support](https://github.com/aoneahsan/macleanup/issues)
+[Docs](https://macleanup-docs.aoneahsan.com) · [npm](https://www.npmjs.com/package/macleanup) · [GitHub](https://github.com/aoneahsan/macleanup) · [Changelog](https://github.com/aoneahsan/macleanup/blob/main/CHANGELOG.md) · [Support](https://github.com/aoneahsan/macleanup/issues)
 
 </div>
 
@@ -25,17 +25,17 @@
 
 macleanup is a single bash script that reclaims disk space on macOS across 28 targeted areas — developer
 caches, browser caches, system logs, stale build artefacts, unused apps, and more. It is built for people who
-want to see exactly what will be deleted before a byte is removed: every destructive section confirms first,
-`--dry-run` never touches disk, and the whole tool is two readable files you can inspect before running.
-It is a terminal tool for macOS only, with no telemetry and no network calls.
+want to see what a section would remove before running it: destructive sections confirm by default,
+`--dry-run` does not delete files, and the whole tool is two readable files you can inspect first.
+It is a terminal tool for macOS only, with no telemetry. `--check-update` contacts npm only when requested.
 
 | | |
 |---|---|
-| **Version** | `4.7.0` |
+| **Version** | `4.7.1` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
-| **Install size** | ~70 kB packed · ~217 kB unpacked |
+| **Install size** | ~71 kB packed · ~222 kB unpacked (local 4.7.1 package preview) |
 | **Types** | None — this is a CLI, not a library |
 | **Status** | Stable · actively maintained |
 
@@ -68,20 +68,17 @@ It is a terminal tool for macOS only, with no telemetry and no network calls.
 <a id="why-macleanup"></a>
 ## 💡 Why macleanup&nbsp;[#](#why-macleanup)
 
-Cleanup tools tend to sit at one of two extremes: a paid app that deletes on your behalf and does not tell you
-what it touched, or a blog post telling you to `rm -rf ~/Library` and hope. macleanup takes the middle
-position — it names every path before removing it, asks per section, and ships a dry-run that genuinely
-writes nothing.
+macleanup shows the sections and candidate paths before a cleanup. Destructive
+sections ask for confirmation by default, and `--dry-run` previews deletion
+without deleting files. The preview can still write logs and reports to
+`~/.mac-cleanup/`.
 
-| | macleanup | Typical cleaner apps | `rm -rf` blog posts |
-|---|---|---|---|
-| Confirms before deleting | always, per section | sometimes | never |
-| Names each path it will touch | yes | rarely | no |
-| Dry-run that writes nothing | yes | sometimes | no |
-| Handles companion data when uninstalling an app | yes | partly | no |
-| Skips Apple-managed caches | yes | yes | no |
-| Source you can read before running | yes, two files | no | n/a |
-| Network calls or telemetry | none | usually | n/a |
+| What you can inspect | Where to find it |
+|---|---|
+| Selected sections and their effects | [`--list`](https://macleanup-docs.aoneahsan.com/reference/cli) and the [sections reference](https://macleanup-docs.aoneahsan.com/reference/sections) |
+| Candidate paths before deletion | Run [`--dry-run`](https://macleanup-docs.aoneahsan.com/before-you-run/dry-run) and read the resulting reports |
+| What happened during a run | Logs and reports under `~/.mac-cleanup/` |
+| The implementation | `mac-cleanup.sh` and `bin/mac-cleanup.js` in this repository |
 
 <a id="what-it-removes-and-whether-you-can-get-it-back"></a>
 ### What it removes, and whether you can get it back
@@ -91,7 +88,7 @@ breakdown is in [Usage](#usage).
 
 | Tier | What happens | Recoverable? |
 |---|---|---|
-| **Rebuilds** | Caches, logs, temp files and build artefacts are removed from disk. The OS or your toolchain recreates them on next use. | Not from disk, but the data reappears — a rebuild or reinstall costs time, not information. |
+| **Rebuilds** | Caches, logs, temp files and build artefacts are removed from disk. Some caches and build output can be regenerated. | Deleted logs and temp files may hold unique information; restoring those needs a backup. |
 | **Moved to Trash** | Uninstalled apps and their companion data (section 21), orphaned app data (12), and large stale files (24) go to the Trash via Finder. | Yes, until you empty the Trash. |
 | **Permanently deleted** | Emptying the Trash (10), Time Machine local snapshots (11), iOS/iPadOS device backups (16), Xcode archives (17), LaunchAgent/Daemon plists (25), and pruned Docker **volumes** (4). | **No.** These are gone. |
 
@@ -116,19 +113,20 @@ and macleanup does not estimate it in advance.
 
 - **28 targeted sections** — developer caches, browser caches, system caches and logs, temp files, Docker,
   Time Machine snapshots, iOS backups, Xcode archives, stale build artefacts, unused apps, launch items.
-- **A dry-run that writes nothing** — every destructive call routes through helpers that no-op in dry mode.
+- **A dry-run that deletes nothing** — destructive helpers preview their actions; logs and reports may still be written.
 - **Per-section confirmation** — destructive work always prompts unless you explicitly pass `--yes`.
 - **A deep-section gate** — six high-risk sections refuse to run unattended without a second,
   separate opt-in flag.
 - **Two-condition delete rule** — non-cache deletes require both "not in use by any tool" and "untouched for
   N days" (by `atime` *and* `mtime`), so a dependency you use monthly survives.
 - **Profiles** — five named bundles (`dev`, `minimal`, `cache-only`, `deep`, `audit`) for common workflows.
-- **Read-only audit sections** — system health, orphan scan, large files, launch items and disk usage report
-  without deleting anything.
+- **Report sections** — system health, installer leftovers, large files and
+  disk usage write reports. Orphan data and launch-item sections also offer
+  confirmed removal, so preview those before acting.
 - **Reports and logs on disk** — dated `.txt` reports and per-day logs under `~/.mac-cleanup/`, outside the
   npx cache, so they survive every invocation.
 - **Machine-readable output** — `--json` prints a one-line run summary for scripting.
-- **No telemetry** — zero network calls; nothing is sent anywhere.
+- **No telemetry** — the script makes no network calls by default. An optional update check contacts npm; npm receives normal request metadata.
 
 <a id="requirements"></a>
 ## 📋 Requirements&nbsp;[#](#requirements)
@@ -275,14 +273,14 @@ The command line is the entire public interface — there is no programmatic API
 |---|---|
 | `--list` | Print every section and exit |
 | `--version` | Print the version |
-| `--dry-run` | Write nothing; show what would be removed |
+| `--dry-run` | Delete nothing; show planned actions and write normal logs or reports |
 | `--all` | Run the safe batch |
 | `--only "5,7,8"` | Run exactly these sections |
 | `--profile NAME` | `dev`, `minimal`, `cache-only`, `deep` or `audit` |
 | `--exclude 14,17` | Subtract sections from `--all` or a profile |
 | `--exclude-path PATH` | Never scan or touch this tree |
 | `--yes` | Auto-confirm prompts. Does **not** unlock the deep sections |
-| `--i-understand-deep` | With `--yes`, allow sections 6, 10, 11, 14, 21, 24 unattended |
+| `--i-understand-deep` | With `--yes`, allow sections 6, 10, 11, 14, 21, 24 unattended and permit section 25 removal in batch mode |
 | `--no-sudo` | Skip every section that needs sudo |
 | `--threshold N` · `--idle-days N` · `--cache-age-days N` | Age thresholds — see [Configuration](#configuration) |
 | `--stale-build-days N` · `--large-file-days N` · `--large-file-size-gb N` | Section 23 and 24 thresholds |
@@ -296,7 +294,7 @@ The command line is the entire public interface — there is no programmatic API
 | `--stats` · `--contact` · `--feedback` · `--report-issue` | Run history and local-first support flags |
 | `--uninstall-data` | Remove `~/.mac-cleanup` (confirms first) |
 
-Full flag reference: [docs/cli-reference.md](https://github.com/aoneahsan/macleanup/blob/main/docs/cli-reference.md).
+Full flag reference: [CLI reference](https://macleanup-docs.aoneahsan.com/reference/cli).
 
 <a id="examples"></a>
 ## 🧪 Examples&nbsp;[#](#examples)
@@ -308,17 +306,17 @@ Full flag reference: [docs/cli-reference.md](https://github.com/aoneahsan/maclea
 | Find every `node_modules` untouched 90+ days | `mac-cleanup --only 23 --stale-build-days 90 --dry-run` |
 | Find dormant 2 GB+ files older than 6 months | `mac-cleanup --only 24 --large-file-size-gb 2 --large-file-days 180 --dry-run` |
 | Audit orphaned login items | `mac-cleanup --only 25` |
-| Read-only health check | `mac-cleanup --profile audit` |
+| Read-only health check | `mac-cleanup --profile audit --dry-run` |
 | Unattended cron sweep | `mac-cleanup --all --yes --quiet` |
 
-More recipes: [docs/examples-cookbook.md](https://github.com/aoneahsan/macleanup/blob/main/docs/examples-cookbook.md).
+More recipes: [Recipes](https://macleanup-docs.aoneahsan.com/recipes).
 
 <a id="advanced-features"></a>
 ## 🎛️ Advanced Features&nbsp;[#](#advanced-features)
 
 - **Profiles** — `dev` (1,2,3,4,23) · `minimal` (5,7,8,9) · `cache-only` (3,5,6,7,9,19) ·
   `deep` (0,1,2,3,4,5,6,7,8,9,17,19,23,26) · `audit` (0,12,18,21,25,26).
-  [Details](https://github.com/aoneahsan/macleanup/blob/main/docs/profiles.md).
+  [Details](https://macleanup-docs.aoneahsan.com/reference/profiles).
 - **JSON output** — `--all --yes --json | jq .freed_kb` for scripting and dashboards.
 - **Toolchain allowlist** — section 23 refuses to enter `~/.bun`, `~/.pnpm-store`, `~/.volta` and similar
   manager directories regardless of file age.
@@ -336,9 +334,9 @@ More recipes: [docs/examples-cookbook.md](https://github.com/aoneahsan/macleanup
 | Section 23 exits asking for `--scan-roots` | It found none of the standard dev folders and will not silently scan `$HOME` | Pass `--scan-roots "$HOME/code:$HOME/repos"` |
 | A deep section is skipped under `--yes` | `--yes` alone never unlocks sections 6, 10, 11, 14, 21, 24 | Add `--i-understand-deep`, or run it from the interactive menu |
 | Free space did not change after section 14 | `/private/var/folders` needs a reboot to take effect | Reboot |
-| A global tool broke after a **v4.3.0** run | A fixed bug let section 23 enter toolchain manager directories | Upgrade to 4.3.1+ and follow the [recovery guide](https://github.com/aoneahsan/macleanup/blob/main/docs/recovery-guide.md) |
+| A global tool broke after a **v4.3.0** run | A fixed bug let section 23 enter toolchain manager directories | Upgrade to 4.3.1+ and follow the [recovery guide](https://macleanup-docs.aoneahsan.com/recovery) |
 
-More symptoms: [docs/troubleshooting.md](https://github.com/aoneahsan/macleanup/blob/main/docs/troubleshooting.md).
+More symptoms: [Troubleshooting](https://macleanup-docs.aoneahsan.com/troubleshooting).
 
 <a id="limitations"></a>
 ## 🚧 Limitations&nbsp;[#](#limitations)
@@ -346,8 +344,8 @@ More symptoms: [docs/troubleshooting.md](https://github.com/aoneahsan/macleanup/
 - **macOS only.** Darwin is enforced; the tool exits immediately anywhere else.
 - **No programmatic API.** The CLI is the whole interface. Requiring the package from Node is not a supported
   use — the entry point launches the tool rather than exporting anything.
-- **No undo.** macleanup has no restore command. The Trash is your only rollback, and only for the tier that
-  uses it.
+- **No undo.** macleanup has no restore command. Trash can restore items moved
+  there; directly deleted items require your own backup.
 - **It cannot tell you in advance how much space you will get back.** `--dry-run` estimates the run it is
   about to perform; nothing predicts a number before that.
 - **Permission-dependent safety.** Without Automation access, the move-to-Trash guarantee does not hold.
@@ -364,8 +362,9 @@ Not if you read each prompt. The riskiest section is 14 (`/private/var/folders`)
 afterwards, requires a typed `yes`, and is excluded from `--all`.
 
 **Does it collect any telemetry?**
-No. The script makes zero network calls, and the Node launcher only spawns bash. The one exception is opt-in:
-`--check-update` asks the npm registry whether a newer version exists.
+No. The script makes no network calls by default, and the Node launcher only
+spawns bash. Opt-in `--check-update` asks the npm registry whether a newer
+version exists; npm receives normal request metadata, such as your IP address.
 
 **What does `npx macleanup` actually run?**
 It downloads the published package into npm's cache and runs `bin/mac-cleanup.js`, which spawns the bundled
@@ -389,29 +388,29 @@ Which document answers which question:
 
 | Document | Read it when |
 |---|---|
-| [Getting started](https://github.com/aoneahsan/macleanup/blob/main/docs/getting-started.md) | first run — the menu explained |
-| [Installation](https://github.com/aoneahsan/macleanup/blob/main/docs/installation.md) | choosing between the three install paths |
-| [CLI reference](https://github.com/aoneahsan/macleanup/blob/main/docs/cli-reference.md) | you need the exact flag |
-| [Sections 0–27](https://github.com/aoneahsan/macleanup/blob/main/docs/sections.md) | you want to know precisely what one section touches |
-| [Profiles](https://github.com/aoneahsan/macleanup/blob/main/docs/profiles.md) | picking a named bundle |
-| [Safety model](https://github.com/aoneahsan/macleanup/blob/main/docs/safety-model.md) | you want the guarantees spelled out |
-| [Reports & logs](https://github.com/aoneahsan/macleanup/blob/main/docs/reports-and-logs.md) | reading what a run wrote |
-| [Examples cookbook](https://github.com/aoneahsan/macleanup/blob/main/docs/examples-cookbook.md) | you have a goal, not a flag |
-| [Recovery guide](https://github.com/aoneahsan/macleanup/blob/main/docs/recovery-guide.md) | a v4.3.0 run broke a toolchain |
-| [Troubleshooting](https://github.com/aoneahsan/macleanup/blob/main/docs/troubleshooting.md) | something behaved unexpectedly |
-| [FAQ](https://github.com/aoneahsan/macleanup/blob/main/docs/faq.md) | the questions people ask first |
+| [Getting started](https://macleanup-docs.aoneahsan.com/getting-started/first-run) | first run — the menu explained |
+| [Installation](https://macleanup-docs.aoneahsan.com/getting-started/installation) | choosing between the three install paths |
+| [CLI reference](https://macleanup-docs.aoneahsan.com/reference/cli) | you need the exact flag |
+| [Sections 0–27](https://macleanup-docs.aoneahsan.com/reference/sections) | you want to know precisely what one section touches |
+| [Profiles](https://macleanup-docs.aoneahsan.com/reference/profiles) | picking a named bundle |
+| [Safety model](https://macleanup-docs.aoneahsan.com/before-you-run/safety-model) | you want the guarantees spelled out |
+| [Reports & logs](https://macleanup-docs.aoneahsan.com/reference/reports-and-logs) | reading what a run wrote |
+| [Examples cookbook](https://macleanup-docs.aoneahsan.com/recipes) | you have a goal, not a flag |
+| [Recovery guide](https://macleanup-docs.aoneahsan.com/recovery) | a v4.3.0 run broke a toolchain |
+| [Troubleshooting](https://macleanup-docs.aoneahsan.com/troubleshooting) | something behaved unexpectedly |
+| [FAQ](https://macleanup-docs.aoneahsan.com/faq) | the questions people ask first |
 
 <a id="changelog"></a>
 ## 🔄 Changelog&nbsp;[#](#changelog)
 
-Latest release: **`4.7.0`** — safety fixes for unattended Trash cleanup, Finder move failures, and temporary files. Full history in the changelog.
+Latest release: **`4.7.1`** — section 25 checks launch-item paths containing spaces correctly and remains report-only in batch mode unless both `--yes` and `--i-understand-deep` are passed. The 4.7.0 safety fixes for Trash, Finder and temp cleanup remain in place. Full history is in the changelog.
 
 <a id="contributing"></a>
 ## 🤝 Contributing&nbsp;[#](#contributing)
 
 Fork and open a pull request — see
 [CONTRIBUTING.md](https://github.com/aoneahsan/macleanup/blob/main/CONTRIBUTING.md) for setup, standards and
-how to request collaborator access. `main` is protected: every change lands through a reviewed PR.
+how to request collaborator access. `main` is protected; external contributions go through review.
 
 Security issues go privately to [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com), not a public issue — see
 [SECURITY.md](https://github.com/aoneahsan/macleanup/blob/main/SECURITY.md).
@@ -457,7 +456,7 @@ the author is not liable for data loss arising from its use.
 
 | | |
 |---|---|
-| Documentation | https://github.com/aoneahsan/macleanup/tree/main/docs |
+| Documentation | https://macleanup-docs.aoneahsan.com |
 | npm | https://www.npmjs.com/package/macleanup |
 | Repository | https://github.com/aoneahsan/macleanup |
 | Issues | https://github.com/aoneahsan/macleanup/issues |

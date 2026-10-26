@@ -39,8 +39,10 @@ is the kindest thank-you.
 **None.** The script makes zero network calls by default. The Node
 launcher (`bin/mac-cleanup.js`) only spawns bash — no analytics, no
 phone-home, no remote requests. The optional `--check-update` is the
-only outbound network call, and it sends no user data — a single
-unauthenticated GET to `https://registry.npmjs.org/macleanup/latest`.
+only outbound network call: a single unauthenticated GET to
+`https://registry.npmjs.org/macleanup/latest`.
+It sends no cleanup paths or reports; npm still receives normal request
+metadata such as your IP address.
 Logs and reports stay on your machine in `~/.mac-cleanup/`.
 
 ### Why does it ship as one file instead of `brew install`?

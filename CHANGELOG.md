@@ -7,6 +7,13 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [4.7.1] - 2026-10-26
+
+### Fixed
+
+- The section 25 LaunchAgent audit now preserves spaces in structured program paths. Existing launch items with paths such as `Application Support` are no longer reported as missing. Ambiguous raw plist strings are skipped instead of guessed. The audit still reports genuinely missing targets.
+- Section 25 stays report-only in batch mode unless both `--yes` and `--i-understand-deep` are supplied. In the interactive menu, users always choose individual candidates. Previously, `--yes` alone selected and removed every reported stale launch item.
+
 ## [4.7.0] - 2026-10-23
 
 ### Fixed
