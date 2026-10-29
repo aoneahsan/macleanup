@@ -72,7 +72,7 @@ You can audit the source in an hour. No binary blobs. No closed-source executabl
 
 ### Tweet 5/7
 ~~~text
-Reports persist at ~/.mac-cleanup/
+Reports persist at ~/.macleanup/
 
 They survive npx cache cleanup automatically.
 
@@ -159,7 +159,7 @@ Sections 1, 2, 3, 4, 23. Everything dev-cache + stale builds. Dry-run by default
 
 ### Tweet 5/6
 ~~~text
-Reports save at ~/.mac-cleanup/reports/stale-build-YYYY-MM-DD.txt
+Reports save at ~/.macleanup/reports/stale-build-YYYY-MM-DD.txt
 
 Sortable by size. Each row has the path, size, age in days. Audit before you delete. Audit after you've deleted.
 ~~~
@@ -233,7 +233,7 @@ You see exactly which sections need sudo in --list and in the menu.
 ~~~text
 Rule 5: Reports for every run.
 
-~/.mac-cleanup/reports/<section>-<date>.txt
+~/.macleanup/reports/<section>-<date>.txt
 
 You can audit what was deleted, when, and what was flagged but kept. Every report file starts with a credits banner so the artefact self-attributes.
 ~~~
@@ -268,7 +268,7 @@ By Ahsan Mahmood
 
 That's it. npm fetches the package, runs the interactive menu, reclaims its own cache afterwards.
 
-Your reports + logs persist at ~/.mac-cleanup/ — never inside the disposable npx cache.
+Your reports + logs persist at ~/.macleanup/ — never inside the disposable npx cache.
 
 🧵
 ~~~
@@ -386,7 +386,7 @@ The bash script: 2,400 lines. Native macOS primitives only — osascript, tmutil
 ~~~text
 Constraint #4: Persistent state.
 
-Logs and reports live at ~/.mac-cleanup/ — outside the npx cache.
+Logs and reports live at ~/.macleanup/ — outside the npx cache.
 
 They survive every npx run. You can audit history without setup. The disposable nature of npx becomes a feature.
 ~~~
@@ -459,7 +459,7 @@ Multi-select removal, sudo when needed for system items.
 ~~~text
 Audit report saves at:
 
-   ~/.mac-cleanup/reports/launch-audit-YYYY-MM-DD.txt
+   ~/.macleanup/reports/launch-audit-YYYY-MM-DD.txt
 
 Each row: plist path · label · missing target binary.
 
@@ -596,8 +596,8 @@ No identifying headers. No payload. Opt-in. Manual. Visible in the source.
 ~~~text
 Where your data goes:
 
-• Logs   → ~/.mac-cleanup/logs/<date>.log
-• Reports → ~/.mac-cleanup/reports/<section>-<date>.txt
+• Logs   → ~/.macleanup/logs/<date>.log
+• Reports → ~/.macleanup/reports/<section>-<date>.txt
 
 Local. Your machine only. Forever.
 
@@ -674,7 +674,7 @@ Then follow up with the developer profile:
 
    npx macleanup --profile dev --dry-run
 
-Sections 1, 2, 3, 4, 23 — every dev cache plus stale node_modules. Dry-run by default. Review the report at ~/.mac-cleanup/reports/, then re-run without --dry-run.
+Sections 1, 2, 3, 4, 23 — every dev cache plus stale node_modules. Dry-run by default. Review the report at ~/.macleanup/reports/, then re-run without --dry-run.
 ~~~
 
 ### Tweet 5/5 — CTA

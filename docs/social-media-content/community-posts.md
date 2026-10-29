@@ -21,7 +21,7 @@ After posting, append `[USED]` to that post's `##` heading.
 
 ## 1. Show HN — primary post
 
-- **Title** (≤80 chars): `Show HN: Macleanup – a free macOS cleanup CLI in a single bash file (npx)`
+- **Title** (≤80 chars): `Show HN: macleanup – a free macOS cleanup CLI in a single bash file (npx)`
 - **URL field**: `https://www.npmjs.com/package/macleanup`
 - **Text field**: leave blank if URL is set, OR paste the body below if you want a self-post.
 
@@ -33,7 +33,7 @@ I built `macleanup` because I'd cleaned up my Mac by hand for the n-th time and 
 What it does:
 - 27 sections covering Xcode/Android/iOS dev caches, every package-manager cache, Docker, browser caches, orphan app data, Time Machine snapshots, idle apps, stale node_modules / vendor / dist / target, large unused files, orphan LaunchAgents, du report.
 - Real `--dry-run` (every destructive call routes through helpers that no-op).
-- Persistent reports + logs at `~/.mac-cleanup/` (outside npx cache).
+- Persistent reports + logs at `~/.macleanup/` (outside npx cache).
 - Multi-select interactive UI for review-then-delete.
 - Five named profiles: `dev`, `minimal`, `cache-only`, `deep`, `audit`.
 
@@ -44,7 +44,7 @@ MIT licensed — fork it, modify it, build on it. Tarball is 41 KB. Audit the so
 
 Two technical decisions I'd particularly value feedback on:
 1. Pure-bash + Node-launcher-spawning-bash as a packaging shape. The npx ergonomics are great; the only real cost is a bash 3.2+ requirement (default macOS bash). Worth it?
-2. Persistent state at `~/.mac-cleanup/{logs,reports}/` rather than `~/Library/Application Support/macleanup/`. I picked the dotfile location for discoverability via `cd ~/.mac-cleanup` — but Apple's HIG would prefer Application Support. What would you have done?
+2. Persistent state at `~/.macleanup/{logs,reports}/` rather than `~/Library/Application Support/macleanup/`. I picked the dotfile location for discoverability via `cd ~/.macleanup` — but Apple's HIG would prefer Application Support. What would you have done?
 
 Repo and license: https://github.com/aoneahsan/macleanup
 ~~~
@@ -82,7 +82,7 @@ I've been on a mission for a while to fix the "my Mac is full and I don't want t
 
 `npx macleanup`
 
-That's it. npm fetches the package, runs the interactive menu, and reclaims its own cache afterwards. Your reports and logs persist at `~/.mac-cleanup/` — never inside the disposable npx cache.
+That's it. npm fetches the package, runs the interactive menu, and reclaims its own cache afterwards. Your reports and logs persist at `~/.macleanup/` — never inside the disposable npx cache.
 
 **What's in the box:**
 
@@ -137,7 +137,7 @@ Honest feedback wanted. If you find bugs, file an issue. If the tool deletes som
 - Stale `node_modules` / `vendor` / `target` finder with configurable age
 - Orphan LaunchAgents audit (uninstalled-app leftovers that slow down boot)
 - Idle-app detector with bulk uninstall (apps go to Trash via Finder)
-- Persistent reports at `~/.mac-cleanup/reports/`
+- Persistent reports at `~/.macleanup/reports/`
 - 5 named profiles: `dev`, `minimal`, `cache-only`, `deep`, `audit`
 - Zero network calls (optional `--check-update` is the only exception)
 
@@ -164,7 +164,7 @@ Author here. A few notes for context:
 
 - Total source is two files: a 2,400-line bash script and an 80-line Node launcher. Tarball is 41 KB. You can audit the whole thing in an hour.
 - Distribution via `npx macleanup` so users don't need to install anything. The Node launcher exists for that one purpose.
-- Persistent state lives at `~/.mac-cleanup/{logs,reports}/` so reports survive npx cache cleanup.
+- Persistent state lives at `~/.macleanup/{logs,reports}/` so reports survive npx cache cleanup.
 - License is MIT — permissive OSI open source. Use, modify, redistribute, and even sell it, as long as the copyright and license notice are kept. I picked MIT to maximize adoption while the AS-IS disclaimer keeps me protected.
 - Zero network calls in the default code path. Optional, manual `--check-update` is the only exception and is opt-in via flag.
 
@@ -190,7 +190,7 @@ It's called **macleanup**. Free, MIT-licensed, single bash file, 41 KB tarball.
 **One command:**
 `npx macleanup`
 
-27 cleanup sections, real `--dry-run` mode, persistent reports at `~/.mac-cleanup/`, multi-select interactive UI, no telemetry.
+27 cleanup sections, real `--dry-run` mode, persistent reports at `~/.macleanup/`, multi-select interactive UI, no telemetry.
 
 **The build / ship in numbers:**
 - 4 weeks of evenings

@@ -95,7 +95,7 @@ I shipped a free CLI that handles the safe cleanup paths in one command: `npx ma
 Designed for predictable, scriptable runs:
 • `--profile minimal` for a weekly scheduled sweep
 • `--dry-run` always available — no surprise deletions
-• Persistent reports at ~/.mac-cleanup/reports/ for audit
+• Persistent reports at ~/.macleanup/reports/ for audit
 • `--no-sudo` to skip every privileged section
 • Zero network calls — passes corporate proxy review easily
 
@@ -264,7 +264,7 @@ Built this for you basically. Free. One command:
 
    npx macleanup --dry-run --all
 
-Single bash file, 27 cleanup sections, real dry-run mode, no telemetry. Reports save at ~/.mac-cleanup/ so you can audit before deleting.
+Single bash file, 27 cleanup sections, real dry-run mode, no telemetry. Reports save at ~/.macleanup/ so you can audit before deleting.
 
 If it works for you, would love a brutally honest reaction. If it doesn't, also tell me — I'd rather hear it from a friend than a stranger.
 

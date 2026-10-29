@@ -1,5 +1,5 @@
 name: 🐛 Bug report
-description: A reproducible problem with mac-cleanup.
+description: A reproducible problem with macleanup.
 title: "[Bug] "
 labels: ["bug"]
 body:
@@ -13,9 +13,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: mac-cleanup version
-      description: Output of `mac-cleanup --version` (or `npx macleanup --version`).
-      placeholder: "mac-cleanup 4.3.0"
+      label: macleanup version
+      description: Output of `macleanup --version` (or `npx macleanup --version`).
+      placeholder: "macleanup 4.3.0"
     validations:
       required: true
 
@@ -40,7 +40,7 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: How was mac-cleanup installed?
+      label: How was macleanup installed?
       options:
         - npx (zero-install)
         - npm install -g
@@ -55,7 +55,7 @@ body:
       label: Exact command you ran
       description: Paste the full command including all flags. Use a code block.
       placeholder: |
-        mac-cleanup --only 23 --stale-build-days 30 --dry-run
+        macleanup --only 23 --stale-build-days 30 --dry-run
       render: bash
     validations:
       required: true
@@ -80,7 +80,7 @@ body:
     attributes:
       label: Relevant log excerpt
       description: |
-        From `~/.mac-cleanup/logs/mac-cleanup-YYYY-MM-DD.log`.
+        From `~/.macleanup/logs/macleanup-YYYY-MM-DD.log`.
         Just the lines around the failure — not the whole file.
       render: text
 

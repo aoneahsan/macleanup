@@ -88,7 +88,7 @@ One bash file, ~2,400 lines. No binaries, no telemetry, no phone-home.
 
   npx macleanup
 
-Real dry-run mode. Confirms before every delete. Reports persist at ~/.mac-cleanup/.
+Real dry-run mode. Confirms before every delete. Reports persist at ~/.macleanup/.
 
 Free. Try it: aoneahsan.com
 
@@ -152,7 +152,7 @@ Free macOS cleanup tool 🧹
 
 • 27 sections
 • Dry-run safe-by-default
-• Persistent reports at ~/.mac-cleanup/
+• Persistent reports at ~/.macleanup/
 • Zero network calls, no telemetry
 • Single bash file, fully readable
 
@@ -174,7 +174,7 @@ Don't trust paid Mac cleaners with your file paths? Same.
 
   npx macleanup
 
-Zero network calls. Single bash file you can read in an hour. No analytics, no telemetry, no upsell. Reports stay local at ~/.mac-cleanup/.
+Zero network calls. Single bash file you can read in an hour. No analytics, no telemetry, no upsell. Reports stay local at ~/.macleanup/.
 
 Free. MIT-licensed. macOS only.
 

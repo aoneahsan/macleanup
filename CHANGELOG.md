@@ -7,6 +7,25 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.0.0] - 2026-10-29
+
+### Changed — one name: `macleanup`
+
+The product, the command and every file it writes now use one name. Run it as `macleanup` or `npx macleanup`.
+
+| Before 5.0.0 | From 5.0.0 | What happens to the old name |
+|---|---|---|
+| `mac-cleanup` command | `macleanup` command | Removed. Use `macleanup` (it was already an alias). |
+| `mac-cleanup.sh` | `macleanup.sh` | Renamed in the package and repository. |
+| `~/.mac-cleanup/` (logs, reports, history) | `~/.macleanup/` | Copied once on the first 5.x run, when `~/.macleanup/` does not exist yet. The old folder stays in place until you remove it. |
+| `~/.mac-cleanuprc` | `~/.macleanuprc` | Still read when the new file is absent, with a note asking you to rename it. |
+| `MAC_CLEANUP_LOGS_DIR`, `MAC_CLEANUP_REPORTS_DIR`, `MAC_CLEANUP_RC` | `MACLEANUP_LOGS_DIR`, `MACLEANUP_REPORTS_DIR`, `MACLEANUP_RC` | Still read for 5.x when the new variable is unset, with a deprecation note. |
+| Daily log `mac-cleanup-YYYY-MM-DD.log` | `macleanup-YYYY-MM-DD.log` | New logs use the new name; copied logs keep theirs. |
+
+### Removed
+
+- The package `main` entry. `require('macleanup')` used to launch the cleanup tool as a side effect of importing it. macleanup has no programmatic API, so importing it now fails fast instead (ISSUE-004).
+
 ## [4.7.1] - 2026-10-26
 
 ### Fixed

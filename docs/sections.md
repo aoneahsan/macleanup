@@ -1,6 +1,6 @@
 # Sections (0–27) — The Twenty-Eight Cleanup Sections
 
-> Every cleanup operation `mac-cleanup` performs lives inside one of 28
+> Every cleanup operation `macleanup` performs lives inside one of 28
 > numbered sections. This page is the complete reference: what each
 > section cleans, which paths it touches, whether it needs `sudo`, what
 > confirmations it asks for, and which CLI flags tune its behaviour.
@@ -476,7 +476,7 @@ is reclaimed lazily.
 | Sudo required | No |
 | Confirmations | Numbered item selection in the interactive menu; Enter selects none. Both batch opt-in flags select all candidates |
 | Dry-run | Prints `[dry-run] would delete …` for each selected item |
-| Reports written | `~/.mac-cleanup/reports/orphans-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/orphans-YYYY-MM-DD.txt` |
 | CLI flags | [`--idle-days N`](cli-reference.md#--idle-days-n), [`--dry-run`](cli-reference.md#--dry-run) |
 | Safety rules | Two-condition rule (heuristic + idle threshold); Apple bundles never flagged; report-only in batch mode unless `--yes` |
 | Skip conditions | Skips if no app directories found; skips items touched within idle threshold |
@@ -664,7 +664,7 @@ After deletions, empty year/month subdirectories are collapsed via
 | Sudo required | No |
 | Confirmations | None |
 | Dry-run | Identical output |
-| Reports written | `~/.mac-cleanup/reports/large-files-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/large-files-YYYY-MM-DD.txt` |
 | CLI flags | None (advisory) |
 | Safety rules | None |
 | Skip conditions | Scan can take ~1 minute on large home directories |
@@ -810,7 +810,7 @@ the app, the tool leaves the app and companion data in place.
 | Sudo required | No |
 | Confirmations | Action menu `[R/B/N]`; bulk has a final confirmation |
 | Dry-run | Prints `[dry-run] would move X and N data path(s) to Trash` |
-| Reports written | `~/.mac-cleanup/reports/unused-apps-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/unused-apps-YYYY-MM-DD.txt` |
 | CLI flags | [`--threshold N`](cli-reference.md#--threshold-n), [`--dry-run`](cli-reference.md#--dry-run) |
 | Safety rules | Apple bundles never flagged; under-flag when no signal; apps moved to Trash (recoverable); report-only in batch mode unless `--yes` |
 | Skip conditions | Spotlight may be re-indexing (results may be incomplete) |
@@ -824,7 +824,7 @@ the app, the tool leaves the app and companion data in place.
 
 **Actions:**
 
-- `mkfile -n 1g ~/.mac-cleanup/.purgeable-bait` (or your `--logs-dir`)
+- `mkfile -n 1g ~/.macleanup/.purgeable-bait` (or your `--logs-dir`)
 - `sleep 1`
 - `rm` the bait file
 
@@ -911,7 +911,7 @@ keeps recent atime and survives.
 | Sudo required | No |
 | Confirmations | "Proceed with scan?" (default Yes); final "Confirm bulk delete?" |
 | Dry-run | Prints `[dry-run] rm -rf …` for each selected item |
-| Reports written | `~/.mac-cleanup/reports/stale-build-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/stale-build-YYYY-MM-DD.txt` |
 | CLI flags | [`--stale-build-days N`](cli-reference.md#--stale-build-days-n), [`--idle-days N`](cli-reference.md#--idle-days-n) (fallback), [`--scan-roots`](cli-reference.md#--scan-roots-p1p2), [`--dry-run`](cli-reference.md#--dry-run) |
 | Safety rules | `CRITICAL_HOME_DIRS` allowlist (find-time + post-filter); refuses to scan all of `$HOME`; report-only in batch mode unless `--yes`; deletions are not moved to Trash (regenerable by definition) |
 | Skip conditions | Errors out if no common dev folder is detected and no `--scan-roots` is supplied |
@@ -956,7 +956,7 @@ keeps recent atime and survives.
 | Sudo required | No |
 | Confirmations | "Proceed with scan?"; final "Confirm move-to-Trash?" |
 | Dry-run | Reports without moving |
-| Reports written | `~/.mac-cleanup/reports/large-stale-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/large-stale-YYYY-MM-DD.txt` |
 | CLI flags | [`--large-file-size-gb N`](cli-reference.md#--large-file-size-gb-n), [`--large-file-days N`](cli-reference.md#--large-file-days-n), [`--dry-run`](cli-reference.md#--dry-run) |
 | Safety rules | atime+mtime gate avoids false-flagging recently-opened files; selected files are **moved to Trash** (recoverable) |
 | Skip conditions | Scan can take several minutes on large home directories |
@@ -991,7 +991,7 @@ the review list only when the resulting absolute target path does not exist.
 | Sudo required | Yes for system locations; no for user items |
 | Confirmations | Optional `[y/N]` to start review; per-item `[y/N/q]` if reviewing |
 | Dry-run | Prints `[dry-run] launchctl unload + rm …` |
-| Reports written | `~/.mac-cleanup/reports/launch-audit-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/launch-audit-YYYY-MM-DD.txt` |
 | CLI flags | [`--dry-run`](cli-reference.md#--dry-run), [`--no-sudo`](cli-reference.md#--no-sudo) (system removal skipped without sudo; read-only audit still lists system items) |
 | Safety rules | Unloads before deletion (prevents zombie launch); report-only in batch mode unless both `--yes` and `--i-understand-deep` are passed |
 | Skip conditions | Skips if no launch items found |
@@ -1012,7 +1012,7 @@ console log, and apparent "ghost" processes in Activity Monitor.
 | Sudo required | No |
 | Confirmations | None |
 | Dry-run | Identical output (informational) |
-| Reports written | `~/.mac-cleanup/reports/disk-usage-YYYY-MM-DD.txt` |
+| Reports written | `~/.macleanup/reports/disk-usage-YYYY-MM-DD.txt` |
 | CLI flags | None |
 | Safety rules | None — purely advisory |
 | Skip conditions | Scan can take ~30 seconds on very large home directories |
@@ -1051,7 +1051,7 @@ health) for a complete pre-cleanup baseline.
 
 > **Note:** This section is **not** in the safe batch and is not one of the
 > deep-destructive sections either — it is simply menu- or `--only`-driven.
-> Run it with `mac-cleanup --only 27`.
+> Run it with `macleanup --only 27`.
 
 ---
 
@@ -1081,4 +1081,4 @@ Out-of-range or junk tokens are silently ignored. Used by sections 21
 
 ---
 
-_Sections reference for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._
+_Sections reference for **macleanup** by **[Ahsan Mahmood](author.md)**._

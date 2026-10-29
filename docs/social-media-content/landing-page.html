@@ -357,7 +357,7 @@
         </div>
         <div class="card">
           <p class="label">Persistent reports</p>
-          <p class="desc">Every run writes a dated <code>.txt</code> at <code>~/.mac-cleanup/reports/</code>.</p>
+          <p class="desc">Every run writes a dated <code>.txt</code> at <code>~/.macleanup/reports/</code>.</p>
         </div>
         <div class="card">
           <p class="label">5 named profiles</p>
@@ -480,7 +480,7 @@
       <div class="install-list">
         <div class="install-option">
           <p class="title">1. Zero-install via <code>npx</code> (easiest)</p>
-          <p class="desc">npm fetches the package into its cache, runs the interactive menu, reclaims its own cache afterwards. Your reports + logs persist at <code>~/.mac-cleanup/</code> — never inside the cache.</p>
+          <p class="desc">npm fetches the package into its cache, runs the interactive menu, reclaims its own cache afterwards. Your reports + logs persist at <code>~/.macleanup/</code> — never inside the cache.</p>
 <pre><code>npx macleanup
 
 # preview the safe-batch cleanup without touching anything
@@ -495,7 +495,7 @@ npx macleanup --list</code></pre>
 
         <div class="install-option">
           <p class="title">2. Global install via <code>npm</code></p>
-          <p class="desc">Same package, persistent install. Both <code>macleanup</code> and <code>mac-cleanup</code> are registered as bin entries.</p>
+          <p class="desc">Same package, persistent install. It registers one command, <code>macleanup</code>.</p>
 <pre><code>npm install -g macleanup
 macleanup --version
 macleanup --profile dev --dry-run</code></pre>
@@ -506,8 +506,8 @@ macleanup --profile dev --dry-run</code></pre>
           <p class="desc">If you don't want Node in the loop, run the bash script directly.</p>
 <pre><code>git clone https://github.com/aoneahsan/macleanup.git
 cd macleanup
-chmod +x mac-cleanup.sh
-./mac-cleanup.sh</code></pre>
+chmod +x macleanup.sh
+./macleanup.sh</code></pre>
         </div>
       </div>
     </section>
@@ -516,9 +516,9 @@ chmod +x mac-cleanup.sh
     <section>
       <h2><span class="num">05</span>Where things live</h2>
       <p class="lede">Reports + logs persist regardless of which install method you pick. Override either path with <code>--logs-dir</code> or <code>--reports-dir</code>.</p>
-<pre><code>~/.mac-cleanup/
+<pre><code>~/.macleanup/
 ├── logs/
-│   └── mac-cleanup-YYYY-MM-DD.log
+│   └── macleanup-YYYY-MM-DD.log
 └── reports/
     ├── orphans-YYYY-MM-DD.txt
     ├── unused-apps-YYYY-MM-DD.txt

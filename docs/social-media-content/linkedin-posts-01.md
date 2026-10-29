@@ -37,7 +37,7 @@ No install. No subscription. No telemetry. Just a bash script you can read line 
 
 • 27 cleanup sections — caches, logs, stale build artefacts, orphaned app data, idle apps, large unused files, LaunchAgents audit, and more
 • A real dry-run mode — preview before deleting anything
-• Persistent reports at ~/.mac-cleanup/ so you can audit every run
+• Persistent reports at ~/.macleanup/ so you can audit every run
 • Five named profiles — dev / minimal / cache-only / deep / audit
 • Multi-select interactive UI — review the list, then bulk-delete
 • Apple Silicon + Intel, macOS 11 and up
@@ -95,7 +95,7 @@ I built macleanup to fix this in one command.
 • Section 4 prunes Docker images, containers, volumes
 • Multi-select UI so you delete only what you want
 
-Reports persist at ~/.mac-cleanup/reports/ so you can audit every run.
+Reports persist at ~/.macleanup/reports/ so you can audit every run.
 
 > "Your dev caches will rebuild on the next install. The disk space is the only thing you actually need."
 
@@ -137,7 +137,7 @@ It's called macleanup. Free. MIT-licensed.
 • Apps go to Trash via Finder, not rm -rf. You can recover them.
 • Sudo sections are explicit. No silent privilege escalation. If sudo isn't available, the section is skipped — never silently bypassed.
 • The deepest sections — /private/var/folders wipe, app uninstall, iOS backup deletion — require typing literal "yes" and are never part of --all.
-• Reports for every run live at ~/.mac-cleanup/reports/ so you can audit what was deleted and when.
+• Reports for every run live at ~/.macleanup/reports/ so you can audit what was deleted and when.
 
 > "A tool that runs rm -rf and sudo on your behalf should be auditable. Mine is one file you can read in your editor."
 
@@ -170,7 +170,7 @@ aoneahsan@gmail.com
 
   npx macleanup
 
-That's it. npm fetches the package, runs the interactive menu, and reclaims its own cache afterwards. Your reports and logs persist at ~/.mac-cleanup/ — never inside the disposable npx cache.
+That's it. npm fetches the package, runs the interactive menu, and reclaims its own cache afterwards. Your reports and logs persist at ~/.macleanup/ — never inside the disposable npx cache.
 
 🧰 What you get from one command
 
@@ -232,7 +232,7 @@ I shipped 2,400 lines of bash plus an 80-line Node launcher. Total: 2 files. Tot
 • Auditable. A cleanup tool runs rm -rf and sudo on your behalf. That should be readable, not a binary blob.
 • No install. npx macleanup works on any Mac with Node 14+. No homebrew tap, no .dmg, no code-signing dance.
 • Zero deps. The Node launcher is 80 lines. It exists for one job: validate Darwin and spawn bash. That's it.
-• Persistent state. Logs and reports live at ~/.mac-cleanup/ so they survive npx cache cleanup automatically.
+• Persistent state. Logs and reports live at ~/.macleanup/ so they survive npx cache cleanup automatically.
 • macOS-native primitives. osascript for Trash moves, tmutil for snapshots, mdls for last-used dates, launchctl for service unloads. Nothing reinvented.
 
 > "Single file means: no curl-pipe-bash, no signing-key surface, no homebrew tap. Drop it in ~/bin/ and you're done."
@@ -276,7 +276,7 @@ I built macleanup section 25 specifically to find them.
 • Reads each .plist for Program or ProgramArguments[0]
 • Flags every entry whose target binary no longer exists on disk
 • Multi-select bulk removal (sudo when removing system items under /Library)
-• Writes a permanent audit report at ~/.mac-cleanup/reports/launch-audit-YYYY-MM-DD.txt
+• Writes a permanent audit report at ~/.macleanup/reports/launch-audit-YYYY-MM-DD.txt
 
 > "If you've ever uninstalled an app and your Mac kept being slow, this is probably why."
 
@@ -372,8 +372,8 @@ That's the entire network footprint.
 
 📂 Where your data goes
 
-• Logs   →  ~/.mac-cleanup/logs/<date>.log    (local, your machine only)
-• Reports → ~/.mac-cleanup/reports/<section>-<date>.txt   (local)
+• Logs   →  ~/.macleanup/logs/<date>.log    (local, your machine only)
+• Reports → ~/.macleanup/reports/<section>-<date>.txt   (local)
 • Nothing else. Ever.
 
 > "If you can't audit a tool's network behaviour, assume it's spying on you. Mine is two files you can read."
@@ -437,7 +437,7 @@ That triggers exactly two sections.
 
   npx macleanup --profile dev --dry-run
 
-That's a preview of sections 1, 2, 3, 4, 23 — every dev cache plus stale node_modules. I review the report at ~/.mac-cleanup/reports/, decide what to delete, and rerun without --dry-run.
+That's a preview of sections 1, 2, 3, 4, 23 — every dev cache plus stale node_modules. I review the report at ~/.macleanup/reports/, decide what to delete, and rerun without --dry-run.
 
 🚀 Try it before your next Xcode reinstall
 

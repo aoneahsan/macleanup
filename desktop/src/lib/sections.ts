@@ -1,4 +1,4 @@
-// The 28 cleanup sections (0–27), mirrored from mac-cleanup.sh's
+// The 28 cleanup sections (0–27), mirrored from macleanup.sh's
 // SECTION_CATALOGUE, with UI grouping + safety metadata. Single source of
 // truth for the GUI. Keep in sync with the script.
 

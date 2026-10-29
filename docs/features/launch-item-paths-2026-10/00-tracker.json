@@ -11,7 +11,7 @@
   ],
   "scope": "Correct the path-with-spaces false positive and prevent --yes alone from removing any launch item in batch mode.",
   "paths": [
-    "mac-cleanup.sh:s25_launchitems",
+    "macleanup.sh:s25_launchitems",
     "package.json",
     "CHANGELOG.md",
     "README.md",
@@ -42,7 +42,7 @@
   ],
   "security": "Section 25 may unload and permanently remove selected plists. Batch mode must report only unless both --yes and --i-understand-deep are supplied. Verify with a disposable HOME fixture; never remove real user or system plists during tests or print credential-bearing plist content.",
   "verification": [
-    "bash -n mac-cleanup.sh",
+    "bash -n macleanup.sh",
     "isolated HOME fixture remains present after --only 25 --yes --no-sudo --no-reports",
     "--only 25 --yes --i-understand-deep --dry-run plans removal but does not delete",
     "section 25 real dry-run --no-sudo --no-reports excludes existing GoogleUpdater target",

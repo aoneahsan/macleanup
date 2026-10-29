@@ -31,11 +31,11 @@ It is a terminal tool for macOS only, with no telemetry. `--check-update` contac
 
 | | |
 |---|---|
-| **Version** | `4.7.1` |
+| **Version** | `5.0.0` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
-| **Install size** | ~71 kB packed · ~222 kB unpacked (local 4.7.1 package preview) |
+| **Install size** | ~73 kB packed · ~227 kB unpacked (local 5.0.0 package preview) |
 | **Types** | None — this is a CLI, not a library |
 | **Status** | Stable · actively maintained |
 
@@ -71,14 +71,14 @@ It is a terminal tool for macOS only, with no telemetry. `--check-update` contac
 macleanup shows the sections and candidate paths before a cleanup. Destructive
 sections ask for confirmation by default, and `--dry-run` previews deletion
 without deleting files. The preview can still write logs and reports to
-`~/.mac-cleanup/`.
+`~/.macleanup/`.
 
 | What you can inspect | Where to find it |
 |---|---|
 | Selected sections and their effects | [`--list`](https://macleanup-docs.aoneahsan.com/reference/cli) and the [sections reference](https://macleanup-docs.aoneahsan.com/reference/sections) |
 | Candidate paths before deletion | Run [`--dry-run`](https://macleanup-docs.aoneahsan.com/before-you-run/dry-run) and read the resulting reports |
-| What happened during a run | Logs and reports under `~/.mac-cleanup/` |
-| The implementation | `mac-cleanup.sh` and `bin/mac-cleanup.js` in this repository |
+| What happened during a run | Logs and reports under `~/.macleanup/` |
+| The implementation | `macleanup.sh` and `bin/macleanup.js` in this repository |
 
 <a id="what-it-removes-and-whether-you-can-get-it-back"></a>
 ### What it removes, and whether you can get it back
@@ -123,7 +123,7 @@ and macleanup does not estimate it in advance.
 - **Report sections** — system health, installer leftovers, large files and
   disk usage write reports. Orphan data and launch-item sections also offer
   confirmed removal, so preview those before acting.
-- **Reports and logs on disk** — dated `.txt` reports and per-day logs under `~/.mac-cleanup/`, outside the
+- **Reports and logs on disk** — dated `.txt` reports and per-day logs under `~/.macleanup/`, outside the
   npx cache, so they survive every invocation.
 - **Machine-readable output** — `--json` prints a one-line run summary for scripting.
 - **No telemetry** — the script makes no network calls by default. An optional update check contacts npm; npm receives normal request metadata.
@@ -151,11 +151,11 @@ npm install -g macleanup
 
 # Or clone and run directly — no Node required
 git clone https://github.com/aoneahsan/macleanup.git
-cd macleanup && chmod +x mac-cleanup.sh && ./mac-cleanup.sh
+cd macleanup && chmod +x macleanup.sh && ./macleanup.sh
 ```
 
-The global install exposes two identical binaries, `mac-cleanup` and `macleanup`. Nothing is written outside
-`~/.mac-cleanup/` (logs and reports) until you confirm a section.
+The global install adds one command, `macleanup`. Nothing is written outside
+`~/.macleanup/` (logs and reports) until you confirm a section.
 
 <a id="quick-start"></a>
 ## 🚀 Quick Start&nbsp;[#](#quick-start)
@@ -217,10 +217,10 @@ npx macleanup
 ### Running a subset
 
 ```bash
-mac-cleanup --list                       # print every section, then exit
-mac-cleanup --only "5,7,8,9"             # run exactly these
-mac-cleanup --profile dev --dry-run      # preview a named bundle
-mac-cleanup --all --yes                  # unattended safe batch
+macleanup --list                       # print every section, then exit
+macleanup --only "5,7,8,9"             # run exactly these
+macleanup --profile dev --dry-run      # preview a named bundle
+macleanup --all --yes                  # unattended safe batch
 ```
 
 `--all` runs only the safe batch — sections `0 3 5 7 8 9 15 18 22 26`. Everything else is opt-in.
@@ -241,7 +241,7 @@ Out-of-range and junk tokens are ignored.
 <a id="configuration"></a>
 ## ⚙️ Configuration&nbsp;[#](#configuration)
 
-Defaults can be set in `~/.mac-cleanuprc` (or `$MAC_CLEANUP_RC`) as simple `key=value` lines. CLI flags
+Defaults can be set in `~/.macleanuprc` (or `$MACLEANUP_RC`) as simple `key=value` lines. CLI flags
 always override the file.
 
 | Setting | Default | Flag |
@@ -256,15 +256,15 @@ always override the file.
 
 Setting `--idle-days 0` or `--cache-age-days 0` disables that condition entirely.
 
-Logs and reports live in `~/.mac-cleanup/{logs,reports}/` — never inside the npx cache, so they survive every
-invocation. Override with `--logs-dir` / `--reports-dir`, or `MAC_CLEANUP_LOGS_DIR` / `MAC_CLEANUP_REPORTS_DIR`.
+Logs and reports live in `~/.macleanup/{logs,reports}/` — never inside the npx cache, so they survive every
+invocation. Override with `--logs-dir` / `--reports-dir`, or `MACLEANUP_LOGS_DIR` / `MACLEANUP_REPORTS_DIR`.
 
 <a id="command-line"></a>
 ## 💻 Command Line&nbsp;[#](#command-line)
 
 ```bash
 npx macleanup [options]
-mac-cleanup [options]        # after a global install
+macleanup [options]        # after a global install
 ```
 
 The command line is the entire public interface — there is no programmatic API.
@@ -292,7 +292,7 @@ The command line is the entire public interface — there is no programmatic API
 | `--brew-autoremove` | Opt in to `brew autoremove` (off by default) |
 | `--check-update` | Ask npm whether a newer version exists |
 | `--stats` · `--contact` · `--feedback` · `--report-issue` | Run history and local-first support flags |
-| `--uninstall-data` | Remove `~/.mac-cleanup` (confirms first) |
+| `--uninstall-data` | Remove `~/.macleanup` (confirms first) |
 
 Full flag reference: [CLI reference](https://macleanup-docs.aoneahsan.com/reference/cli).
 
@@ -301,13 +301,13 @@ Full flag reference: [CLI reference](https://macleanup-docs.aoneahsan.com/refere
 
 | Goal | Command |
 |---|---|
-| See what tonight's cleanup would free | `mac-cleanup --dry-run --all` |
-| Reclaim developer-tool space | `mac-cleanup --profile dev --dry-run` |
-| Find every `node_modules` untouched 90+ days | `mac-cleanup --only 23 --stale-build-days 90 --dry-run` |
-| Find dormant 2 GB+ files older than 6 months | `mac-cleanup --only 24 --large-file-size-gb 2 --large-file-days 180 --dry-run` |
-| Audit orphaned login items | `mac-cleanup --only 25` |
-| Read-only health check | `mac-cleanup --profile audit --dry-run` |
-| Unattended cron sweep | `mac-cleanup --all --yes --quiet` |
+| See what tonight's cleanup would free | `macleanup --dry-run --all` |
+| Reclaim developer-tool space | `macleanup --profile dev --dry-run` |
+| Find every `node_modules` untouched 90+ days | `macleanup --only 23 --stale-build-days 90 --dry-run` |
+| Find dormant 2 GB+ files older than 6 months | `macleanup --only 24 --large-file-size-gb 2 --large-file-days 180 --dry-run` |
+| Audit orphaned login items | `macleanup --only 25` |
+| Read-only health check | `macleanup --profile audit --dry-run` |
+| Unattended cron sweep | `macleanup --all --yes --quiet` |
 
 More recipes: [Recipes](https://macleanup-docs.aoneahsan.com/recipes).
 
@@ -320,7 +320,7 @@ More recipes: [Recipes](https://macleanup-docs.aoneahsan.com/recipes).
 - **JSON output** — `--all --yes --json | jq .freed_kb` for scripting and dashboards.
 - **Toolchain allowlist** — section 23 refuses to enter `~/.bun`, `~/.pnpm-store`, `~/.volta` and similar
   manager directories regardless of file age.
-- **Config file** — `~/.mac-cleanuprc` for persistent defaults.
+- **Config file** — `~/.macleanuprc` for persistent defaults.
 - **Desktop app** — a small native macOS GUI (Tauri) wrapping this same script lives in
   [desktop/](https://github.com/aoneahsan/macleanup/tree/main/desktop). It reimplements no cleanup logic.
 
@@ -367,12 +367,12 @@ spawns bash. Opt-in `--check-update` asks the npm registry whether a newer
 version exists; npm receives normal request metadata, such as your IP address.
 
 **What does `npx macleanup` actually run?**
-It downloads the published package into npm's cache and runs `bin/mac-cleanup.js`, which spawns the bundled
-`mac-cleanup.sh` through bash. Your logs and reports go to `~/.mac-cleanup/`, never the cache, so they survive.
+It downloads the published package into npm's cache and runs `bin/macleanup.js`, which spawns the bundled
+`macleanup.sh` through bash. Your logs and reports go to `~/.macleanup/`, never the cache, so they survive.
 
 **Can I read the source before running it?**
-Yes, and you should. The tool is two files: `mac-cleanup.sh` (about 3,600 lines of bash) and
-`bin/mac-cleanup.js` (about 100 lines of Node).
+Yes, and you should. The tool is two files: `macleanup.sh` (about 3,600 lines of bash) and
+`bin/macleanup.js` (about 100 lines of Node).
 
 **Why one bash file instead of a Homebrew formula?**
 A single file means no curl-pipe-bash, no tap to trust, and no signing surface — you can read every line
@@ -403,7 +403,7 @@ Which document answers which question:
 <a id="changelog"></a>
 ## 🔄 Changelog&nbsp;[#](#changelog)
 
-Latest release: **`4.7.1`** — section 25 checks launch-item paths containing spaces correctly and remains report-only in batch mode unless both `--yes` and `--i-understand-deep` are passed. The 4.7.0 safety fixes for Trash, Finder and temp cleanup remain in place. Full history is in the changelog.
+Latest release: **`5.0.0`** — one name everywhere. The command is `macleanup`, data lives in `~/.macleanup/`, the config file is `~/.macleanuprc` and environment variables use `MACLEANUP_*`. Upgrading from 4.x moves nothing by hand: the first 5.x run copies your earlier logs and reports and leaves the originals in place. The changelog has the full rename table.
 
 <a id="contributing"></a>
 ## 🤝 Contributing&nbsp;[#](#contributing)
@@ -419,15 +419,15 @@ Security issues go privately to [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com
 ## 🗂️ Repository&nbsp;[#](#repository)
 
 ```text
-mac-cleanup.sh   the tool — all cleanup logic lives here (published)
+macleanup.sh   the tool — all cleanup logic lives here (published)
 bin/             Node launcher that spawns the script for npx (published)
 docs/            the manual
 desktop/         optional native macOS GUI (Tauri), separate package
 assets/logo/     SVG logo masters
 ```
 
-Only `mac-cleanup.sh`, `bin/`, and the four root Markdown files ship in the npm tarball. At runtime every
-invocation reads and writes `~/.mac-cleanup/{logs,reports}/`, never the repository.
+Only `macleanup.sh`, `bin/`, and the four root Markdown files ship in the npm tarball. At runtime every
+invocation reads and writes `~/.macleanup/{logs,reports}/`, never the repository.
 
 <a id="support"></a>
 ## 💬 Support&nbsp;[#](#support)

@@ -52,7 +52,7 @@ audit beyond npm itself.
 `files` is an allowlist (there is no `.npmignore`, and there must never be one):
 
 ```
-bin/  mac-cleanup.sh  README.md  LICENSE.md  CHANGELOG.md  SECURITY.md
+bin/  macleanup.sh  README.md  LICENSE.md  CHANGELOG.md  SECURITY.md
 ```
 
 `CHANGELOG.md` is listed explicitly. npm does **not** include it automatically, so omitting it would ship
@@ -64,7 +64,7 @@ installed copies with no history. Verified present in the extracted tarball 2026
 
 ## `macleanup-desktop`
 
-A Tauri + React + Vite application. It reimplements no cleanup logic — it runs the bundled `mac-cleanup.sh`
+A Tauri + React + Vite application. It reimplements no cleanup logic — it runs the bundled `macleanup.sh`
 in `--json` mode and renders the stream. It is **not** published to npm and is not part of the CLI's
 dependency surface; its manifest is listed here only so the inventory is complete.
 

@@ -32,9 +32,9 @@ on a coding machine without touching system state, system caches, or
 sudo paths.
 
 ```bash
-mac-cleanup --profile dev --dry-run                   # preview
-mac-cleanup --profile dev --yes                       # execute
-mac-cleanup --profile dev --cache-age-days 60 --yes   # tighter cache window
+macleanup --profile dev --dry-run                   # preview
+macleanup --profile dev --yes                       # execute
+macleanup --profile dev --cache-age-days 60 --yes   # tighter cache window
 ```
 
 **What it actually does:**
@@ -74,8 +74,8 @@ The quick weekly housekeeping profile. Touches only user-space, only
 short-lived data. Safe to run every Monday morning.
 
 ```bash
-mac-cleanup --profile minimal --dry-run
-mac-cleanup --profile minimal --yes
+macleanup --profile minimal --dry-run
+macleanup --profile minimal --yes
 ```
 
 **What it actually does:**
@@ -104,8 +104,8 @@ When a single tool is misbehaving and you suspect a corrupted cache
 somewhere on the machine.
 
 ```bash
-mac-cleanup --profile cache-only --dry-run
-mac-cleanup --profile cache-only --yes
+macleanup --profile cache-only --dry-run
+macleanup --profile cache-only --yes
 ```
 
 **What it actually does:**
@@ -144,9 +144,9 @@ build artefact, and Xcode archives. Excludes section 14
 16, 21, 25) which are more meaningful to run interactively.
 
 ```bash
-mac-cleanup --profile deep --dry-run
-mac-cleanup --profile deep --yes
-mac-cleanup --profile deep --exclude 17 --yes  # skip Xcode archives review
+macleanup --profile deep --dry-run
+macleanup --profile deep --yes
+macleanup --profile deep --exclude 17 --yes  # skip Xcode archives review
 ```
 
 **What it actually does:**
@@ -192,8 +192,8 @@ both `--yes` and `--i-understand-deep` are passed. The interactive menu lets
 you select individual launch items for permanent removal.
 
 ```bash
-mac-cleanup --profile audit                    # interactive review of orphans/apps/launch items
-mac-cleanup --profile audit --dry-run          # report-only, no review
+macleanup --profile audit                    # interactive review of orphans/apps/launch items
+macleanup --profile audit --dry-run          # report-only, no review
 ```
 
 **What it actually does:**
@@ -214,7 +214,7 @@ mac-cleanup --profile audit --dry-run          # report-only, no review
 - After a major upgrade — find what's stale.
 - Before backing up — identify what's worth backing up vs cleaning first.
 
-**Output:** Six report files dropped in `~/.mac-cleanup/reports/`. Read
+**Output:** Six report files dropped in `~/.macleanup/reports/`. Read
 them at your leisure. See [Reports & Logs](reports-and-logs.md).
 
 ---
@@ -225,19 +225,19 @@ Profiles compose with every other flag:
 
 ```bash
 # Preview the dev preset with a tighter cache window
-mac-cleanup --profile dev --cache-age-days 60 --dry-run
+macleanup --profile dev --cache-age-days 60 --dry-run
 
 # Run the deep preset, but skip the Xcode archive review and reboot one
-mac-cleanup --profile deep --exclude "14,17" --yes
+macleanup --profile deep --exclude "14,17" --yes
 
 # Audit, but with a notification when scanning finishes
-mac-cleanup --profile audit --notify
+macleanup --profile audit --notify
 
 # Cron-friendly: minimal weekly, fully unattended, quiet, with notification
-mac-cleanup --profile minimal --yes --quiet --notify
+macleanup --profile minimal --yes --quiet --notify
 
 # Restrict the dev preset to a specific code folder
-mac-cleanup --profile dev --scan-roots "$HOME/work" --yes
+macleanup --profile dev --scan-roots "$HOME/work" --yes
 ```
 
 ---
@@ -249,16 +249,16 @@ combination repeatedly, just shell-alias it:
 
 ```bash
 # in ~/.zshrc / ~/.bash_profile
-alias mac-clean-week='mac-cleanup --only "5,7,8,9" --yes --quiet --notify'
-alias mac-clean-dev='mac-cleanup --only "1,2,3,4,23" --cache-age-days 60 --yes'
-alias mac-clean-audit='mac-cleanup --only "0,12,18,21,25,26"'
+alias mac-clean-week='macleanup --only "5,7,8,9" --yes --quiet --notify'
+alias mac-clean-dev='macleanup --only "1,2,3,4,23" --cache-age-days 60 --yes'
+alias mac-clean-audit='macleanup --only "0,12,18,21,25,26"'
 ```
 
 Or wrap it in a one-line shell function:
 
 ```bash
 mac-clean-monthly() {
-  mac-cleanup --profile deep --exclude 14 --yes --notify
+  macleanup --profile deep --exclude 14 --yes --notify
 }
 ```
 
@@ -272,4 +272,4 @@ mac-clean-monthly() {
 
 ---
 
-_Profiles guide for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._
+_Profiles guide for **macleanup** by **[Ahsan Mahmood](author.md)**._

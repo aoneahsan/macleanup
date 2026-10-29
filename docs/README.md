@@ -1,24 +1,24 @@
-# mac-cleanup — Documentation
+# macleanup — Documentation
 
-> The complete reference for **mac-cleanup**, a comprehensive, safe-by-default
+> The complete reference for **macleanup**, a comprehensive, safe-by-default
 > macOS cleanup & maintenance tool — one bash file, twenty-eight targeted
 > sections, zero install via `npx`.
 
 Welcome. This documentation set explains every feature, flag, profile,
-safety rule and section that ships with `mac-cleanup`. If the
+safety rule and section that ships with `macleanup`. If the
 [README](../README.md) is the elevator pitch, this folder is the manual.
 
 - **Project:** [github.com/aoneahsan/macleanup](https://github.com/aoneahsan/macleanup)
 - **npm:** [npmjs.com/package/macleanup](https://www.npmjs.com/package/macleanup)
 - **Author:** [Ahsan Mahmood](author.md) · [aoneahsan.com](https://aoneahsan.com) · [LinkedIn](https://linkedin.com/in/aoneahsan) · [GitHub](https://github.com/aoneahsan)
-- **Current documented version:** `4.7.1`
+- **Current documented version:** `5.0.0`
 - **License:** MIT (see [LICENSE.md](../LICENSE.md))
 
 ---
 
 ## Who this tool is for
 
-`mac-cleanup` is built for people who want to **understand exactly what gets
+`macleanup` is built for people who want to **understand exactly what gets
 deleted from their Mac** before a single byte is removed. That includes:
 
 - **macOS developers** drowning in stale `node_modules`, `vendor`, `.next`,
@@ -51,7 +51,7 @@ is for you.
 | [Sections (0–27)](sections.md) | Deep dive on every one of the 28 cleanup sections |
 | [Profiles](profiles.md) | The 5 named bundles (`dev`, `minimal`, `cache-only`, `deep`, `audit`) |
 | [Safety Model](safety-model.md) | Two-condition rule, `CRITICAL_HOME_DIRS`, sudo handling, dry-run guarantees |
-| [Reports & Logs](reports-and-logs.md) | What gets written to `~/.mac-cleanup/` and how to read it |
+| [Reports & Logs](reports-and-logs.md) | What gets written to `~/.macleanup/` and how to read it |
 
 ### Operating playbooks
 | Page | What it covers |
@@ -68,9 +68,9 @@ is for you.
 
 ---
 
-## What makes mac-cleanup different
+## What makes macleanup different
 
-| Capability | mac-cleanup | Typical "cleaner" apps | A blog `rm -rf ~/Library` post |
+| Capability | macleanup | Typical "cleaner" apps | A blog `rm -rf ~/Library` post |
 |---|---|---|---|
 | Confirms before deleting | **always (per section)** | sometimes | never |
 | Tells you what each path is | **yes** | rarely | no |
@@ -116,7 +116,7 @@ or wire it into a [cron-friendly automation](examples-cookbook.md#unattended-cro
 
 ## Author
 
-`mac-cleanup` is built and maintained by **[Ahsan Mahmood](author.md)** —
+`macleanup` is built and maintained by **[Ahsan Mahmood](author.md)** —
 senior software engineer, macOS power user, maker of small sharp tools.
 
 - 🌐 [aoneahsan.com](https://aoneahsan.com)
@@ -125,11 +125,11 @@ senior software engineer, macOS power user, maker of small sharp tools.
 - 📧 [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com)
 - 📱 +92 304 6619706
 
-If `mac-cleanup` reclaims disk space for you, the kindest thank-you is a
+If `macleanup` reclaims disk space for you, the kindest thank-you is a
 ⭐ on the [GitHub repo](https://github.com/aoneahsan/macleanup) and a share
 with a fellow Mac developer. See the [Author & Credits](author.md) page
 for more on how to support the project.
 
 ---
 
-> _Documentation reviewed against macleanup v4.7.1. The maintained web manual is at [macleanup-docs.aoneahsan.com](https://macleanup-docs.aoneahsan.com)._
+> _Documentation reviewed against macleanup v5.0.0. The maintained web manual is at [macleanup-docs.aoneahsan.com](https://macleanup-docs.aoneahsan.com)._

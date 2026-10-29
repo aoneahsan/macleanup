@@ -1,8 +1,8 @@
 # Installation
 
-> Three ways to install **mac-cleanup**. Pick the one that fits your workflow.
+> Three ways to install **macleanup**. Pick the one that fits your workflow.
 
-`mac-cleanup` is published as the npm package
+`macleanup` is published as the npm package
 [`macleanup`](https://www.npmjs.com/package/macleanup) and as the GitHub
 repository [`aoneahsan/macleanup`](https://github.com/aoneahsan/macleanup).
 You can run it three ways: **zero-install via `npx`**, **global via
@@ -12,7 +12,7 @@ You can run it three ways: **zero-install via `npx`**, **global via
 |---|---|:-:|:-:|
 | `npx macleanup` | One-off cleanups, trying it out | yes (>=14) | reports + logs only |
 | `npm install -g macleanup` | Regular use, scripts, cron | yes (>=14) | yes |
-| `git clone …` + `./mac-cleanup.sh` | Reading the source, no Node available | no | yes |
+| `git clone …` + `./macleanup.sh` | Reading the source, no Node available | no | yes |
 
 All three invocations accept identical flags — see
 [CLI Reference](cli-reference.md). Pick whichever invocation fits your
@@ -46,21 +46,21 @@ npx macleanup --list
 1. `npx` resolves `macleanup` to the latest published version on the npm
    registry.
 2. If the package isn't already in npm's cache, it downloads it.
-3. It runs `bin/mac-cleanup.js` (a tiny Node launcher, ~80 lines) with
+3. It runs `bin/macleanup.js` (a tiny Node launcher, ~80 lines) with
    any flags you passed.
 4. The launcher checks you're on macOS, locates the bundled
-   `mac-cleanup.sh` (~3,000 lines of bash), and `exec`s `bash` with your
+   `macleanup.sh` (~3,000 lines of bash), and `exec`s `bash` with your
    argv forwarded.
 5. The bash script self-checks `bash >= 3.2` and runs.
 
 **Your reports and logs are never inside the npx cache.** They live at
-`~/.mac-cleanup/{logs,reports}/` and survive every `npx` invocation, every
+`~/.macleanup/{logs,reports}/` and survive every `npx` invocation, every
 npm cache cleanup, every macOS restart. See [Reports & Logs](reports-and-logs.md).
 
 ### Pinning a specific version with `npx`
 
 ```bash
-npx macleanup@4.7.1          # pin a version
+npx macleanup@5.0.0          # pin a version
 npx macleanup@latest         # always pull latest
 ```
 
@@ -68,13 +68,13 @@ Useful when you want to lock a CI/cron job to a known version.
 
 ### When `npx` is the wrong choice
 
-- You're running `mac-cleanup` **multiple times a day** — the cache lookup
+- You're running `macleanup` **multiple times a day** — the cache lookup
   and platform check add a small startup cost. Use the global install instead.
 - You're on a machine with **no Node installed** and don't want to install
   Node. Use the [git clone](#method-3--direct-git-checkout-no-node-required)
   method.
 - You're scripting it into **launchd / cron** — pin a version with
-  `npx macleanup@4.7.1` or use the global install for stability.
+  `npx macleanup@5.0.0` or use the global install for stability.
 
 ---
 
@@ -84,22 +84,20 @@ Useful when you want to lock a CI/cron job to a known version.
 npm install -g macleanup
 ```
 
-After install, two binaries are available in your PATH:
+After install, one command is available in your PATH:
 
 ```bash
-mac-cleanup            # canonical name
-macleanup              # short alias
-mac-cleanup --version  # mac-cleanup 4.7.1
+macleanup --version  # macleanup 5.0.0
 ```
 
-Both commands are identical entry points to the same script.
+Before 5.0.0 the package also installed a `mac-cleanup` command. It was removed in 5.0.0; use `macleanup`.
 
 ### Updating later
 
 ```bash
 npm install -g macleanup@latest
 # or check first:
-mac-cleanup --check-update
+macleanup --check-update
 ```
 
 `--check-update` queries the public npm registry for the latest published
@@ -113,11 +111,11 @@ npm uninstall -g macleanup
 ```
 
 This removes the binaries and the cached package. Your data at
-`~/.mac-cleanup/` is **preserved** — delete it manually if you want to
+`~/.macleanup/` is **preserved** — delete it manually if you want to
 remove logs and reports too:
 
 ```bash
-rm -rf ~/.mac-cleanup/
+rm -rf ~/.macleanup/
 ```
 
 ### Note for users with package-manager preferences
@@ -130,7 +128,7 @@ yarn global add macleanup
 ```
 
 The package has zero dependencies — installation is essentially copying
-the bundled `mac-cleanup.sh` and `bin/mac-cleanup.js` into your global
+the bundled `macleanup.sh` and `bin/macleanup.js` into your global
 node_modules.
 
 ---
@@ -143,20 +141,20 @@ clone the repo and execute the script directly:
 ```bash
 git clone https://github.com/aoneahsan/macleanup.git
 cd macleanup
-chmod +x mac-cleanup.sh
-./mac-cleanup.sh
+chmod +x macleanup.sh
+./macleanup.sh
 ```
 
-That's the entire installation. The `mac-cleanup.sh` file is **fully
+That's the entire installation. The `macleanup.sh` file is **fully
 self-contained** — no source dependencies, no other files needed at
 runtime, no `npm install` step.
 
 ### Putting it on PATH
 
-If you want to invoke `mac-cleanup` from anywhere, drop a symlink:
+If you want to invoke `macleanup` from anywhere, drop a symlink:
 
 ```bash
-ln -s "$PWD/mac-cleanup.sh" ~/bin/mac-cleanup
+ln -s "$PWD/macleanup.sh" ~/bin/macleanup
 # add ~/bin to PATH if it isn't already
 ```
 
@@ -175,7 +173,7 @@ That's all. No build step, no dependencies to update.
 ### When direct checkout is the right choice
 
 - **You want to read every line before running.** Open
-  `mac-cleanup.sh` (~3,000 lines of plain bash) in any editor.
+  `macleanup.sh` (~3,000 lines of plain bash) in any editor.
 - **You want zero Node dependency.** A future Node breakage doesn't affect
   you — bash is a macOS system component.
 - **You want to fork it.** The MIT license lets you modify and
@@ -190,12 +188,12 @@ Whichever method you used, the same three commands confirm everything is
 wired correctly:
 
 ```bash
-mac-cleanup --version          # mac-cleanup 4.7.1
-mac-cleanup --list             # prints all 28 sections
-mac-cleanup --dry-run --all    # preview without deleting; writes normal logs/reports
+macleanup --version          # macleanup 5.0.0
+macleanup --list             # prints all 28 sections
+macleanup --dry-run --all    # preview without deleting; writes normal logs/reports
 ```
 
-If `--version` says something other than `4.7.1`, your install is on a
+If `--version` says something other than `5.0.0`, your install is on a
 different version — check [CHANGELOG.md](../CHANGELOG.md) for the
 differences, or run `npm install -g macleanup@latest` to upgrade.
 
@@ -205,23 +203,23 @@ differences, or run `npm install -g macleanup@latest` to upgrade.
 
 | Path | What lives there | When created |
 |---|---|---|
-| `~/.mac-cleanup/logs/mac-cleanup-YYYY-MM-DD.log` | One log per day, every action recorded | First run on any given day |
-| `~/.mac-cleanup/reports/*.txt` | Per-section dated reports (orphans, large files, stale builds…) | When relevant sections run |
-| `~/.mac-cleanup/.welcomed` | Marker — disables the one-time welcome screen | First run on any machine |
+| `~/.macleanup/logs/macleanup-YYYY-MM-DD.log` | One log per day, every action recorded | First run on any given day |
+| `~/.macleanup/reports/*.txt` | Per-section dated reports (orphans, large files, stale builds…) | When relevant sections run |
+| `~/.macleanup/.welcomed` | Marker — disables the one-time welcome screen | First run on any machine |
 
-Everything is in one tidy place under `~/.mac-cleanup/`. To wipe it:
+Everything is in one tidy place under `~/.macleanup/`. To wipe it:
 
 ```bash
-rm -rf ~/.mac-cleanup/
+rm -rf ~/.macleanup/
 ```
 
 You can also override either path:
 
 ```bash
-mac-cleanup --logs-dir /tmp/mc-logs --reports-dir /tmp/mc-reports
+macleanup --logs-dir /tmp/mc-logs --reports-dir /tmp/mc-reports
 # or via env vars:
-export MAC_CLEANUP_LOGS_DIR=/tmp/mc-logs
-export MAC_CLEANUP_REPORTS_DIR=/tmp/mc-reports
+export MACLEANUP_LOGS_DIR=/tmp/mc-logs
+export MACLEANUP_REPORTS_DIR=/tmp/mc-reports
 ```
 
 See [Reports & Logs](reports-and-logs.md) for what each file contains.
@@ -237,30 +235,30 @@ You don't have Node installed. Either:
 1. **Install Node** via [nodejs.org](https://nodejs.org) — `npx` ships with it.
 2. **Or use Method 3** (`git clone`) — no Node required.
 
-### `permission denied: ./mac-cleanup.sh`
+### `permission denied: ./macleanup.sh`
 
 ```bash
-chmod +x mac-cleanup.sh
+chmod +x macleanup.sh
 ```
 
 The git checkout sometimes loses the executable bit on Windows-era zips.
 Setting `+x` once fixes it permanently for that file.
 
-### `mac-cleanup: this tool only runs on macOS. Detected platform: linux`
+### `macleanup: this tool only runs on macOS. Detected platform: linux`
 
 The script and the Node launcher both check for Darwin. There's no Linux
-port — `mac-cleanup` is intentionally macOS-only because it touches paths
+port — `macleanup` is intentionally macOS-only because it touches paths
 specific to the macOS filesystem layout (`~/Library`, `/private/var/folders`,
 APFS snapshots, `tmutil`, `xcrun`, `dscacheutil`, `mDNSResponder`,
 `launchctl`, `osascript`, etc.).
 
-### `mac-cleanup: bash 3.2+ required. Detected: 2.0.x`
+### `macleanup: bash 3.2+ required. Detected: 2.0.x`
 
 You're invoking the script with an unusually old bash. macOS ships with
 3.2 by default; if `bash --version` reports something older, your PATH may
 be pointing at a stripped-down shell. Try `/bin/bash --version`.
 
-### `command not found: mac-cleanup` after global install
+### `command not found: macleanup` after global install
 
 ```bash
 npm config get prefix
@@ -278,7 +276,7 @@ export PATH="$(npm config get prefix)/bin:$PATH"
 ### More install issues
 
 See [Troubleshooting](troubleshooting.md) for symptom → cause → fix
-mappings, or open an issue with `mac-cleanup --report-issue` (collects
+mappings, or open an issue with `macleanup --report-issue` (collects
 environment info locally and opens a pre-filled GitHub issue — nothing is
 auto-sent).
 

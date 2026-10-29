@@ -48,7 +48,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "resources/mac-cleanup.sh"
+      "resources/macleanup.sh"
     ],
     "macOS": {
       "minimumSystemVersion": "11.0"

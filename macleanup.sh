@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  mac-cleanup  —  comprehensive, safe-by-default macOS cleanup & maintenance.
+#  macleanup  —  comprehensive, safe-by-default macOS cleanup & maintenance.
 # =============================================================================
 #
 #  Author    : Ahsan Mahmood  <aoneahsan@gmail.com>
@@ -18,15 +18,15 @@
 #
 #  One self-contained interactive bash script. Every destructive action
 #  confirms before running. `--dry-run` deletes nothing but writes logs/reports.
-#  Logs + reports persist at ~/.mac-cleanup/{logs,reports}/ across runs.
+#  Logs + reports persist at ~/.macleanup/{logs,reports}/ across runs.
 #
 #  Quick start
 #      npx macleanup                # zero-install via npm
-#      ./mac-cleanup.sh                          # direct from a checkout
-#      ./mac-cleanup.sh --dry-run --all          # preview the safe-batch
-#      ./mac-cleanup.sh --all --yes              # unattended safe cleanup
-#      ./mac-cleanup.sh --list                   # show every section
-#      ./mac-cleanup.sh --version                # print version and exit
+#      ./macleanup.sh                          # direct from a checkout
+#      ./macleanup.sh --dry-run --all          # preview the safe-batch
+#      ./macleanup.sh --all --yes              # unattended safe cleanup
+#      ./macleanup.sh --list                   # show every section
+#      ./macleanup.sh --version                # print version and exit
 #
 #  Requirements
 #      • macOS 11 Big Sur or later (Apple Silicon or Intel)
@@ -39,26 +39,26 @@ set -uo pipefail
 
 # ── runtime preflight ────────────────────────────────────────────────────
 if [[ "$(uname -s 2>/dev/null)" != "Darwin" ]]; then
-  printf 'mac-cleanup: this tool only runs on macOS (Darwin). Detected: %s\n' \
+  printf 'macleanup: this tool only runs on macOS (Darwin). Detected: %s\n' \
     "$(uname -s 2>/dev/null || echo unknown)" >&2
   exit 1
 fi
 if [[ -z "${BASH_VERSINFO+set}" ]] \
    || (( BASH_VERSINFO[0] < 3 )) \
    || (( BASH_VERSINFO[0] == 3 && BASH_VERSINFO[1] < 2 )); then
-  printf 'mac-cleanup: bash 3.2+ required. Detected: %s\n' "${BASH_VERSION:-unknown}" >&2
+  printf 'macleanup: bash 3.2+ required. Detected: %s\n' "${BASH_VERSION:-unknown}" >&2
   exit 1
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
 #                                CONSTANTS
 # ──────────────────────────────────────────────────────────────────────────
-# Single source of truth is package.json: the npx/npm launcher (bin/mac-cleanup.js)
-# exports its version as MAC_CLEANUP_VERSION. For a direct `./mac-cleanup.sh`
+# Single source of truth is package.json: the npx/npm launcher (bin/macleanup.js)
+# exports its version as MACLEANUP_VERSION. For a direct `./macleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MAC_CLEANUP_VERSION:-4.7.1}"
-SCRIPT_NAME="mac-cleanup"
+SCRIPT_VERSION="${MACLEANUP_VERSION:-5.0.0}"
+SCRIPT_NAME="macleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 
@@ -76,13 +76,30 @@ PROJECT_REPO="https://github.com/aoneahsan/macleanup"
 PROJECT_NPM="https://www.npmjs.com/package/macleanup"
 
 # ── Persistent runtime directories (survive npx cache cleanup) ────────────
-# Default to $HOME/.mac-cleanup/{logs,reports} so reports + history are
+# Default to $HOME/.macleanup/{logs,reports} so reports + history are
 # stable regardless of whether the script ran from a git checkout, an
 # /opt install, or `npx macleanup`. Both paths can be
 # overridden via --logs-dir / --reports-dir or environment variables.
-DEFAULT_DATA_DIR="$HOME/.mac-cleanup"
-LOG_DIR="${MAC_CLEANUP_LOGS_DIR:-$DEFAULT_DATA_DIR/logs}"
-REPORTS_DIR="${MAC_CLEANUP_REPORTS_DIR:-$DEFAULT_DATA_DIR/reports}"
+DEFAULT_DATA_DIR="$HOME/.macleanup"
+
+# ── 5.0.0 one-name rename: pre-5 names are read as fallbacks for 5.x ─────
+# Before 5.0.0 the tool used ~/.mac-cleanup, ~/.mac-cleanuprc and
+# MAC_CLEANUP_* variables. The new names always win; an old name is used only
+# when its new counterpart is unset, and each use prints one deprecation note.
+LEGACY_DATA_DIR="$HOME/.mac-cleanup"
+LEGACY_RC_FILE="$HOME/.mac-cleanuprc"
+LEGACY_NOTES=()
+for _legacy_pair in LOGS_DIR REPORTS_DIR RC; do
+  _new_var="MACLEANUP_${_legacy_pair}"; _old_var="MAC_CLEANUP_${_legacy_pair}"
+  if [[ -z "${!_new_var:-}" && -n "${!_old_var:-}" ]]; then
+    printf -v "$_new_var" '%s' "${!_old_var}"
+    LEGACY_NOTES+=("\$${_old_var} is deprecated; use \$${_new_var}.")
+  fi
+done
+unset _legacy_pair _new_var _old_var
+
+LOG_DIR="${MACLEANUP_LOGS_DIR:-$DEFAULT_DATA_DIR/logs}"
+REPORTS_DIR="${MACLEANUP_REPORTS_DIR:-$DEFAULT_DATA_DIR/reports}"
 LOG_FILE="${LOG_DIR}/${SCRIPT_NAME}-${TODAY}.log"
 ORPHAN_REPORT="${REPORTS_DIR}/orphans-${TODAY}.txt"
 UNUSED_APPS_REPORT="${REPORTS_DIR}/unused-apps-${TODAY}.txt"
@@ -186,6 +203,22 @@ USER_CACHE_PRESERVE=(
   'node'
 )
 
+# migrate_legacy_data_dir — one-time, copy-only move to the 5.0.0 data dir.
+# When ~/.mac-cleanup exists and ~/.macleanup does not, copy it (never move or
+# delete), then write a marker naming the source. The old folder stays in
+# place for the user to remove when ready.
+migrate_legacy_data_dir() {
+  [[ -d "$LEGACY_DATA_DIR" && ! -e "$DEFAULT_DATA_DIR" ]] || return 0
+  if cp -Rp "$LEGACY_DATA_DIR" "$DEFAULT_DATA_DIR" 2>/dev/null; then
+    printf 'Copied from %s on %s\n' "$LEGACY_DATA_DIR" "$RUN_TIMESTAMP" \
+      > "$DEFAULT_DATA_DIR/.migrated-from-4x" 2>/dev/null || true
+    LEGACY_NOTES+=("Copied $LEGACY_DATA_DIR to $DEFAULT_DATA_DIR. The old folder was left in place; remove it when you no longer need it.")
+  else
+    LEGACY_NOTES+=("Could not copy $LEGACY_DATA_DIR to $DEFAULT_DATA_DIR. Older logs and reports stay in the old folder.")
+  fi
+}
+
+migrate_legacy_data_dir
 mkdir -p "$LOG_DIR" "$REPORTS_DIR" 2>/dev/null || true
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -254,8 +287,8 @@ _cleanup_temps() {
   # parse_args; "Unknown option" already printed help).
   if (( rc != 0 )) && (( rc != 2 )) && [[ -d "${LOG_DIR:-}" ]]; then
     printf '\n%b   Something went wrong (exit %d).%b\n' "${YELLOW:-}" "$rc" "${NC:-}" >&2
-    printf '%b   Run \`%s --report-issue\` to file a pre-filled bug report,%b\n' "${YELLOW:-}" "${SCRIPT_NAME:-mac-cleanup}" "${NC:-}" >&2
-    printf '%b   or \`%s --feedback\` to email the author directly.%b\n\n' "${YELLOW:-}" "${SCRIPT_NAME:-mac-cleanup}" "${NC:-}" >&2
+    printf '%b   Run \`%s --report-issue\` to file a pre-filled bug report,%b\n' "${YELLOW:-}" "${SCRIPT_NAME:-macleanup}" "${NC:-}" >&2
+    printf '%b   or \`%s --feedback\` to email the author directly.%b\n\n' "${YELLOW:-}" "${SCRIPT_NAME:-macleanup}" "${NC:-}" >&2
   fi
   # Reset terminal attributes so an interrupted printf doesn't leave the
   # shell in a coloured / dimmed state — only when we were using colours.
@@ -762,7 +795,7 @@ multi_select() {
 # tmp_file → mktemp registered for cleanup
 tmp_file() {
   local f
-  f=$(mktemp -t maccleanup.XXXXXX)
+  f=$(mktemp -t macleanup.XXXXXX)
   TMPFILES+=("$f")
   printf '%s' "$f"
 }
@@ -798,9 +831,9 @@ ${BOLD}Options${NC}
   --exclude-path PATH         Never touch PATH (or anything under it) in the
                               scanning sections 23 / 24. Repeatable.
   --logs-dir PATH             Persistent logs directory
-                              (default: \$HOME/.mac-cleanup/logs).
+                              (default: \$HOME/.macleanup/logs).
   --reports-dir PATH          Persistent reports directory
-                              (default: \$HOME/.mac-cleanup/reports).
+                              (default: \$HOME/.macleanup/reports).
   --no-reports                Skip writing per-section .txt report files.
                               (Logs still written.)
   --cleanup-logs-on-finish    Delete this run's log file at exit.
@@ -850,16 +883,16 @@ ${BOLD}Options${NC}
   --report-issue              Collect environment info LOCALLY and open
        (--report-bug)         a pre-filled GitHub issue (you review it
                               before submitting — nothing is auto-sent).
-  --stats                     Show history of runs at $HOME/.mac-cleanup.
+  --stats                     Show history of runs at $HOME/.macleanup.
   --prune-history [N]         Delete logs + reports older than N days from
-                              $HOME/.mac-cleanup (default N=90). Honours
+                              $HOME/.macleanup (default N=90). Honours
                               --dry-run.
-  --uninstall-data            Remove the entire $HOME/.mac-cleanup data dir
+  --uninstall-data            Remove the entire $HOME/.macleanup data dir
                               (logs, reports, run history) after confirming.
   -h, --help                  Show this help.
 
 ${BOLD}Config file${NC}
-  Defaults can be set in ~/.mac-cleanuprc (or \$MAC_CLEANUP_RC) as simple
+  Defaults can be set in ~/.macleanuprc (or \$MACLEANUP_RC) as simple
   key=value lines; CLI flags always override. Recognised keys:
   cache-age-days, idle-days, threshold, stale-build-days, large-file-days,
   large-file-size-gb, scan-roots, quiet, notify, brew-autoremove.
@@ -935,7 +968,7 @@ apply_exclude() {
 notify_user() {
   (( NOTIFY )) || return 0
   has_cmd osascript || return 0
-  local title="${1:-mac-cleanup}" msg="${2:-Done}"
+  local title="${1:-macleanup}" msg="${2:-Done}"
   local t="${title//\\/\\\\}"; t="${t//\"/\\\"}"
   local m="${msg//\\/\\\\}"; m="${m//\"/\\\"}"
   osascript -e "display notification \"$m\" with title \"$t\" sound name \"Glass\"" \
@@ -1075,7 +1108,7 @@ EOF
   printf '\nPrefer email?  %s\n' "$AUTHOR_EMAIL"
 }
 
-# cmd_stats — read-only summary of historical runs from ~/.mac-cleanup/.
+# cmd_stats — read-only summary of historical runs from ~/.macleanup/.
 cmd_stats() {
   printf '\n%b%s — runtime stats%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$NC"
   printf '%b%s%b\n' "$DIM" "─────────────────────────────────────────────" "$NC"
@@ -1138,7 +1171,7 @@ cmd_prune_history() {
   fi
 }
 
-# cmd_uninstall_data — remove the entire persistent data dir (~/.mac-cleanup:
+# cmd_uninstall_data — remove the entire persistent data dir (~/.macleanup:
 # logs, reports, the first-run marker). Confirms first; honours DRY_RUN.
 cmd_uninstall_data() {
   printf '\n%b%s — remove persistent data%b\n' "$BOLD$MAGENTA" "$SCRIPT_NAME" "$NC"
@@ -1162,12 +1195,16 @@ cmd_uninstall_data() {
   fi
 }
 
-# load_rc_file — read ~/.mac-cleanuprc (or $MAC_CLEANUP_RC) as simple key=value
+# load_rc_file — read ~/.macleanuprc (or $MACLEANUP_RC) as simple key=value
 # lines BEFORE CLI parsing, so explicit flags always win. Parsed with `read`
 # (never source/eval); only a whitelist of keys is honoured; malformed lines
 # warn and are skipped so a stray line can never brick the tool.
 load_rc_file() {
-  local rc="${MAC_CLEANUP_RC:-$HOME/.mac-cleanuprc}"
+  local rc="${MACLEANUP_RC:-$HOME/.macleanuprc}"
+  if [[ -z "${MACLEANUP_RC:-}" && ! -f "$rc" && -f "$LEGACY_RC_FILE" ]]; then
+    rc="$LEGACY_RC_FILE"
+    LEGACY_NOTES+=("Read $LEGACY_RC_FILE; rename it to $HOME/.macleanuprc.")
+  fi
   [[ -f "$rc" ]] || return 0
   local key val
   while IFS='=' read -r key val; do
@@ -2735,7 +2772,7 @@ s23_stale_builds() {
   if (( ${#roots[@]} == 0 )); then
     warn "No common dev folder detected (~/Projects, ~/Code, ~/Developer, ~/dev, ~/repos, ~/work, ~/Documents, ~/Desktop, ~/Downloads)."
     note "To scan a specific path, re-run with:"
-    note "    mac-cleanup --only 23 --scan-roots \"\$HOME/path/to/dev\""
+    note "    macleanup --only 23 --scan-roots \"\$HOME/path/to/dev\""
     note "Refusing to scan all of \$HOME — that risks deleting toolchain"
     note "directories (~/.nvm, ~/.bun, ~/.pnpm-store, etc.)."
     mark_done 23; press_enter; return 0
@@ -3347,7 +3384,7 @@ _finish_run() {
     exec 1>&3 3>&-
     emit_json
   fi
-  notify_user "mac-cleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
+  notify_user "macleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
 }
 
 show_menu() {
@@ -3360,7 +3397,7 @@ show_menu() {
   disk_free_h=$(df -h / | awk 'NR==2 {print $4}')
 
   printf '%b%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%b\n' "$BOLD" "$MAGENTA" "$NC"
-  printf '%b   mac-cleanup v%s   —   macOS %s (%s)   RAM %s   Free %s%b\n' \
+  printf '%b   macleanup v%s   —   macOS %s (%s)   RAM %s   Free %s%b\n' \
     "$BOLD$MAGENTA" "$SCRIPT_VERSION" "$mac_ver" "$chip" "$ram_h" "$disk_free_h" "$NC"
   if (( DRY_RUN )); then
     printf '%b   DRY-RUN MODE — nothing will be deleted%b\n' "$YELLOW" "$NC"
@@ -3492,9 +3529,18 @@ show_first_run_welcome_if_needed() {
   printf '\n'
 }
 
+# print_legacy_notes — one stderr line per pre-5 name still in use.
+print_legacy_notes() {
+  local note
+  for note in "${LEGACY_NOTES[@]+"${LEGACY_NOTES[@]}"}"; do
+    printf '%b[NOTE]%b %s\n' "$YELLOW" "$NC" "$note" >&2
+  done
+}
+
 main() {
-  # Load ~/.mac-cleanuprc defaults BEFORE argv so explicit CLI flags win.
+  # Load ~/.macleanuprc defaults BEFORE argv so explicit CLI flags win.
   load_rc_file
+  print_legacy_notes
   parse_args "$@"
   # Make sure logs/reports dirs exist after any --logs-dir / --reports-dir
   # overrides that may have been parsed from argv.
@@ -3502,7 +3548,7 @@ main() {
   init_log_file
   show_first_run_welcome_if_needed
   DISK_FREE_BEFORE_KB=$(disk_free_kb /)
-  log_to_file "── mac-cleanup v$SCRIPT_VERSION started ──"
+  log_to_file "── macleanup v$SCRIPT_VERSION started ──"
 
   # --json: send every human/log line to stderr (real stdout saved on fd 3) so
   # the only thing written to stdout is the JSON object emitted by _finish_run.
@@ -3582,7 +3628,7 @@ main() {
   done
 
   _finish_run
-  log_to_file "── mac-cleanup ended ──"
+  log_to_file "── macleanup ended ──"
   # Note: --cleanup-logs-on-finish is handled by the EXIT trap so it
   # fires for every code path (interactive quit, --only, --all, signals).
 }

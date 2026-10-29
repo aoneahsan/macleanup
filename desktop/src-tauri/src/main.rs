@@ -3,7 +3,7 @@
 
 //! macleanup desktop — Rust backend.
 //!
-//! Thin, safe wrapper around the bundled `mac-cleanup.sh`. The Rust layer:
+//! Thin, safe wrapper around the bundled `macleanup.sh`. The Rust layer:
 //!   * resolves + runs the bundled CLI in `--json` mode,
 //!   * streams the human log (stderr) to the UI line-by-line via events,
 //!   * captures the machine-readable JSON summary (stdout) and emits it on done,
@@ -49,11 +49,11 @@ struct OauthRedirect {
     query: String,
 }
 
-/// Absolute path to the bundled `mac-cleanup.sh` resource.
+/// Absolute path to the bundled `macleanup.sh` resource.
 fn script_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     app.path()
         .resolve(
-            "resources/mac-cleanup.sh",
+            "resources/macleanup.sh",
             tauri::path::BaseDirectory::Resource,
         )
         .map_err(|e| format!("could not locate bundled script: {e}"))

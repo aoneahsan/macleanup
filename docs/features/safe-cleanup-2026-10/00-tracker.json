@@ -4,23 +4,23 @@
   "status": "complete",
   "plan": {
     "scope": "Fix confirmed irreversible-deletion and temp-pruning bugs, run only reviewed temporary-cache cleanup, and align affected reference documentation.",
-    "codePaths": ["mac-cleanup.sh", "package.json", "README.md", "docs/REPORTED-ISSUES.md", "docs/RESOLVED-ISSUES.md"],
+    "codePaths": ["macleanup.sh", "package.json", "README.md", "docs/REPORTED-ISSUES.md", "docs/RESOLVED-ISSUES.md"],
     "dataChanges": "None; preserve user files, Trash, Time Machine snapshots, application data, and coding-agent global configuration.",
     "order": ["Guard Trash in unattended runs and remove it from the minimal profile", "Remove direct-delete fallback when Finder Trash fails", "Restrict temp pruning to old regular files in system temp locations", "Verify syntax and runtime safety cases", "Run reviewed cache-only sections on this Mac", "Update affected docs and resolve the confirmed issue entries"],
     "edgeCases": ["Finder Automation denied or unavailable", "Unattended --profile minimal --yes", "Explicit --only 10 with either --yes or --i-understand-deep missing", "A user-managed ~/tmp or an old temp directory containing newer files", "Dry-run must never remove files"],
-    "verification": ["bash -n mac-cleanup.sh", "node -c bin/mac-cleanup.js", "yarn version:check", "Unattended Trash refusal with either required flag missing", "Dry-run of selected sections before real cleanup", "git diff --check"],
+    "verification": ["bash -n macleanup.sh", "node -c bin/macleanup.js", "yarn version:check", "Unattended Trash refusal with either required flag missing", "Dry-run of selected sections before real cleanup", "git diff --check"],
     "success": "No unattended Trash deletion without both safety flags; Finder failure leaves app and companion data in place; temp cleanup leaves ~/tmp and nested files in place; this Mac's cleanup touches only reviewed temporary caches.",
     "rollback": "Revert the source commit; no destructive cleanup action can be rolled back without a backup.",
     "decisions": "Proceed without a backup at the owner's request; do not touch agent global configuration."
   },
   "releasePlan": {
     "target": "4.7.0 minor release because named-profile and temp-cleanup behavior changes",
-    "paths": ["package.json", "mac-cleanup.sh", "CHANGELOG.md", "README.md", "docs/README.md", "docs/cli-reference.md", "docs/RESOLVED-ISSUES.md"],
+    "paths": ["package.json", "macleanup.sh", "CHANGELOG.md", "README.md", "docs/README.md", "docs/cli-reference.md", "docs/RESOLVED-ISSUES.md"],
     "schemaChanges": "None; the CLI flags and JSON output shape remain the same.",
     "order": ["Refresh the FilesHub npm credential and verify registry authentication", "Bump package and script versions together", "Move safety fixes into the 4.7.0 changelog and align versioned reference text", "Run syntax, version-parity, focused safety, and npm pack checks", "Publish the package with a temporary credential file outside the repository", "Verify npm registry version and archive contents", "Fetch and merge remote changes, then push the release commit and tag"],
     "edgeCases": ["Expired or scope-limited npm token", "Registry version already exists", "2FA or stage-only token challenge", "Publish succeeds but local verification times out", "No secret in packlist, log, commit, or process arguments"],
     "security": "Reveal the token only from FilesHub at publish time, use the supplied .npmrc content in a mode-0600 temporary file, and remove it on process exit; never print it.",
-    "verification": ["bash -n mac-cleanup.sh", "node -c bin/mac-cleanup.js", "yarn version:check", "unattended deep-gate checks", "isolated temp-pruning fixture", "npm pack --dry-run --json", "npm view macleanup version", "git diff --check"],
+    "verification": ["bash -n macleanup.sh", "node -c bin/macleanup.js", "yarn version:check", "unattended deep-gate checks", "isolated temp-pruning fixture", "npm pack --dry-run --json", "npm view macleanup version", "git diff --check"],
     "success": "npm serves macleanup 4.7.0 with the safety fixes; source and published documentation state the same behavior; GitHub main matches the release.",
     "rollback": "A published npm version cannot be safely overwritten; if verification finds a defect, publish a corrective version and document it. Local preparation can be reverted before publication.",
     "unresolved": "None."

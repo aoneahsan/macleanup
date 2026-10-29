@@ -9,7 +9,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "macleanup@workspace:."
   bin:
-    mac-cleanup: bin/mac-cleanup.js
-    macleanup: bin/mac-cleanup.js
+    macleanup: bin/macleanup.js
   languageName: unknown
   linkType: soft

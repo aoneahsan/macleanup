@@ -1,8 +1,8 @@
-# Getting Started with mac-cleanup
+# Getting Started with macleanup
 
 > Five minutes to your first cleanup. No commitment, no install, no risk.
 
-This page walks you through running `mac-cleanup` for the very first time.
+This page walks you through running `macleanup` for the very first time.
 By the end you'll have:
 
 - previewed every cleanup it would perform on your machine,
@@ -48,12 +48,12 @@ Here's what happens, in order:
 
 1. `npx` fetches the [`macleanup`](https://www.npmjs.com/package/macleanup)
    package from the npm registry into npm's cache.
-2. The tiny Node launcher (`bin/mac-cleanup.js`, ~80 lines) checks you're on
-   macOS, locates the bundled `mac-cleanup.sh`, and `exec`s bash with your
+2. The tiny Node launcher (`bin/macleanup.js`, ~80 lines) checks you're on
+   macOS, locates the bundled `macleanup.sh`, and `exec`s bash with your
    arguments forwarded.
 3. The bash script confirms `bash >= 3.2`, then prints the interactive menu.
 4. When you exit, npm's cache may be reclaimed — but **your logs and reports
-   are written to `~/.mac-cleanup/`**, which survives every `npx` run.
+   are written to `~/.macleanup/`**, which survives every `npx` run.
 
 > **Why `npx`?** Single-command, no install, no PATH changes, no need to
 > trust a Homebrew tap. You can read the script source online at
@@ -88,10 +88,10 @@ sections page](sections.md#section-5--user-caches) for what it actually does.
 
 ## Step 3 — First-run walkthrough
 
-When you launch `mac-cleanup` without flags, you'll see something like this:
+When you launch `macleanup` without flags, you'll see something like this:
 
 ```
-mac-cleanup v4.7.1
+macleanup v5.0.0
 =====================================================
 
 Choose a section to run (or 'a' for the safe batch, 'q' to quit):
@@ -133,7 +133,7 @@ menu — pick another, or type `q` to quit.
 
 ## Step 4 — Read the on-screen prompts
 
-`mac-cleanup` is **explicit** about every confirmation it asks for. There
+`macleanup` is **explicit** about every confirmation it asks for. There
 are three levels of prompt, escalating by risk:
 
 | Prompt | Default | Used by |
@@ -158,7 +158,7 @@ files, stale builds, etc.), it writes a dated `.txt` report you can read
 later in any editor.
 
 ```bash
-ls -la ~/.mac-cleanup/reports/
+ls -la ~/.macleanup/reports/
 ```
 
 Output looks like:
@@ -212,10 +212,10 @@ Three flags help you reach the author or report issues, all local-first
 Submit):
 
 ```bash
-mac-cleanup --contact         # show the author contact card
-mac-cleanup --feedback        # open mail client with prefilled message
-mac-cleanup --report-issue    # open a pre-filled GitHub issue
-mac-cleanup --stats           # show your run history at ~/.mac-cleanup
+macleanup --contact         # show the author contact card
+macleanup --feedback        # open mail client with prefilled message
+macleanup --report-issue    # open a pre-filled GitHub issue
+macleanup --stats           # show your run history at ~/.macleanup
 ```
 
 For more, see the [Author & Credits](author.md) page and the

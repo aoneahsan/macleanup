@@ -1,6 +1,6 @@
 # FAQ
 
-> Plain-English answers to the questions people ask about `mac-cleanup`
+> Plain-English answers to the questions people ask about `macleanup`
 > first. For step-by-step problem-solving see [Troubleshooting](troubleshooting.md).
 
 ---
@@ -37,13 +37,13 @@ is the kindest thank-you.
 ### Does it collect any telemetry?
 
 **None.** The script makes zero network calls by default. The Node
-launcher (`bin/mac-cleanup.js`) only spawns bash — no analytics, no
+launcher (`bin/macleanup.js`) only spawns bash — no analytics, no
 phone-home, no remote requests. The optional `--check-update` is the
 only outbound network call: a single unauthenticated GET to
 `https://registry.npmjs.org/macleanup/latest`.
 It sends no cleanup paths or reports; npm still receives normal request
 metadata such as your IP address.
-Logs and reports stay on your machine in `~/.mac-cleanup/`.
+Logs and reports stay on your machine in `~/.macleanup/`.
 
 ### Why does it ship as one file instead of `brew install`?
 
@@ -54,17 +54,17 @@ and you're done. See [Installation — Method 3](installation.md#method-3--direc
 ### Can I read the source before running it?
 
 Yes — and you should. The whole tool is two files:
-[`mac-cleanup.sh`](https://github.com/aoneahsan/macleanup/blob/main/mac-cleanup.sh)
+[`macleanup.sh`](https://github.com/aoneahsan/macleanup/blob/main/macleanup.sh)
 (~3,000 lines of plain bash) and
-[`bin/mac-cleanup.js`](https://github.com/aoneahsan/macleanup/blob/main/bin/mac-cleanup.js)
+[`bin/macleanup.js`](https://github.com/aoneahsan/macleanup/blob/main/bin/macleanup.js)
 (~80 lines of plain Node). Open them in any editor.
 
 ### What happens when I run `npx macleanup`?
 
 `npx` downloads the published package from the npm registry into npm's
-cache, runs `bin/mac-cleanup.js` (which spawns the bundled
-`mac-cleanup.sh` via `bash`), and lets npm reclaim the cache afterwards.
-Your reports and logs are written to `~/.mac-cleanup/` and are **never
+cache, runs `bin/macleanup.js` (which spawns the bundled
+`macleanup.sh` via `bash`), and lets npm reclaim the cache afterwards.
+Your reports and logs are written to `~/.macleanup/` and are **never
 inside** the cache, so they survive every `npx` invocation.
 
 ### Is this OSI-approved open source?
@@ -106,10 +106,10 @@ pre-trimmed list for unattended use, but its deep sections (6) still require
 
 Either:
 
-1. **Use a profile** if one matches: `mac-cleanup --profile minimal --yes`
+1. **Use a profile** if one matches: `macleanup --profile minimal --yes`
 2. **Shell-alias it:**
    ```bash
-   alias mac-clean-week='mac-cleanup --only "5,7,8,9" --yes --quiet --notify'
+   alias mac-clean-week='macleanup --only "5,7,8,9" --yes --quiet --notify'
    ```
 3. **Cron / launchd** for fully automated. See
    [Examples Cookbook — Unattended cron job](examples-cookbook.md#unattended-cron-job).
@@ -153,7 +153,7 @@ Two likely causes:
 
 1. **Your IDE is keeping the directory's atime fresh.** Even reading
    files for autocomplete updates atime. Lower the threshold:
-   `mac-cleanup --only 23 --stale-build-days 30 --dry-run`.
+   `macleanup --only 23 --stale-build-days 30 --dry-run`.
 2. **The directory is in `CRITICAL_HOME_DIRS`.** Section 23 will never
    touch `~/.bun`, `~/.pnpm-store`, `~/.cargo`, etc. — see
    [Safety Model](safety-model.md#critical_home_dirs--the-section-23-allowlist).
@@ -204,7 +204,7 @@ LaunchDaemons. All of those require root.
 If you don't want sudo at all:
 
 ```bash
-mac-cleanup --all --no-sudo
+macleanup --all --no-sudo
 ```
 
 The sudo-requiring sections will be skipped, **never silently
@@ -225,12 +225,12 @@ in the same run won't prompt again.
 By default, in your home directory — never in the npx cache:
 
 ```
-~/.mac-cleanup/logs/      # session logs (one per day)
-~/.mac-cleanup/reports/   # per-section reports (one per day per type)
+~/.macleanup/logs/      # session logs (one per day)
+~/.macleanup/reports/   # per-section reports (one per day per type)
 ```
 
 Override with `--logs-dir PATH` and `--reports-dir PATH`, or set
-`MAC_CLEANUP_LOGS_DIR` / `MAC_CLEANUP_REPORTS_DIR` in the env. See
+`MACLEANUP_LOGS_DIR` / `MACLEANUP_REPORTS_DIR` in the env. See
 [Reports & Logs](reports-and-logs.md).
 
 ### Why does each report start with author info?
@@ -243,7 +243,7 @@ tool generated it. Disable per-section reports with `--no-reports`
 ### How do I clear my run history?
 
 ```bash
-rm -rf ~/.mac-cleanup/
+rm -rf ~/.macleanup/
 ```
 
 That wipes logs, reports, and the welcome marker. Next run will
@@ -271,7 +271,7 @@ corepack enable && corepack prepare pnpm@latest --activate
 # yarn
 corepack enable && corepack prepare yarn@stable --activate
 
-# upgrade mac-cleanup itself
+# upgrade macleanup itself
 npx macleanup@latest --version    # confirm 4.5.0+
 ```
 
@@ -293,9 +293,9 @@ See [Safety Model — `CRITICAL_HOME_DIRS`](safety-model.md#critical_home_dirs--
 
 ## Project & licensing
 
-### Can I include `mac-cleanup` in my own product / SaaS / public installer script?
+### Can I include `macleanup` in my own product / SaaS / public installer script?
 
-Yes. mac-cleanup is **MIT licensed**, so you're free to use, modify,
+Yes. macleanup is **MIT licensed**, so you're free to use, modify,
 redistribute, bundle, and even sell it — the only condition is that you
 keep the copyright and license notice in your copies. See
 [LICENSE.md](../LICENSE.md) for full terms.
@@ -315,7 +315,7 @@ See [SECURITY.md](../SECURITY.md).
 ### How do I report a non-security bug?
 
 ```bash
-mac-cleanup --report-issue
+macleanup --report-issue
 ```
 
 Opens a pre-filled GitHub issue with your environment info collected
@@ -338,7 +338,7 @@ user, maker of small sharp tools.
 - 📧 [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com)
 - 📱 +92 304 6619706
 
-If `mac-cleanup` saved you time, [a GitHub star](https://github.com/aoneahsan/macleanup)
+If `macleanup` saved you time, [a GitHub star](https://github.com/aoneahsan/macleanup)
 and [a share with a fellow Mac developer](#) are the kindest thank-yous.
 
 ### How can I support the project?
@@ -346,7 +346,7 @@ and [a share with a fellow Mac developer](#) are the kindest thank-yous.
 - ⭐ Star the [GitHub repo](https://github.com/aoneahsan/macleanup).
 - 🐦 Share it with a fellow Mac developer.
 - 💼 Hire the author for consulting / contract work — see [aoneahsan.com](https://aoneahsan.com).
-- 💬 Send feedback via `mac-cleanup --feedback`.
+- 💬 Send feedback via `macleanup --feedback`.
 
 See [Author & Credits](author.md) for more.
 
@@ -361,4 +361,4 @@ See [Author & Credits](author.md) for more.
 
 ---
 
-_FAQ for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_FAQ for **macleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

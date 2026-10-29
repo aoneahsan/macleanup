@@ -1,6 +1,6 @@
 # Security policy
 
-`mac-cleanup` runs `rm -rf`, `sudo`, and AppleScript Trash moves against
+`macleanup` runs `rm -rf`, `sudo`, and AppleScript Trash moves against
 your machine. Even small bugs can have outsized impact, so security
 reports are taken seriously.
 
@@ -25,7 +25,7 @@ critical issues will be triaged ahead of feature work.
 
 ## What's in scope
 
-- Anything in `mac-cleanup.sh` that could:
+- Anything in `macleanup.sh` that could:
   - Delete files outside the intended target.
   - Bypass the `--dry-run` guarantee.
   - Inject shell or AppleScript through a crafted filename / bundle ID.

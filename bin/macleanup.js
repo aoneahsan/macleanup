@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 /**
- * mac-cleanup — Node.js launcher for the bundled bash script.
+ * macleanup — Node.js launcher for the bundled bash script.
  *
  * This file exists for one reason: enable `npx macleanup` so users can
  * run the tool with zero install. It does NOT reimplement
- * anything in JavaScript. All logic lives in mac-cleanup.sh — the launcher
+ * anything in JavaScript. All logic lives in macleanup.sh — the launcher
  * just validates the host platform, locates the script, and execs bash
  * with the user's argv forwarded through.
  *
@@ -22,7 +22,7 @@ const fs = require('fs');
 // ── Platform guard ──────────────────────────────────────────────────────
 if (process.platform !== 'darwin') {
   console.error(
-    'mac-cleanup: this tool only runs on macOS. Detected platform: ' +
+    'macleanup: this tool only runs on macOS. Detected platform: ' +
       process.platform,
   );
   process.exit(1);
@@ -30,10 +30,10 @@ if (process.platform !== 'darwin') {
 
 // ── Locate the bash script that ships next to this launcher ─────────────
 // __dirname == <package>/bin, so the script is one level up.
-const scriptPath = path.resolve(__dirname, '..', 'mac-cleanup.sh');
+const scriptPath = path.resolve(__dirname, '..', 'macleanup.sh');
 if (!fs.existsSync(scriptPath)) {
   console.error(
-    'mac-cleanup: bundled script not found at ' +
+    'macleanup: bundled script not found at ' +
       scriptPath +
       '\nThe package may be corrupted. Try `npx --yes macleanup` again.',
   );
@@ -56,7 +56,7 @@ const bashCmd = 'bash';
 
 // ── Single-source the version ───────────────────────────────────────────
 // package.json is the source of truth. Export it so the bash script reports
-// the exact published version (MAC_CLEANUP_VERSION) instead of a hand-kept
+// the exact published version (MACLEANUP_VERSION) instead of a hand-kept
 // literal that could drift.
 let pkgVersion = '';
 try {
@@ -65,7 +65,7 @@ try {
   /* best-effort — direct checkouts fall back to the literal in the script */
 }
 const childEnv = pkgVersion
-  ? Object.assign({}, process.env, { MAC_CLEANUP_VERSION: pkgVersion })
+  ? Object.assign({}, process.env, { MACLEANUP_VERSION: pkgVersion })
   : process.env;
 
 // ── Forward argv + stdio + signals ──────────────────────────────────────
@@ -90,7 +90,7 @@ for (const sig of FORWARD_SIGNALS) {
 }
 
 child.on('error', (err) => {
-  console.error('mac-cleanup: failed to launch bash: ' + err.message);
+  console.error('macleanup: failed to launch bash: ' + err.message);
   process.exit(127);
 });
 

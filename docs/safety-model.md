@@ -1,10 +1,10 @@
 # Safety Model
 
-> The rules `mac-cleanup` holds itself to. Read this before you run
+> The rules `macleanup` holds itself to. Read this before you run
 > section 14, before you wire it into cron with `--yes`, or before you
 > point it at a fleet of machines.
 
-`mac-cleanup` is **safe by default** — but it is also a tool that runs
+`macleanup` is **safe by default** — but it is also a tool that runs
 `rm -rf` and `sudo`, and ultimately you are responsible for verifying its
 outputs on your machine. This page documents the design rules so you can
 trust them, audit them, and (where they can be loosened with flags)
@@ -253,7 +253,7 @@ For symmetry — these are explicit non-features:
   any new machine.
 - **Don't use `--all --yes` blindly.** It is appropriate for known,
   trusted profiles like `--profile minimal --yes --quiet --notify` in a
-  cron job. It is not appropriate for "I just installed mac-cleanup."
+  cron job. It is not appropriate for "I just installed macleanup."
 - **Don't run section 14 without intending to reboot.**
 - **Don't run section 21 with `--yes` on a production machine** without
   reviewing the report first.
@@ -262,7 +262,7 @@ For symmetry — these are explicit non-features:
 
 ## Recovery if something does go wrong
 
-`mac-cleanup` had one known incident in its history: **v4.3.0 with the
+`macleanup` had one known incident in its history: **v4.3.0 with the
 silent `$HOME` fallback in section 23 could remove `node_modules`-shaped
 folders inside toolchain manager directories** (`~/.bun`, `~/.pnpm-store`,
 `~/.local/share/pnpm`, `~/.npm-packages`, `~/.volta`), breaking globally
@@ -292,4 +292,4 @@ for one-line restore commands for `bun`, `pnpm`, `yarn`, `nvm`, `Volta`,
 
 ---
 
-_Safety model for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._
+_Safety model for **macleanup** by **[Ahsan Mahmood](author.md)**._

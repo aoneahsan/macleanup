@@ -1,6 +1,6 @@
 # Reports & Logs
 
-> Where everything `mac-cleanup` writes lives, what's in each file, and
+> Where everything `macleanup` writes lives, what's in each file, and
 > how to keep it tidy.
 
 By default, every run leaves three things behind:
@@ -10,7 +10,7 @@ By default, every run leaves three things behind:
    produce candidate lists.
 3. **A welcome marker** — once, on first run.
 
-All three live under `~/.mac-cleanup/` so they survive `npx` cache
+All three live under `~/.macleanup/` so they survive `npx` cache
 cleanup, npm cache purges, and macOS restarts.
 
 ---
@@ -18,10 +18,10 @@ cleanup, npm cache purges, and macOS restarts.
 ## Default file layout
 
 ```
-~/.mac-cleanup/
+~/.macleanup/
 ├── .welcomed                                 # marker — disables welcome screen
 ├── logs/
-│   └── mac-cleanup-YYYY-MM-DD.log           # one session log per day
+│   └── macleanup-YYYY-MM-DD.log           # one session log per day
 └── reports/
     ├── orphans-YYYY-MM-DD.txt               # section 12 candidates
     ├── unused-apps-YYYY-MM-DD.txt           # section 21 candidates
@@ -45,14 +45,14 @@ Two ways to point logs and reports somewhere else:
 **Per-invocation, via flags:**
 
 ```bash
-mac-cleanup --logs-dir /tmp/mc-logs --reports-dir /tmp/mc-reports
+macleanup --logs-dir /tmp/mc-logs --reports-dir /tmp/mc-reports
 ```
 
 **Persistently, via env vars** (e.g. in `~/.zshrc`):
 
 ```bash
-export MAC_CLEANUP_LOGS_DIR=/var/log/mac-cleanup
-export MAC_CLEANUP_REPORTS_DIR=/var/log/mac-cleanup
+export MACLEANUP_LOGS_DIR=/var/log/macleanup
+export MACLEANUP_REPORTS_DIR=/var/log/macleanup
 ```
 
 Both can point to the same directory if you prefer. The directories are
@@ -60,12 +60,12 @@ created if they don't exist (best-effort `mkdir -p`).
 
 ---
 
-## The session log — `logs/mac-cleanup-YYYY-MM-DD.log`
+## The session log — `logs/macleanup-YYYY-MM-DD.log`
 
 Format: each line begins with an ISO-8601 timestamp and a level tag.
 
 ```
-[2026-05-10 12:34:56] [INFO] Starting mac-cleanup v4.5.0
+[2026-05-10 12:34:56] [INFO] Starting macleanup v4.5.0
 [2026-05-10 12:34:57] [INFO] Section 1: Xcode caches…
 [2026-05-10 12:34:58] [OK]   ~/Library/Developer/Xcode/DerivedData → 12.4 GB freed
 [2026-05-10 12:35:01] [WARN] xcrun simctl delete unavailable failed
@@ -78,14 +78,14 @@ append; the file grows until you delete it or pass `--cleanup-logs-on-finish`.
 ### Reading the log
 
 ```bash
-tail -50 ~/.mac-cleanup/logs/mac-cleanup-$(date +%Y-%m-%d).log
-less ~/.mac-cleanup/logs/mac-cleanup-2026-05-10.log
+tail -50 ~/.macleanup/logs/macleanup-$(date +%Y-%m-%d).log
+less ~/.macleanup/logs/macleanup-2026-05-10.log
 ```
 
 Or use the `--stats` command to find the latest log path:
 
 ```bash
-mac-cleanup --stats
+macleanup --stats
 ```
 
 ### Cleaning up old logs
@@ -95,14 +95,14 @@ free). Three options to clean up:
 
 | Approach | Command |
 |---|---|
-| Delete this run's log on exit | `mac-cleanup --cleanup-logs-on-finish` |
-| Manual cleanup of old logs | `find ~/.mac-cleanup/logs -name '*.log' -mtime +90 -delete` |
-| Wipe everything | `rm -rf ~/.mac-cleanup/logs/` |
+| Delete this run's log on exit | `macleanup --cleanup-logs-on-finish` |
+| Manual cleanup of old logs | `find ~/.macleanup/logs -name '*.log' -mtime +90 -delete` |
+| Wipe everything | `rm -rf ~/.macleanup/logs/` |
 
 If you need a "rolling 30-day window" effect, drop this in cron / `launchd`:
 
 ```bash
-find ~/.mac-cleanup/logs -name 'mac-cleanup-*.log' -mtime +30 -delete
+find ~/.macleanup/logs -name 'macleanup-*.log' -mtime +30 -delete
 ```
 
 ---
@@ -235,7 +235,7 @@ your colleague knows exactly what generated it.
 
 ```
 ═════════════════════════════════════════════════════════════════════
-  mac-cleanup v4.5.0 — comprehensive macOS cleanup & maintenance
+  macleanup v4.5.0 — comprehensive macOS cleanup & maintenance
 ─────────────────────────────────────────────────────────────────────
   Author    : Ahsan Mahmood <aoneahsan@gmail.com>
   Website   : https://aoneahsan.com
@@ -251,24 +251,24 @@ your colleague knows exactly what generated it.
 To **disable per-section reports** entirely (logs still written):
 
 ```bash
-mac-cleanup --no-reports
+macleanup --no-reports
 ```
 
 ---
 
 ## The welcome marker — `.welcomed`
 
-The first time you run `mac-cleanup` on a machine, it shows a one-time
+The first time you run `macleanup` on a machine, it shows a one-time
 welcome screen explaining what the tool does, where reports go, and how
 to get help.
 
 After acknowledgement, an empty marker file is created at
-`~/.mac-cleanup/.welcomed`. Subsequent runs skip the welcome.
+`~/.macleanup/.welcomed`. Subsequent runs skip the welcome.
 
 To see the welcome again:
 
 ```bash
-rm ~/.mac-cleanup/.welcomed
+rm ~/.macleanup/.welcomed
 ```
 
 ---
@@ -276,19 +276,19 @@ rm ~/.mac-cleanup/.welcomed
 ## Inspecting your run history — `--stats`
 
 ```bash
-mac-cleanup --stats
+macleanup --stats
 ```
 
 Prints a tidy summary:
 
 ```
-mac-cleanup — runtime stats
+macleanup — runtime stats
 ─────────────────────────────────────────────
-Data directory: /Users/you/.mac-cleanup
+Data directory: /Users/you/.macleanup
 
    Logs        : 14 files, 720K total
-                 oldest mac-cleanup-2026-04-26.log
-                 newest mac-cleanup-2026-05-10.log
+                 oldest macleanup-2026-04-26.log
+                 newest macleanup-2026-05-10.log
    Reports     : 6 files, 48K total
 
 Recent reports:
@@ -298,9 +298,9 @@ Recent reports:
    ...
 
 Get help
-   mac-cleanup --feedback       email Ahsan
-   mac-cleanup --report-issue   open a pre-filled bug report
-   mac-cleanup --contact        full contact card
+   macleanup --feedback       email Ahsan
+   macleanup --report-issue   open a pre-filled bug report
+   macleanup --contact        full contact card
 ```
 
 Useful as a quick sanity check before a deep run, or when you want to
@@ -322,15 +322,15 @@ If you redact paths from a report before sharing (e.g. for a GitHub
 issue), grep for your username:
 
 ```bash
-sed "s|$USER|user|g" ~/.mac-cleanup/reports/orphans-2026-05-10.txt
+sed "s|$USER|user|g" ~/.macleanup/reports/orphans-2026-05-10.txt
 ```
 
 ---
 
-## Wiping everything mac-cleanup left behind
+## Wiping everything macleanup left behind
 
 ```bash
-rm -rf ~/.mac-cleanup/
+rm -rf ~/.macleanup/
 ```
 
 This wipes logs, reports, and the welcome marker. Next run will re-create
@@ -346,4 +346,4 @@ the directory and show the welcome.
 
 ---
 
-_Reports & logs guide for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Reports & logs guide for **macleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

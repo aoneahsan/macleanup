@@ -1,10 +1,10 @@
 <div align="center">
   <img src="../assets/logo/macleanup-mark.svg" width="96" alt="macleanup"/>
   <h1>macleanup — desktop app</h1>
-  <p>A tiny native macOS GUI (Tauri) in front of the <code>mac-cleanup</code> CLI.</p>
+  <p>A tiny native macOS GUI (Tauri) in front of the <code>macleanup</code> CLI.</p>
 </div>
 
-A thin, native wrapper around the battle-tested `mac-cleanup.sh`. The Rust core
+A thin, native wrapper around the battle-tested `macleanup.sh`. The Rust core
 runs the **bundled** script in `--json` mode and streams its output to a polished
 React UI. No cleanup logic is reimplemented — all 28 sections, safety rules, and
 dry-run guarantees come straight from the script.
@@ -127,10 +127,10 @@ desktop/
 ├─ src-tauri/                Rust core
 │  ├─ src/main.rs            runs the bundled CLI (--json), streams output, OAuth loopback
 │  ├─ tauri.conf.json        bundle + updater config
-│  ├─ resources/             bundled copy of ../../mac-cleanup.sh (generated)
+│  ├─ resources/             bundled copy of ../../macleanup.sh (generated)
 │  └─ icons/                 generated from ../assets/logo (generated)
 └─ scripts/                  sync-script.mjs · gen-icons.mjs
 ```
 
-The bundled `mac-cleanup.sh` is copied from the **repo root** at build time, so
+The bundled `macleanup.sh` is copied from the **repo root** at build time, so
 the GUI and CLI always ship the same version.

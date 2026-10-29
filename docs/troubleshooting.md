@@ -3,7 +3,7 @@
 > Symptom → cause → fix. Reach for this when something didn't work as
 > expected. For "why does it work this way?" questions, see [FAQ](faq.md).
 
-If a fix below doesn't solve your issue, run `mac-cleanup --report-issue`
+If a fix below doesn't solve your issue, run `macleanup --report-issue`
 — it opens a pre-filled GitHub issue with environment info collected
 locally (nothing is auto-sent until you click Submit on github.com).
 
@@ -23,7 +23,7 @@ locally (nothing is auto-sent until you click Submit on github.com).
 
 ---
 
-### `permission denied: ./mac-cleanup.sh`
+### `permission denied: ./macleanup.sh`
 
 **Cause:** The executable bit was lost (most often via a Windows-era zip
 extraction or a `cp` between volumes).
@@ -31,13 +31,13 @@ extraction or a `cp` between volumes).
 **Fix:**
 
 ```bash
-chmod +x mac-cleanup.sh
-./mac-cleanup.sh
+chmod +x macleanup.sh
+./macleanup.sh
 ```
 
 ---
 
-### `mac-cleanup: this tool only runs on macOS. Detected platform: linux`
+### `macleanup: this tool only runs on macOS. Detected platform: linux`
 
 **Cause:** You're running it on Linux or in a non-Darwin environment
 (e.g. WSL, Docker container).
@@ -50,7 +50,7 @@ have no Linux equivalent.
 
 ---
 
-### `mac-cleanup: bash 3.2+ required. Detected: 2.0.x`
+### `macleanup: bash 3.2+ required. Detected: 2.0.x`
 
 **Cause:** You're invoking the script with an unusually old bash
 interpreter.
@@ -59,7 +59,7 @@ interpreter.
 
 ```bash
 /bin/bash --version            # confirm the system bash is >=3.2
-/bin/bash mac-cleanup.sh       # run via system bash explicitly
+/bin/bash macleanup.sh       # run via system bash explicitly
 ```
 
 If `/bin/bash` is missing, you may have a customised macOS install — try
@@ -67,7 +67,7 @@ restoring `/bin/bash` from a known-good source.
 
 ---
 
-### `command not found: mac-cleanup` after `npm install -g`
+### `command not found: macleanup` after `npm install -g`
 
 **Cause:** Your shell's PATH doesn't include the npm global bin
 directory.
@@ -85,11 +85,11 @@ Add to `~/.zshrc` or `~/.bash_profile`:
 export PATH="$(npm config get prefix)/bin:$PATH"
 ```
 
-Re-source: `source ~/.zshrc`. Then `which mac-cleanup` should resolve.
+Re-source: `source ~/.zshrc`. Then `which macleanup` should resolve.
 
 ---
 
-### `mac-cleanup: bundled script not found at …mac-cleanup.sh`
+### `macleanup: bundled script not found at …macleanup.sh`
 
 **Cause:** The npm package is corrupted or partially extracted.
 
@@ -120,8 +120,8 @@ won't be flagged.
 **Fix:** Lower the threshold or use section 18 instead:
 
 ```bash
-mac-cleanup --only 24 --large-file-days 30 --dry-run    # smaller window
-mac-cleanup --only 18                                   # purely by size
+macleanup --only 24 --large-file-days 30 --dry-run    # smaller window
+macleanup --only 18                                   # purely by size
 ```
 
 See [Section 24 reference](sections.md#section-24--large-stale-files).
@@ -136,7 +136,7 @@ fresh (autocomplete reads files).
 **Fix:**
 
 ```bash
-mac-cleanup --only 23 --stale-build-days 30 --dry-run
+macleanup --only 23 --stale-build-days 30 --dry-run
 ```
 
 **Cause #2:** The directory is inside one of the `CRITICAL_HOME_DIRS`
@@ -147,7 +147,7 @@ enter those.
 caches, run:
 
 ```bash
-mac-cleanup --only 3
+macleanup --only 3
 ```
 
 See [Safety Model — `CRITICAL_HOME_DIRS`](safety-model.md#critical_home_dirs--the-section-23-allowlist).
@@ -157,7 +157,7 @@ See [Safety Model — `CRITICAL_HOME_DIRS`](safety-model.md#critical_home_dirs--
 **Fix:**
 
 ```bash
-mac-cleanup --only 23 --scan-roots "$HOME/repos:$HOME/work:$HOME/code" --dry-run
+macleanup --only 23 --scan-roots "$HOME/repos:$HOME/work:$HOME/code" --dry-run
 ```
 
 ---
@@ -191,7 +191,7 @@ the 4.3.0 bug). It auto-detects common dev folders (`~/Projects`,
 **Fix:**
 
 ```bash
-mac-cleanup --only 23 --scan-roots "$HOME/path/to/your/code"
+macleanup --only 23 --scan-roots "$HOME/path/to/your/code"
 ```
 
 ---
@@ -204,7 +204,7 @@ mac-cleanup --only 23 --scan-roots "$HOME/path/to/your/code"
 then re-run section 4. Or skip:
 
 ```bash
-mac-cleanup --all --exclude 4 --yes
+macleanup --all --exclude 4 --yes
 ```
 
 ---
@@ -234,7 +234,7 @@ ls -laO ~/.Trash/         # 'uchg' flag = user immutable
 
 # unlock and try again
 chflags -R nouchg ~/.Trash/
-mac-cleanup --only 10
+macleanup --only 10
 ```
 
 ---
@@ -247,7 +247,7 @@ when the disk needs more space.
 **Fix:** Either trigger purgeable space reclaim:
 
 ```bash
-mac-cleanup --only 22
+macleanup --only 22
 ```
 
 Or just wait — the next time disk pressure hits, the space appears.
@@ -263,13 +263,13 @@ notification banner).
 **Fix:**
 
 1. Open **System Settings → Privacy & Security → Automation**.
-2. Find the app that's running mac-cleanup (Terminal, iTerm, Warp, etc.).
+2. Find the app that's running macleanup (Terminal, iTerm, Warp, etc.).
 3. Allow it to control **Finder** and **System Events**.
 
 If you don't want to grant the permission:
 
 ```bash
-mac-cleanup --all --yes               # skip the --notify flag
+macleanup --all --yes               # skip the --notify flag
 # section 21 leaves the app and its data in place if Finder cannot move them
 ```
 
@@ -277,7 +277,7 @@ mac-cleanup --all --yes               # skip the --notify flag
 
 ## Logs & reports
 
-### `~/.mac-cleanup/` doesn't exist
+### `~/.macleanup/` doesn't exist
 
 **Cause:** No section that writes a report or log has run yet (you may
 have only used `--list`, `--version`, etc.).
@@ -285,7 +285,7 @@ have only used `--list`, `--version`, etc.).
 **Fix:** Run any section. The directory is created on first write:
 
 ```bash
-mac-cleanup --only 0      # health check creates the log
+macleanup --only 0      # health check creates the log
 ```
 
 ---
@@ -293,14 +293,14 @@ mac-cleanup --only 0      # health check creates the log
 ### Reports stopped being written
 
 **Cause:** You may have passed `--no-reports`, or set
-`MAC_CLEANUP_REPORTS_DIR` to a path you don't have write permission for.
+`MACLEANUP_REPORTS_DIR` to a path you don't have write permission for.
 
 **Fix:**
 
 ```bash
-echo "$MAC_CLEANUP_REPORTS_DIR"        # check env var
-mac-cleanup --reports-dir ~/.mac-cleanup/reports --only 23 --dry-run
-ls -la ~/.mac-cleanup/reports/
+echo "$MACLEANUP_REPORTS_DIR"        # check env var
+macleanup --reports-dir ~/.macleanup/reports --only 23 --dry-run
+ls -la ~/.macleanup/reports/
 ```
 
 ---
@@ -314,13 +314,13 @@ free in practice, but if you've run for years you may have hundreds.
 
 ```bash
 # manual cleanup of old logs
-find ~/.mac-cleanup/logs -name '*.log' -mtime +90 -delete
+find ~/.macleanup/logs -name '*.log' -mtime +90 -delete
 
 # or per-run automatic cleanup
-mac-cleanup --cleanup-logs-on-finish
+macleanup --cleanup-logs-on-finish
 
-# or wipe everything mac-cleanup left behind
-rm -rf ~/.mac-cleanup/
+# or wipe everything macleanup left behind
+rm -rf ~/.macleanup/
 ```
 
 ---
@@ -338,7 +338,7 @@ directories.
 - **Section 24** can be tightened:
 
   ```bash
-  mac-cleanup --only 24 --large-file-size-gb 5 --large-file-days 365 --dry-run
+  macleanup --only 24 --large-file-size-gb 5 --large-file-days 365 --dry-run
   ```
 
   Larger size + older age threshold = fewer candidates = faster scan.
@@ -353,7 +353,7 @@ to enumerate).
 **Fix:** Restrict scan roots:
 
 ```bash
-mac-cleanup --only 23 --scan-roots "$HOME/active-projects" --dry-run
+macleanup --only 23 --scan-roots "$HOME/active-projects" --dry-run
 ```
 
 ---
@@ -388,8 +388,8 @@ skip.
 restore old behaviour:
 
 ```bash
-mac-cleanup --only 23 --idle-days 0 --cache-age-days 0    # disable both gates
-mac-cleanup --only 3 --brew-autoremove                    # restore old brew behaviour
+macleanup --only 23 --idle-days 0 --cache-age-days 0    # disable both gates
+macleanup --only 3 --brew-autoremove                    # restore old brew behaviour
 ```
 
 ---
@@ -397,7 +397,7 @@ mac-cleanup --only 3 --brew-autoremove                    # restore old brew beh
 ## Still stuck?
 
 ```bash
-mac-cleanup --report-issue
+macleanup --report-issue
 ```
 
 Opens a pre-filled GitHub issue with environment info collected locally.
@@ -418,4 +418,4 @@ For private security issues, email <aoneahsan@gmail.com>. See
 
 ---
 
-_Troubleshooting guide for **mac-cleanup** by **[Ahsan Mahmood](author.md)**._
+_Troubleshooting guide for **macleanup** by **[Ahsan Mahmood](author.md)**._

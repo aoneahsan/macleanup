@@ -191,8 +191,8 @@ above are automatic. You can also adopt these habits:
 ### Always `--dry-run` first
 
 ```bash
-mac-cleanup --only 23 --dry-run
-mac-cleanup --profile dev --dry-run
+macleanup --only 23 --dry-run
+macleanup --profile dev --dry-run
 ```
 
 Even with the safety changes, `--dry-run` is the easiest sanity check —
@@ -204,7 +204,7 @@ Even though section 23 now refuses to scan `$HOME` silently, being
 explicit is clearer:
 
 ```bash
-mac-cleanup --only 23 --scan-roots "$HOME/repos:$HOME/work:$HOME/code"
+macleanup --only 23 --scan-roots "$HOME/repos:$HOME/work:$HOME/code"
 ```
 
 ### Never combine `--all --yes` with sections you haven't reviewed
@@ -215,7 +215,7 @@ It's wrong for "let me just run the whole thing on a new machine."
 ### Check that you're on the latest version
 
 ```bash
-mac-cleanup --check-update
+macleanup --check-update
 ```
 
 Single-line opt-in advisory, no telemetry sent. See [CLI Reference —
@@ -227,10 +227,10 @@ Single-line opt-in advisory, no telemetry sent. See [CLI Reference —
 
 If a tool isn't on the list above and you suspect 4.3.0 affected it:
 
-1. Check `~/.mac-cleanup/logs/mac-cleanup-2026-*.log` for any line
+1. Check `~/.macleanup/logs/macleanup-2026-*.log` for any line
    mentioning the tool's directory.
 2. Check the section 23 stale-build report from that day:
-   `~/.mac-cleanup/reports/stale-build-YYYY-MM-DD.txt`
+   `~/.macleanup/reports/stale-build-YYYY-MM-DD.txt`
 3. The tool's own re-install instructions (curl one-liner, brew formula,
    etc.) should restore it cleanly. **None of these tools store
    irreplaceable user state in their `~/.tool-name/node_modules`** —
@@ -240,7 +240,7 @@ If you find a path that should be in `CRITICAL_HOME_DIRS` but isn't,
 open an issue:
 
 ```bash
-mac-cleanup --report-issue
+macleanup --report-issue
 ```
 
 ---
@@ -251,7 +251,7 @@ If a current 4.3.1+ release deleted something you didn't expect, that's
 a bug — please report it:
 
 ```bash
-mac-cleanup --report-issue
+macleanup --report-issue
 ```
 
 The pre-filled GitHub issue includes your environment info (collected
@@ -270,4 +270,4 @@ For private security disclosures, see [SECURITY.md](../SECURITY.md).
 
 ---
 
-_Recovery guide for **mac-cleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._
+_Recovery guide for **macleanup** v4.5.0 by **[Ahsan Mahmood](author.md)**._

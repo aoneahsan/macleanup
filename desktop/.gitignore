@@ -8,8 +8,8 @@ src-tauri/gen/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
-# bundled-in copy of the CLI (generated at build time from ../mac-cleanup.sh)
-src-tauri/resources/mac-cleanup.sh
+# bundled-in copy of the CLI (generated at build time from ../macleanup.sh)
+src-tauri/resources/macleanup.sh
 # generated icons (produced from ../assets/logo by scripts/gen-icons.mjs)
 src-tauri/icons/
 # local secrets / config

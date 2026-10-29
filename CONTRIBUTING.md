@@ -1,7 +1,7 @@
-# Contributing to mac-cleanup
+# Contributing to macleanup
 
 Thank you for considering a contribution! Before you spend time on a
-patch, please read this short note — `mac-cleanup` ships under the
+patch, please read this short note — `macleanup` ships under the
 **MIT** license (see [LICENSE.md](LICENSE.md)) and this covers how
 contributions are handled.
 
@@ -37,7 +37,7 @@ contributions are handled.
 4. **Style.** Two-space indent, `local` for every function-scoped var,
    `#` headers for sections, lower_snake_case function names, ANSI
    colours via the existing `RED`/`GREEN`/`…` variables.
-5. **Test.** At minimum `bash -n mac-cleanup.sh` and run the new
+5. **Test.** At minimum `bash -n macleanup.sh` and run the new
    section with `--dry-run`. If you touch a helper used widely, smoke
    the safe batch.
 6. **Author block.** Don't add new top-level author names — but you may

@@ -1,4 +1,4 @@
-// Bridge to the Rust backend that runs the bundled mac-cleanup.sh.
+// Bridge to the Rust backend that runs the bundled macleanup.sh.
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
@@ -11,7 +11,7 @@ export interface RunArgs {
   extraArgs?: string[];
 }
 
-/** The JSON summary emitted by `mac-cleanup.sh --json`. */
+/** The JSON summary emitted by `macleanup.sh --json`. */
 export interface CleanSummary {
   tool: string;
   version: string;

@@ -1,6 +1,6 @@
 # Author & Credits
 
-> The complete credits page for **mac-cleanup** — who built it, why,
+> The complete credits page for **macleanup** — who built it, why,
 > how to support the project, and how to hire the author for adjacent work.
 
 ---
@@ -17,15 +17,15 @@
     <td valign="top">
       <h3 style="margin-top:0">Ahsan Mahmood</h3>
       <em>Senior software engineer · macOS power user · maker of small sharp tools</em><br/><br/>
-      <strong>Ahsan Mahmood</strong> is the sole author and maintainer of <strong>mac-cleanup</strong>.
+      <strong>Ahsan Mahmood</strong> is the sole author and maintainer of <strong>macleanup</strong>.
       He's a senior engineer with deep experience across mobile, web, and
       developer tooling — Capacitor, React, Flutter, TypeScript,
       Node.js, Firebase, and the macOS / iOS toolchain.
       <br/><br/>
-      mac-cleanup grew out of years of reclaiming gigabytes from his own
+      macleanup grew out of years of reclaiming gigabytes from his own
       developer machines and the realisation that <em>most cleanup tools
       either delete too aggressively (and break things) or do too little
-      (and leave gigabytes of cruft).</em> mac-cleanup sits in the
+      (and leave gigabytes of cruft).</em> macleanup sits in the
       middle: safe by default, transparent about what it touches, and
       auditable line-by-line.
     </td>
@@ -48,7 +48,7 @@ points back to this page (or directly to <https://aoneahsan.com>).
 
 ---
 
-## Why mac-cleanup exists
+## Why macleanup exists
 
 There are three categories of macOS cleanup software in the wild today:
 
@@ -61,7 +61,7 @@ There are three categories of macOS cleanup software in the wild today:
 3. **Tiny CLI gists** — single-purpose, single-author, undocumented,
    unmaintained. Often broken on the latest macOS release.
 
-`mac-cleanup` was written to fill the middle:
+`macleanup` was written to fill the middle:
 
 - **Free** like the gists.
 - **Auditable** like the gists (~3,000 lines of plain bash, two files).
@@ -71,7 +71,7 @@ There are three categories of macOS cleanup software in the wild today:
 - **No telemetry or upsells; no network calls by default.** The optional
   version check contacts npm.
 
-Read the [README](../README.md) "Why mac-cleanup" comparison table for
+Read the [README](../README.md) "Why macleanup" comparison table for
 the side-by-side.
 
 ---
@@ -84,7 +84,7 @@ the side-by-side.
 | Early 2026 | Modular split into per-section files for maintainability. |
 | 2026-04 | **v4.0.0** — re-bundled into a single self-contained file. |
 | 2026-05 | **v4.1.0** — sections 23/24/25/26 added. `--scan-roots`, `--list`, `--version`. |
-| 2026-05 | **v4.2.0** — `npx macleanup` zero-install via Node launcher. Persistent logs/reports moved to `~/.mac-cleanup/{logs,reports}/`. Branding header in every artefact. |
+| 2026-05 | **v4.2.0** — `npx macleanup` zero-install via Node launcher. Persistent logs/reports moved to `~/.macleanup/{logs,reports}/`. Branding header in every artefact. |
 | 2026-05 | **v4.3.0** — `--profile`, `--exclude`, `--notify`, `--check-update`, `--brew-autoremove` added. (Section 23 incident — see [Recovery Guide](recovery-guide.md).) |
 | 2026-05 | **v4.3.1** — SAFETY FIX: `CRITICAL_HOME_DIRS` allowlist; `brew autoremove` made opt-in; no silent `$HOME` fallback. |
 | 2026-05 | **v4.3.2** — age-aware cache pruning (`--cache-age-days`, default 100). |
@@ -98,7 +98,7 @@ See [CHANGELOG.md](../CHANGELOG.md) for the full per-version detail.
 
 ## How to support the project
 
-mac-cleanup is **free**. There is no paid tier, no upsell, no
+macleanup is **free**. There is no paid tier, no upsell, no
 "professional edition." If it saves you time or disk, here are five
 ways to give back, in increasing order of effort:
 
@@ -119,14 +119,14 @@ trusted friend beats every search-engine result.
 
 Suggested copy you can copy-paste:
 
-> "Just used [mac-cleanup](https://github.com/aoneahsan/macleanup) to
+> "Just used [macleanup](https://github.com/aoneahsan/macleanup) to
 > reclaim 28 GB on my Mac in 5 minutes. Single bash file, `--dry-run`
 > first, `npx macleanup` to try. Built by [Ahsan Mahmood](https://github.com/aoneahsan)."
 
 ### 3. 💬 Send feedback
 
 ```bash
-mac-cleanup --feedback
+macleanup --feedback
 ```
 
 Opens your mail client with a prefilled message. Tell Ahsan what
@@ -136,7 +136,7 @@ the next release more than any GitHub stars do.
 ### 4. 🐛 Report bugs (or fix one)
 
 ```bash
-mac-cleanup --report-issue
+macleanup --report-issue
 ```
 
 Pre-filled GitHub issue with your environment info. Or open a pull
@@ -156,7 +156,7 @@ Ahsan takes consulting and contract engagements in:
 - **Technical writing** — docs that engineers actually read
 
 Get in touch at [aoneahsan.com](https://aoneahsan.com) or directly at
-<aoneahsan@gmail.com>. Mention you found him via mac-cleanup — it
+<aoneahsan@gmail.com>. Mention you found him via macleanup — it
 helps him understand which projects are bringing in opportunities.
 
 ---
@@ -181,7 +181,7 @@ Browse his pinned and most-starred repositories at
 
 ## Tech credits
 
-`mac-cleanup` is built on the shoulders of these well-maintained tools
+`macleanup` is built on the shoulders of these well-maintained tools
 and standards. Where the script invokes them, it does so directly via
 the system or PATH.
 
@@ -217,18 +217,18 @@ against the [`docs/` folder](https://github.com/aoneahsan/macleanup/tree/main/do
 
 ## Citation
 
-If you reference `mac-cleanup` in a blog post, a conference talk, an
+If you reference `macleanup` in a blog post, a conference talk, an
 internal wiki, or a paper, a one-line credit is appreciated:
 
-> `mac-cleanup` — comprehensive, safe-by-default macOS cleanup tool by
+> `macleanup` — comprehensive, safe-by-default macOS cleanup tool by
 > Ahsan Mahmood (<https://github.com/aoneahsan/macleanup>).
 
 A BibTeX-friendly form:
 
 ```bibtex
-@misc{mac_cleanup_2026,
+@misc{macleanup_2026,
   author       = {Ahsan Mahmood},
-  title        = {mac-cleanup: A safe-by-default macOS cleanup and maintenance tool},
+  title        = {macleanup: A safe-by-default macOS cleanup and maintenance tool},
   year         = {2026},
   url          = {https://github.com/aoneahsan/macleanup},
   note         = {MIT licensed}
@@ -239,7 +239,7 @@ A BibTeX-friendly form:
 
 ## License
 
-`mac-cleanup` is released under the **MIT License**. You may **use**,
+`macleanup` is released under the **MIT License**. You may **use**,
 **copy**, **modify**, **redistribute**, **sublicense**, and **sell** it,
 provided the copyright and license notice are kept in all copies. The
 author offers it AS-IS with no warranty and is not liable for any data
@@ -264,10 +264,10 @@ Full terms: [LICENSE.md](../LICENSE.md).
 ### From inside the tool
 
 ```bash
-mac-cleanup --contact         # the author contact card
-mac-cleanup --feedback        # open mail client with prefilled message
-mac-cleanup --report-issue    # open a pre-filled GitHub issue
-mac-cleanup --stats           # show your run history at ~/.mac-cleanup
+macleanup --contact         # the author contact card
+macleanup --feedback        # open mail client with prefilled message
+macleanup --report-issue    # open a pre-filled GitHub issue
+macleanup --stats           # show your run history at ~/.macleanup
 ```
 
 All of those collect environment info **locally only**. Nothing is
@@ -278,7 +278,7 @@ auto-sent until you explicitly Submit / Send.
 ## Thank you
 
 If you've made it this far in the documentation: **thank you for caring
-about the details**. mac-cleanup was built for people who read the
+about the details**. macleanup was built for people who read the
 script before running it — that's the audience this tool deserves.
 
 If it reclaimed gigabytes for you and saved you the cost of a
@@ -302,4 +302,4 @@ one fellow Mac developer.
 
 ---
 
-_Author & credits page for **mac-cleanup** v4.5.0._
+_Author & credits page for **macleanup** v4.5.0._

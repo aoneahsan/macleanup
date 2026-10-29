@@ -10,7 +10,7 @@ are common-sense — but they are enforced.
   people. "I think this is wrong because X" is welcome. "You are wrong
   because you are X" is not.
 - **Be specific.** When reporting bugs, include macOS version,
-  `mac-cleanup --version`, the command you ran, and what you expected
+  `macleanup --version`, the command you ran, and what you expected
   vs. what happened. Vague reports get closed with a request for
   details.
 - **Be patient.** This is an unpaid side project. Response times vary
