@@ -11,7 +11,6 @@ Inventory of every `package.json` unit in this repository, what each depends on,
 | Path | Name | Published? | Purpose |
 |---|---|---|---|
 | `package.json` | `macleanup` | ✅ npm | The CLI. Ships the bash script + a Node launcher. |
-| `desktop/package.json` | `macleanup-desktop` | ❌ never | Tauri GUI wrapping the same script. Built and released as a `.app` via GitHub Releases, not npm. |
 
 **One manifest per package name.** Verified 2026-07-25 — the two manifests carry *distinct* names, so there is
 no directory from which `npm publish` could ship the wrong tree. Re-verify after any build:
@@ -58,7 +57,7 @@ bin/  macleanup.sh  README.md  LICENSE.md  CHANGELOG.md  SECURITY.md
 `CHANGELOG.md` is listed explicitly. npm does **not** include it automatically, so omitting it would ship
 installed copies with no history. Verified present in the extracted tarball 2026-07-25.
 
-`docs/`, `desktop/`, `assets/`, `CLAUDE.md` and `AGENTS.md` are all excluded by omission.
+`docs/`, `assets/`, `CLAUDE.md` and `AGENTS.md` are all excluded by omission.
 
 ---
 
@@ -68,7 +67,7 @@ A Tauri + React + Vite application. It reimplements no cleanup logic — it runs
 in `--json` mode and renders the stream. It is **not** published to npm and is not part of the CLI's
 dependency surface; its manifest is listed here only so the inventory is complete.
 
-Its own dependencies are managed inside `desktop/` and are out of scope for the published package.
+The desktop app (Tauri) moved to its own private repository in 5.2.0; its dependencies are not part of this package.
 
 ---
 

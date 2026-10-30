@@ -426,7 +426,7 @@ Security issues go privately to [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com
 macleanup.sh   the tool — all cleanup logic lives here (published)
 bin/             Node launcher that spawns the script for npx (published)
 docs/            the manual
-desktop/         optional native macOS GUI (Tauri), separate package
+                 (the desktop app lives in its own repository and ships through this repo's Releases)
 assets/logo/     SVG logo masters
 ```
 
