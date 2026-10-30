@@ -7,6 +7,18 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.3.0] - 2026-10-30
+
+### Changed
+
+- Section 26 (disk usage report) no longer measures `~/Music`, `~/Movies` or `~/Pictures`. Reading them made macOS ask the desktop app for Apple Music, media and Photos access on every first preview, and none of them holds anything macleanup cleans. The report says they were not measured and points to Finder's Get Info.
+
+### Desktop app 5.3.0
+
+- An assistant that explains a preview, typed or spoken (Speak). It sees section numbers, sizes and counts, never a file path.
+- Receipt backups on Pro and Team: a receipt's summary, restored on another Mac.
+- Required updates: the app checks for a release notice at start, every 15 minutes and on return. An urgent one asks you to update before continuing; a normal one is required from the next start. Automatic updates now install and relaunch at a quiet moment, never during a run.
+
 ## [5.2.2] - 2026-10-30
 
 ### Fixed

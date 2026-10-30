@@ -141,10 +141,16 @@ s26_du_report() {
   # scanning EVERY user's home). The old grep tried to drop those but the regex
   # never matched the full absolute paths, so du walked them anyway — turning a
   # ~30s report into a multi-minute, cross-user scan.
-  find "$HOME" -mindepth 1 -maxdepth 1 -exec du -sh {} + 2>/dev/null \
+  # Media libraries are not measured: reading ~/Music, ~/Movies or ~/Pictures
+  # makes macOS ask for Apple Music, media or Photos access, and none of them
+  # holds anything macleanup cleans. Finder's Get Info shows their size.
+  find "$HOME" -mindepth 1 -maxdepth 1 \
+    ! -path "$HOME/Music" ! -path "$HOME/Movies" ! -path "$HOME/Pictures" \
+    -exec du -sh {} + 2>/dev/null \
     | sort -h \
     | tail -20 > "$_scan"
   sed 's/^/   /' "$_scan"
+  note "Not measured: ~/Music, ~/Movies, ~/Pictures (media libraries; see Finder > Get Info)."
   if (( _have_report )); then
     {
       printf '## Top $HOME children (largest at the bottom)\n'
