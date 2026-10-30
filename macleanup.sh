@@ -2629,21 +2629,23 @@ s18_large_files() {
   info "Scanning \$HOME for files larger than 500 MB (this can take a minute)…"
   init_report_file "$LARGE_FILES_REPORT" "large files report (>500 MB)" || true
   local _scan; _scan=$(tmp_file)
-  find "$HOME" -maxdepth 7 -type f -size +500M \
-    ! -path "*/Library/CloudStorage/*" \
-    ! -path "*/Library/Mobile Documents/*" \
-    ! -path "*/Library/Photos/*" \
-    ! -path "*.photoslibrary/*" \
-    ! -path "*/Movies/*" \
-    ! -path "*/Music/*" \
-    ! -path "*/Virtual Machines/*" \
-    ! -path "*/.Trash/*" \
-    ! -path "*/Parallels/*" \
-    ! -path "*/VMware/*" \
-    -exec du -h {} + 2>/dev/null \
+  # Prune (do not descend into) libraries and synced folders: a ! -path filter
+  # still walks every file beneath them, and iCloud folders can be very slow.
+  find "$HOME" -maxdepth 7 \
+    \( -path "*/Library/CloudStorage" -o -path "*/Library/Mobile Documents" \
+       -o -path "*/Library/Photos" -o -name "*.photoslibrary" -o -path "$HOME/Movies" \
+       -o -path "$HOME/Music" -o -name "Virtual Machines" -o -path "$HOME/.Trash" \
+       -o -name "Parallels" -o -name "VMware" \) -prune \
+    -o -type f -size +500M -exec du -h {} + 2>/dev/null \
     | sort -hr \
     | head -25 > "$_scan"
   (( QUIET )) || cat "$_scan"
+  if (( JSON_EVENTS )); then
+    local _sz _p
+    while IFS=$'\t' read -r _sz _p; do
+      [[ -n "$_p" ]] && ev_item "$_p" "$(size_kb "$_p")" report
+    done < "$_scan"
+  fi
   if (( ! NO_REPORTS )); then
     cat "$_scan" >> "$LARGE_FILES_REPORT"
     info "Top entries written to: $LARGE_FILES_REPORT"
