@@ -7,6 +7,25 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.1.0] - 2026-10-30
+
+### Added
+
+- `--json-events`: a newline-delimited JSON event stream on stdout — `plan`, `disk` (before and after, with the local-snapshot count), `section_start`, `item`, `progress`, `section_result` (completed, skipped or failed, with a reason), `error` and `summary`. Schema version 1 is documented in [`docs/json-events.md`](docs/json-events.md). The macleanup desktop app reads it.
+- `--archive-path PATH` (repeatable): before PATH is deleted or moved to the Trash, it is written to a gzip archive in `~/.macleanup/archives/` (folder mode 700, file mode 600). If the archive cannot be written, PATH is left in place.
+- Section 12 lists the orphan-shaped entries it skipped because they were touched recently, in its report, for review. A skipped entry is not proof that nothing is left behind.
+- Section 25 lists loaded Homebrew and third-party services in both launchd domains (your user's and the system's). A `brew services list` run in one domain can say `none` while a root service is running.
+- The session summary shows attempted, skipped and failed sections beside the completed ones, and the local-snapshot count with a note that deleted files may not free space until macOS releases those snapshots.
+
+### Changed
+
+- `--exclude-path` now protects a path in every section's delete and Trash move, not only sections 23 and 24.
+- `--all` runs its safe-batch sections through the same dispatcher as `--only`, so every run uses one accounting path.
+
+### Verified
+
+- The launcher runs on Node 14.21.3, so the declared `engines.node: ">=14"` floor holds (ISSUE-003).
+
 ## [5.0.0] - 2026-10-29
 
 ### Changed — one name: `macleanup`

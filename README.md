@@ -125,7 +125,8 @@ and macleanup does not estimate it in advance.
   confirmed removal, so preview those before acting.
 - **Reports and logs on disk** — dated `.txt` reports and per-day logs under `~/.macleanup/`, outside the
   npx cache, so they survive every invocation.
-- **Machine-readable output** — `--json` prints a one-line run summary for scripting.
+- **Machine-readable output** — `--json` prints a one-line run summary; `--json-events` streams one event per line (plan, every item, per-section result, summary) for scripts and the desktop app.
+- **Keep or archive before removal** — `--exclude-path PATH` keeps a path out of every section; `--archive-path PATH` writes it to a private archive in `~/.macleanup/archives/` first.
 - **No telemetry** — the script makes no network calls by default. An optional update check contacts npm; npm receives normal request metadata.
 
 <a id="requirements"></a>
@@ -288,6 +289,8 @@ The command line is the entire public interface — there is no programmatic API
 | `--logs-dir` · `--reports-dir` · `--no-reports` · `--cleanup-logs-on-finish` | Log and report handling |
 | `--prune-history N` | Prune logs and reports older than N days |
 | `--json` | One-line JSON run summary |
+| `--json-events` | NDJSON event stream ([schema](https://github.com/aoneahsan/macleanup/blob/main/docs/json-events.md)) |
+| `--exclude-path PATH` · `--archive-path PATH` | Keep a path, or archive it before it is removed (repeatable) |
 | `--quiet` · `--no-color` · `--notify` | Output controls |
 | `--brew-autoremove` | Opt in to `brew autoremove` (off by default) |
 | `--check-update` | Ask npm whether a newer version exists |

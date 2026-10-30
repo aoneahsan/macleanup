@@ -40,6 +40,7 @@ one section at a time, with confirmations for every destructive operation.
 | [`--no-sudo`](#--no-sudo) | switch | off | Skip every sudo section |
 | [`--quiet`](#--quiet) | switch | off | Suppress info chatter |
 | [`--json`](#--json) | switch | off | One-line JSON run summary on stdout (implies `--quiet`) |
+| [`--json-events`](#--json-events) | switch | off | NDJSON event stream on stdout (implies `--quiet`; 5.1.0+) |
 | [`--no-color`](#--no-color) | switch | auto | Disable ANSI colour |
 | [`--notify`](#--notify) | switch | off | macOS notification on completion |
 | [`--check-update`](#--check-update) | switch | off | Query npm for newer version |
@@ -51,7 +52,8 @@ one section at a time, with confirmations for every destructive operation.
 | [`--large-file-days N`](#--large-file-days-n) | int | 100 | Large unused file age (sec 24) |
 | [`--large-file-size-gb N`](#--large-file-size-gb-n) | int | 1 | Large file min size in GB (sec 24) |
 | [`--scan-roots "P1:P2:…"`](#--scan-roots-p1p2) | string | auto | Roots for sec 23 / 24 |
-| [`--exclude-path PATH`](#--exclude-path-path) | string (repeatable) | — | Never touch PATH/subtree in sec 23 / 24 |
+| [`--exclude-path PATH`](#--exclude-path-path) | string (repeatable) | — | Never touch PATH/subtree in any section (5.1.0+; sections 23 / 24 before) |
+| [`--archive-path PATH`](#--archive-path-path) | string (repeatable) | — | Archive PATH to `~/.macleanup/archives/` before it is removed (5.1.0+) |
 | [`--logs-dir PATH`](#--logs-dir-path) | string | `~/.macleanup/logs` | Persistent logs dir |
 | [`--reports-dir PATH`](#--reports-dir-path) | string | `~/.macleanup/reports` | Persistent reports dir |
 | [`--no-reports`](#--no-reports) | switch | off | Skip writing per-section reports |
@@ -329,6 +331,20 @@ macleanup --all --yes --json | jq .freed_kb
 
 ---
 
+### `--json-events`
+
+```
+--json-events
+```
+
+Streams one JSON object per line on stdout while the run happens: `plan`, `disk`, `section_start`, `item`, `progress`, `section_result`, `error`, and `summary` last. Human output goes to stderr. It needs `--only`, `--profile` or `--all`, and it cannot be combined with `--json`. The full schema is in [`json-events.md`](json-events.md).
+
+```bash
+macleanup --dry-run --all --json-events | jq -c 'select(.type=="section_result")'
+```
+
+---
+
 ### `--no-color`
 
 ```
@@ -574,8 +590,9 @@ See [Recovery Guide](recovery-guide.md) for why this safety rail exists.
 --exclude-path "$HOME/Code/keep-this"
 ```
 
-Never touch `PATH` **or anything under it** in the scanning sections 23
-(Stale build artefacts) and 24 (Large stale files). The flag is
+Never touch `PATH` **or anything under it**. From 5.1.0 every section's delete
+and Trash move honours it; before 5.1.0 only the scanning sections 23
+(Stale build artefacts) and 24 (Large stale files) did. The flag is
 **repeatable** — pass it multiple times to protect several trees. Each entry
 is enforced as a literal-path plus subtree guard (`PATH` and `PATH/*`), in
 addition to the always-on `CRITICAL_HOME_DIRS` protection.
@@ -585,6 +602,16 @@ macleanup --only 23 \
   --exclude-path "$HOME/Code/active-project" \
   --exclude-path "$HOME/Code/client-work" --dry-run
 ```
+
+---
+
+### `--archive-path PATH`
+
+```
+--archive-path "$HOME/Library/Application Support/SomeApp"
+```
+
+Before `PATH` (or anything under it) is deleted or moved to the Trash, macleanup writes it to a gzip archive in `~/.macleanup/archives/`, named `<date>-<name>.tar.gz`. The folder is mode 700 and each archive is mode 600, because an archive can hold settings, sessions or keys. If the archive cannot be written, `PATH` is left in place. Repeatable. In a dry run it only reports what it would archive.
 
 ---
 

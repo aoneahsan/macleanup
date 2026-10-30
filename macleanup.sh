@@ -57,7 +57,7 @@ fi
 # exports its version as MACLEANUP_VERSION. For a direct `./macleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MACLEANUP_VERSION:-5.0.0}"
+SCRIPT_VERSION="${MACLEANUP_VERSION:-5.1.0}"
 SCRIPT_NAME="macleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -257,8 +257,18 @@ BREW_AUTOREMOVE=0  # --brew-autoremove (opt-in; removes "unused" formulae)
 CACHE_AGE_DAYS="$CACHE_AGE_DAYS_DEFAULT"  # --cache-age-days N
 IDLE_THRESHOLD_DAYS="$IDLE_THRESHOLD_DAYS_DEFAULT"  # --idle-days N (sections 12, 23 gate; 16, 17 highlight)
 DEEP_OPT_IN=0      # --i-understand-deep (allow deep destructive sections under batch)
-EXCLUDE_PATHS=()   # --exclude-path PATH (repeatable; extra protection for sections 23/24)
+EXCLUDE_PATHS=()   # --exclude-path PATH (repeatable; never touched by any section's delete or Trash move)
+ARCHIVE_PATHS=()   # --archive-path PATH (repeatable; archived to ~/.macleanup/archives before removal)
+ARCHIVE_DIR="${MACLEANUP_ARCHIVES_DIR:-$DEFAULT_DATA_DIR/archives}"
 JSON_MODE=0        # --json (emit a machine-readable summary on stdout)
+JSON_EVENTS=0      # --json-events (NDJSON event stream on stdout; docs/json-events.md)
+EV_READY=0         # fd 3 holds the real stdout for the event stream
+CURRENT_SECTION="" # section id being dispatched (for --json-events attribution)
+SECTION_ITEMS=0    # items reported by the current section
+LAST_SKIP_REASON="" # last "Skipping …" warning inside the current section
+ATTEMPTED_SECTIONS=()
+SKIPPED_SECTIONS=()
+FAILED_SECTIONS=()
 
 TOTAL_FREED_KB=0
 DISK_FREE_BEFORE_KB=""
@@ -320,8 +330,8 @@ trap '_on_signal TERM' TERM
 log_to_file() { printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG_FILE" 2>/dev/null || true; }
 info()        { (( QUIET )) || printf '%b[INFO]%b %s\n' "$BLUE" "$NC" "$*"; log_to_file "INFO  $*"; }
 ok()          { (( QUIET )) || printf '%b[ OK ]%b %s\n' "$GREEN" "$NC" "$*"; log_to_file "OK    $*"; }
-warn()        { printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"; log_to_file "WARN  $*"; }
-err()         { printf '%b[ERR ]%b %s\n' "$RED" "$NC" "$*" >&2; log_to_file "ERR   $*"; }
+warn()        { printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"; log_to_file "WARN  $*"; [[ -n "$CURRENT_SECTION" ]] && LAST_SKIP_REASON="$*"; return 0; }
+err()         { printf '%b[ERR ]%b %s\n' "$RED" "$NC" "$*" >&2; log_to_file "ERR   $*"; (( JSON_EVENTS )) && ev_error "$*"; return 0; }
 step()        { printf '\n%b▶ %s%b\n' "$CYAN$BOLD" "$*" "$NC"; log_to_file "STEP  $*"; }
 note()        { (( QUIET )) || printf '%b   %s%b\n' "$DIM" "$*" "$NC"; log_to_file "NOTE  $*"; }
 divider()     { (( QUIET )) || printf '%b%s%b\n' "$DIM" "────────────────────────────────────────────────────────────" "$NC"; }
@@ -420,6 +430,48 @@ press_enter() {
   read -r _ || true
 }
 
+# path_is_excluded path → 0 when path equals or sits under an --exclude-path.
+path_is_excluded() {
+  local p="${1%/}" x
+  for x in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    x="${x%/}"
+    [[ -n "$x" ]] || continue
+    [[ "$p" == "$x" || "$p" == "$x/"* ]] && return 0
+  done
+  return 1
+}
+
+# archive_if_requested path → 0 when no archive was asked for, or the archive
+# was written; 1 when one was asked for and could not be written (the caller
+# must then leave the path in place). Archives are gzip tarballs, mode 600,
+# in a mode-700 folder, named <date>-<basename>.tar.gz.
+archive_if_requested() {
+  local p="${1%/}" a want=0
+  for a in "${ARCHIVE_PATHS[@]+"${ARCHIVE_PATHS[@]}"}"; do
+    [[ "$p" == "$a" || "$p" == "$a/"* ]] && { want=1; break; }
+  done
+  (( want )) || return 0
+  local base out
+  base="${p##*/}"; base="${base//[^A-Za-z0-9._-]/_}"
+  out="$ARCHIVE_DIR/$(date '+%Y%m%d-%H%M%S')-${base}.tar.gz"
+  if (( DRY_RUN )); then
+    note "[dry-run] would archive $p to $out"
+    (( JSON_EVENTS )) && ev_item "$p" "$(size_kb "$p")" archive
+    return 0
+  fi
+  ( umask 077; mkdir -p "$ARCHIVE_DIR" ) || return 1
+  chmod 700 "$ARCHIVE_DIR" 2>/dev/null || true
+  if ( umask 077; tar -czf "$out" -C "$(dirname "$p")" "${p##*/}" ) 2>/dev/null; then
+    chmod 600 "$out" 2>/dev/null || true
+    ok "Archived $p → $out"
+    (( JSON_EVENTS )) && ev_item "$p" "$(size_kb "$p")" archive
+    return 0
+  fi
+  rm -f -- "$out" 2>/dev/null || true
+  warn "Could not archive $p; left it in place."
+  return 1
+}
+
 # safe_rm_rf path → respects DRY_RUN; refuses suspicious paths.
 # This is the central deletion chokepoint. Its refusal list is intentionally
 # broad: top-level system roots, user document roots, and every
@@ -451,6 +503,13 @@ safe_rm_rf() {
       "$HOME/$_e"|"$HOME/$_e/") err "Refusing protected toolchain/config dir: '$p'"; return 1 ;;
     esac
   done
+  if path_is_excluded "$p"; then
+    note "Kept (excluded): $p"
+    (( JSON_EVENTS )) && ev_item "$p" 0 skip
+    return 0
+  fi
+  archive_if_requested "$p" || return 1
+  (( JSON_EVENTS )) && ev_item "$p" "$(size_kb "$p")" delete
   if (( DRY_RUN )); then
     note "[dry-run] rm -rf $p"
     return 0
@@ -460,6 +519,9 @@ safe_rm_rf() {
 
 safe_rm_f() {
   local p="$1"
+  if path_is_excluded "$p"; then note "Kept (excluded): $p"; return 0; fi
+  archive_if_requested "$p" || return 1
+  (( JSON_EVENTS )) && ev_item "$p" "$(size_kb "$p")" delete
   if (( DRY_RUN )); then note "[dry-run] rm -f $p"; return 0; fi
   rm -f -- "$p" 2>/dev/null || return 1
 }
@@ -476,11 +538,13 @@ _sum_kb_nul() {
 clean_dir_contents() {
   local d="$1" before
   [[ -z "$d" ]] && return 0
+  if path_is_excluded "$d"; then note "Kept (excluded): $d"; return 0; fi
   if [[ ! -d "$d" ]]; then
     note "Skipping (missing): $d"
     return 0
   fi
   before=$(size_kb "$d")
+  ev_item "$d" "$before" delete
   if (( DRY_RUN )); then
     note "[dry-run] would clear $(human_kb "$before") in $d"
     track_freed "$before" 0   # estimate: the whole directory would be cleared
@@ -503,6 +567,7 @@ clean_dir_old() {
   shift 2
   local globs=("$@")
   [[ ! -d "$d" ]] && return 0
+  if path_is_excluded "$d"; then note "Kept (excluded): $d"; return 0; fi
   local before after
   before=$(size_kb "$d")
   # Build the -name OR-clause once (shared by the estimate + the real delete).
@@ -520,6 +585,7 @@ clean_dir_old() {
       est=$(find "$d" -type f -mtime "+$days" \( "${name_args[@]}" \) -print0 2>/dev/null | _sum_kb_nul)
     fi
     note "[dry-run] would prune $(human_kb "$est") (>${days}d) from $d"
+    ev_item "$d" "$est" delete
     track_freed "$est" 0
     return 0
   fi
@@ -531,6 +597,7 @@ clean_dir_old() {
   fi
   after=$(size_kb "$d")
   track_freed "$before" "$after"
+  ev_item "$d" "$(( before - after ))" delete
   ok "Pruned $(human_kb "$(( before - after ))") (>${days}d) from $d"
 }
 
@@ -549,6 +616,7 @@ clean_dir_old() {
 clean_dir_unused() {
   local d="$1" days="${2:-${CACHE_AGE_DAYS:-100}}"
   [[ -z "$d" ]] && return 0
+  if path_is_excluded "$d"; then note "Kept (excluded): $d"; return 0; fi
   if [[ ! -d "$d" ]]; then
     note "Skipping (missing): $d"
     return 0
@@ -564,6 +632,7 @@ clean_dir_unused() {
       est=$(find "$d" -mindepth 1 -type f -atime "+$days" -mtime "+$days" -print0 2>/dev/null | _sum_kb_nul)
       note "[dry-run] would prune $(human_kb "$est") (>${days}d unused) from $d"
     fi
+    ev_item "$d" "$est" delete
     track_freed "$est" 0
     return 0
   fi
@@ -587,6 +656,7 @@ clean_dir_unused() {
   fi
   track_freed "$before" "$after"
   freed=$(( before - after ))
+  ev_item "$d" "$freed" delete
   if (( freed > 0 )); then
     if (( days == 0 )); then
       ok "Wiped $(human_kb "$freed") from $d"
@@ -728,6 +798,13 @@ init_report_file() {
 # if a user has bizarre filenames). Honours DRY_RUN.
 osascript_trash() {
   local p="$1"
+  if path_is_excluded "$p"; then
+    note "Kept (excluded): $p"
+    (( JSON_EVENTS )) && ev_item "$p" 0 skip
+    return 1
+  fi
+  archive_if_requested "$p" || return 1
+  (( JSON_EVENTS )) && ev_item "$p" "$(size_kb "$p")" trash
   if (( DRY_RUN )); then
     note "[dry-run] move to Trash: $p"
     return 0
@@ -828,8 +905,13 @@ ${BOLD}Options${NC}
   --large-file-size-gb N      Min size in GB for the large-file scan (default: ${LARGE_FILE_SIZE_GB_DEFAULT}).
   --scan-roots "P1:P2:…"      Override scan roots for sections 23 / 24
                               (colon-separated absolute paths).
-  --exclude-path PATH         Never touch PATH (or anything under it) in the
-                              scanning sections 23 / 24. Repeatable.
+  --exclude-path PATH         Never touch PATH (or anything under it). Every
+                              section's delete and Trash move honours it.
+                              Repeatable. (Keep.)
+  --archive-path PATH         Before PATH is deleted or moved to the Trash,
+                              write it to a private archive in
+                              ~/.macleanup/archives/ (mode 600). If the
+                              archive fails, PATH is left in place. Repeatable.
   --logs-dir PATH             Persistent logs directory
                               (default: \$HOME/.macleanup/logs).
   --reports-dir PATH          Persistent reports directory
@@ -842,6 +924,10 @@ ${BOLD}Options${NC}
   --json                      Emit a one-line JSON run summary on stdout (all
                               other output goes to stderr). Implies --quiet.
                               Best paired with --only / --all for scripting/CI.
+  --json-events               Stream one JSON event per line on stdout (plan,
+                              per-section items and results, summary). Needs
+                              --only / --profile / --all; not with --json.
+                              Schema: docs/json-events.md in the repo.
   --no-color                  Disable ANSI colour output (auto on non-TTYs).
   --notify                    Show a macOS notification when the run finishes.
   --check-update              Query npm for the latest published version
@@ -1236,7 +1322,109 @@ load_rc_file() {
 }
 
 # json_escape — escape backslashes and double-quotes for embedding in JSON.
-json_escape() { local s="${1:-}"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s"; }
+json_escape() {
+  local s="${1:-}"
+  s="${s//\\/\\\\}"; s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"; s="${s//$'\r'/\\r}"; s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# ── --json-events (schema v1, docs/json-events.md) ───────────────────────
+# Recovery tier per section id 0..27 (same as the docs and the desktop app).
+SECTION_TIERS=(read routine routine routine routine routine routine routine routine routine \
+  permanent permanent trash read permanent read permanent permanent read routine \
+  read trash read permanent trash permanent read routine)
+SUDO_SECTIONS=" 6 7 11 13 14 20 25 "
+UNIQUE_DATA_SECTIONS=" 12 16 17 21 24 "
+
+# _ev_bool cond-string → true/false for "space-padded set contains id"
+_ev_in() { [[ "$2" == *" $1 "* ]] && printf true || printf false; }
+
+# ev_emit type json-fields → one NDJSON line on the saved real stdout (fd 3).
+ev_emit() {
+  (( JSON_EVENTS && EV_READY )) || return 0
+  local extra="${2:-}"
+  [[ -n "$extra" ]] && extra=",$extra"
+  printf '{"v":1,"type":"%s","ts":%s%s}\n' "$1" "$(( $(date +%s) * 1000 ))" "$extra" >&3
+}
+
+# section_title id → the --list label.
+section_title() {
+  local entry
+  for entry in "${SECTION_CATALOGUE[@]}"; do
+    [[ "${entry%%|*}" == "$1" ]] && { printf '%s' "${entry#*|}"; return 0; }
+  done
+}
+
+# _ev_section_obj id → {"id":…,"title":…,"stamp":…,"sudo":…,"deep":…}
+_ev_section_obj() {
+  printf '{"id":%d,"title":"%s","stamp":"%s","sudo":%s,"deep":%s}' "$1" \
+    "$(json_escape "$(section_title "$1")")" "${SECTION_TIERS[$1]:-read}" \
+    "$(_ev_in "$1" "$SUDO_SECTIONS")" "$(_ev_in "$1" "$DEEP_INTERACTIVE_SECTIONS")"
+}
+
+# ev_plan "csv of ids"
+ev_plan() {
+  (( JSON_EVENTS )) || return 0
+  local arr="" s
+  IFS=',' read -r -a _plan_ids <<<"$1"
+  for s in "${_plan_ids[@]+"${_plan_ids[@]}"}"; do
+    s="${s// /}"; [[ "$s" =~ ^[0-9]+$ ]] && (( s <= 27 )) || continue
+    [[ -n "$arr" ]] && arr+=","
+    arr+="$(_ev_section_obj "$s")"
+  done
+  local prof="null"; [[ -n "$PROFILE_NAME" ]] && prof="\"$(json_escape "$PROFILE_NAME")\""
+  ev_emit plan "\"version\":\"$(json_escape "$SCRIPT_VERSION")\",\"dry_run\":$([[ $DRY_RUN -eq 1 ]] && echo true || echo false),\"profile\":$prof,\"sections\":[$arr]"
+}
+
+# ev_disk before|after — free space plus the local-snapshot note.
+ev_disk() {
+  (( JSON_EVENTS )) || return 0
+  local total free snaps=0
+  total=$(df -k / 2>/dev/null | awk 'NR==2 {print $2+0}')
+  free=$(disk_free_kb /)
+  if has_cmd tmutil; then
+    snaps=$(tmutil listlocalsnapshots / 2>/dev/null | grep -c 'com.apple' || true)
+  fi
+  snaps=${snaps:-0}
+  ev_emit disk "\"phase\":\"$1\",\"total_kb\":${total:-0},\"free_kb\":${free:-0},\"purgeable_kb\":null,\"snapshots\":$snaps,\"snapshot_note\":$( (( snaps > 0 )) && echo true || echo false)"
+}
+
+# ev_item path kb action — one path a section would touch (dry run) or touched.
+ev_item() {
+  (( JSON_EVENTS )) && [[ -n "$CURRENT_SECTION" ]] || return 0
+  SECTION_ITEMS=$(( SECTION_ITEMS + 1 ))
+  ev_emit item "\"id\":$CURRENT_SECTION,\"path\":\"$(json_escape "$1")\",\"kb\":${2:-0},\"action\":\"$3\",\"unique\":$(_ev_in "$CURRENT_SECTION" "$UNIQUE_DATA_SECTIONS")"
+  ev_emit progress "\"id\":$CURRENT_SECTION,\"done\":$SECTION_ITEMS,\"total\":null"
+}
+
+# ev_error message
+ev_error() {
+  local id="null"; [[ -n "$CURRENT_SECTION" ]] && id="$CURRENT_SECTION"
+  ev_emit error "\"id\":$id,\"message\":\"$(json_escape "$1")\""
+}
+
+# _ev_ids name-of-array → comma-joined ids
+_ev_ids() {
+  local IFS=,
+  eval "printf '%s' \"\${$1[*]+\${$1[*]}}\""
+}
+
+# ev_summary — the last line of every finished stream.
+ev_summary() {
+  (( JSON_EVENTS )) || return 0
+  local elapsed reps="" r _rmt
+  elapsed=$(( $(date +%s) - START_EPOCH ))
+  for r in "$ORPHAN_REPORT" "$UNUSED_APPS_REPORT" "$LARGE_FILES_REPORT" "$STALE_BUILD_REPORT" \
+           "$LARGE_STALE_REPORT" "$LAUNCH_AUDIT_REPORT" "$DU_REPORT"; do
+    [[ -f "$r" ]] || continue
+    _rmt=$(stat -f %m "$r" 2>/dev/null || echo 0)
+    (( _rmt >= START_EPOCH )) || continue
+    [[ -n "$reps" ]] && reps+=","
+    reps+="\"$(json_escape "$r")\""
+  done
+  ev_emit summary "\"attempted\":[$(_ev_ids ATTEMPTED_SECTIONS)],\"completed\":[$(_ev_ids COMPLETED_SECTIONS)],\"skipped\":[$(_ev_ids SKIPPED_SECTIONS)],\"failed\":[$(_ev_ids FAILED_SECTIONS)],\"freed_kb\":$TOTAL_FREED_KB,\"disk_free_before_kb\":${DISK_FREE_BEFORE_KB:-0},\"disk_free_after_kb\":${DISK_FREE_AFTER_KB:-0},\"elapsed_s\":$elapsed,\"reports\":[$reps],\"log\":\"$(json_escape "$LOG_FILE")\",\"dry_run\":$([[ $DRY_RUN -eq 1 ]] && echo true || echo false)"
+}
 
 # emit_json — print a single-line machine-readable run summary to stdout.
 # Used by --json. Caller is responsible for keeping other output off stdout.
@@ -1434,8 +1622,14 @@ parse_args() {
         shift
         [[ -n "${1:-}" ]] || { err "--exclude-path needs a path"; exit 2; }
         EXCLUDE_PATHS+=("$1") ;;
+      --archive-path)
+        shift
+        [[ -n "${1:-}" ]] || { err "--archive-path needs a path"; exit 2; }
+        ARCHIVE_PATHS+=("${1%/}") ;;
       --json)
         JSON_MODE=1; QUIET=1 ;;
+      --json-events)
+        JSON_EVENTS=1; QUIET=1 ;;
       --prune-history)
         local _ph=90
         if [[ "${2:-}" =~ ^[0-9]+$ ]]; then _ph="$2"; shift; fi
@@ -1985,7 +2179,7 @@ s12_orphaned() {
     return 1
   }
 
-  declare -a candidates=()
+  declare -a candidates=() recent_list=()
   local recent_skipped=0
   local _now; _now=$(date +%s)
   local _idle_days="$IDLE_THRESHOLD_DAYS"
@@ -2018,11 +2212,13 @@ s12_orphaned() {
       # idle >= threshold become candidates.
       if (( _newer <= 0 )); then
         recent_skipped=$(( recent_skipped + 1 ))
+        (( ${#recent_list[@]} < 500 )) && recent_list+=("$entry")
         continue
       fi
       _idle=$(( (_now - _newer) / 86400 ))
       if (( _idle < _idle_days )); then
         recent_skipped=$(( recent_skipped + 1 ))
+        (( ${#recent_list[@]} < 500 )) && recent_list+=("$entry")
         continue
       fi
       candidates+=("$entry")
@@ -2038,6 +2234,16 @@ s12_orphaned() {
 
   if (( recent_skipped > 0 )); then
     note "Skipped $recent_skipped orphan-shaped entries that were touched within the last ${_idle_days} days (probably still in use)."
+    note "They are listed for review in the report. A skipped entry is not proof that nothing is left behind."
+    local _r
+    if (( _have_report )); then
+      printf '\n# Recent orphan-shaped entries (touched within %s days; review only, never removed by this section)\n\n' "$_idle_days" >> "$report"
+    fi
+    for _r in "${recent_list[@]+"${recent_list[@]}"}"; do
+      (( _have_report )) && printf '%s\n' "$_r" >> "$report"
+      (( JSON_EVENTS )) && ev_item "$_r" 0 report
+    done
+    (( _have_report )) && printf '\n# Orphan candidates (idle at least %s days)\n\n' "$_idle_days" >> "$report"
   fi
 
   if (( ${#candidates[@]} == 0 )); then
@@ -2056,6 +2262,7 @@ s12_orphaned() {
   for c in "${candidates[@]}"; do
     sz_kb=$(size_kb "$c")
     cand_kb[idx]=$sz_kb; idx=$(( idx + 1 ))
+    (( JSON_EVENTS )) && ev_item "$c" "$sz_kb" trash
     total_kb=$(( total_kb + sz_kb ))
     printf '%s\t%s\n' "$(human_kb "$sz_kb")" "$c" >> "$data"
   done
@@ -3087,6 +3294,38 @@ s24_large_stale() {
 # no longer exists (or whose AssociatedBundleIdentifiers point to an
 # uninstalled app). These are a common source of slow login + zombie
 # background processes.
+# s25_running_services — list loaded Homebrew and third-party services in BOTH
+# launchd domains (your user's gui domain and the system domain). `brew
+# services list` only shows the domain it was run in, so a root service can be
+# running while it says "none". Read-only: nothing is stopped here.
+s25_running_services() {
+  has_cmd launchctl || return 0
+  local uid line domain label shown=0
+  uid=$(id -u)
+  for domain in "gui/$uid" system; do
+    while IFS= read -r line; do
+      label=$(printf '%s' "$line" | awk '{print $NF}')
+      [[ -z "$label" || "$label" == com.apple.* ]] && continue
+      case "$label" in
+        homebrew.mxcl.*|*.mxcl.*) ;;
+        *) [[ "$domain" == system ]] || continue ;;
+      esac
+      if (( shown == 0 )); then
+        printf '\n%bLoaded services (user and system domains):%b\n' "$BOLD" "$NC"
+        shown=1
+      fi
+      printf '   %-10s %s\n' "${domain%%/*}" "$label"
+      (( JSON_EVENTS )) && ev_item "launchd:${domain%%/*}/$label" 0 report
+    done < <(launchctl print "$domain" 2>/dev/null \
+      | awk '/^[[:space:]]*services = \{/{f=1;next} f&&/^[[:space:]]*\}/{f=0} f{print}' \
+      | awk '$1 ~ /^[0-9]+$/ && $1 > 0 {print}')
+  done
+  if (( shown )); then
+    note "Running system-domain services keep working after a user-level \"brew services\" says none."
+    note "Stop one with: sudo brew services stop <name>  (or keep it; this audit changes nothing)."
+  fi
+}
+
 s25_launchitems() {
   header "[25] LaunchAgents / LaunchDaemons audit"
   info "Looking for login items whose target binary is missing."
@@ -3102,6 +3341,8 @@ s25_launchitems() {
     while IFS= read -r plist; do plists+=("$plist"); done \
       < <(find "$loc" -maxdepth 1 -type f -name '*.plist' 2>/dev/null)
   done
+  s25_running_services
+
   if (( ${#plists[@]} == 0 )); then
     info "No launch items found in standard locations."
     mark_done 25; press_enter; return 0
@@ -3332,18 +3573,7 @@ run_all_safe() {
   step "Running safe-batch sections: ${SAFE_BATCH[*]}"
   local s
   for s in "${SAFE_BATCH[@]}"; do
-    case "$s" in
-      0)  s00_health ;;
-      3)  s03_pkg_managers ;;
-      5)  s05_user_caches ;;
-      7)  s07_logs ;;
-      8)  s08_temp ;;
-      9)  s09_update_caches ;;
-      15) s15_installer ;;
-      18) s18_large_files ;;
-      22) s22_purgeable_trigger ;;
-      26) s26_du_report ;;
-    esac
+    dispatch "$s"
   done
 }
 
@@ -3360,6 +3590,16 @@ session_summary() {
   printf '   Tracked freed:     %s\n' "$(human_kb "$TOTAL_FREED_KB")"
   printf '   Disk free Δ:       %s (root)\n' "$(human_kb "$disk_delta")"
   printf '   Sections done:     %s\n' "${COMPLETED_SECTIONS[*]:-(none)}"
+  if (( ${#ATTEMPTED_SECTIONS[@]} > 0 )); then
+    printf '   Attempted:         %s\n' "${ATTEMPTED_SECTIONS[*]}"
+    printf '   Skipped:           %s\n' "${SKIPPED_SECTIONS[*]:-(none)}"
+    printf '   Failed:            %s\n' "${FAILED_SECTIONS[*]:-(none)}"
+  fi
+  local _snaps=0
+  has_cmd tmutil && _snaps=$(tmutil listlocalsnapshots / 2>/dev/null | grep -c 'com.apple' || true)
+  if (( ${_snaps:-0} > 0 )); then
+    printf '%b   Local snapshots:   %s — space from deleted files may stay in use until macOS releases them (section 11).%b\n' "$DIM" "$_snaps" "$NC"
+  fi
   printf '   Logs dir:          %s\n' "$LOG_DIR"
   printf '   Reports dir:       %s\n' "$REPORTS_DIR"
   printf '   Today log file:    %s\n' "$LOG_FILE"
@@ -3383,6 +3623,12 @@ _finish_run() {
   if (( JSON_MODE )); then
     exec 1>&3 3>&-
     emit_json
+  fi
+  if (( JSON_EVENTS )); then
+    DISK_FREE_AFTER_KB=$(disk_free_kb /)
+    ev_disk after
+    ev_summary
+    exec 1>&3 3>&-
   fi
   notify_user "macleanup" "Done — freed $(human_kb "$TOTAL_FREED_KB")"
 }
@@ -3447,7 +3693,36 @@ show_menu() {
   printf '\n'
 }
 
+# dispatch n — run one section; under --json-events, frame it with
+# section_start / section_result and the attempted/completed/skipped/failed
+# accounting.
 dispatch() {
+  local n="$1" rc=0 freed_before reason status
+  CURRENT_SECTION="$n"; SECTION_ITEMS=0; LAST_SKIP_REASON=""
+  ATTEMPTED_SECTIONS+=("$n")
+  freed_before=$TOTAL_FREED_KB
+  ev_emit section_start "\"id\":$n,\"title\":\"$(json_escape "$(section_title "$n")")\",\"stamp\":\"${SECTION_TIERS[$n]:-read}\""
+  dispatch_section "$n" || rc=$?
+  reason="null"
+  if is_done "$n"; then
+    status=completed
+  elif (( rc != 0 )); then
+    status=failed; FAILED_SECTIONS+=("$n")
+    reason="\"$(json_escape "${LAST_SKIP_REASON:-section returned $rc}")\""
+  else
+    status=skipped; SKIPPED_SECTIONS+=("$n")
+    case "$LAST_SKIP_REASON" in
+      *interactive-only*) LAST_SKIP_REASON="needs --i-understand-deep" ;;
+      *sudo*) LAST_SKIP_REASON="needs administrator password" ;;
+    esac
+    reason="\"$(json_escape "${LAST_SKIP_REASON:-nothing to do}")\""
+  fi
+  ev_emit section_result "\"id\":$n,\"status\":\"$status\",\"freed_kb\":$(( TOTAL_FREED_KB - freed_before )),\"items\":$SECTION_ITEMS,\"reason\":$reason"
+  CURRENT_SECTION=""
+  return 0
+}
+
+dispatch_section() {
   local n="$1"
   # Enforce the "human-present" safety contract: deep destructive sections are
   # refused under batch mode unless the operator explicitly opted in with
@@ -3553,6 +3828,14 @@ main() {
   # --json: send every human/log line to stderr (real stdout saved on fd 3) so
   # the only thing written to stdout is the JSON object emitted by _finish_run.
   if (( JSON_MODE )); then exec 3>&1 1>&2; fi
+  if (( JSON_EVENTS )); then
+    if (( JSON_MODE )); then err "--json and --json-events cannot be combined"; exit 2; fi
+    if [[ -z "$ONLY_SECTIONS" && -z "$PROFILE_NAME" ]] && (( ! RUN_ALL )); then
+      err "--json-events needs --only, --profile or --all"; exit 2
+    fi
+    exec 3>&1 1>&2
+    EV_READY=1
+  fi
 
   # Optional opt-in update check (no telemetry).
   check_update_npm
@@ -3575,6 +3858,7 @@ main() {
   fi
 
   if [[ -n "$ONLY_SECTIONS" ]]; then
+    ev_plan "$ONLY_SECTIONS"; ev_disk before
     step "Running explicit sections: $ONLY_SECTIONS"
     local s
     IFS=',' read -r -a _arr <<<"$ONLY_SECTIONS"
@@ -3584,6 +3868,7 @@ main() {
       dispatch "$s"
     done
     _finish_run
+    (( JSON_EVENTS )) && (( ${#FAILED_SECTIONS[@]} > 0 )) && exit 1
     return 0
   fi
 
@@ -3593,6 +3878,7 @@ main() {
       local _safe_csv _filtered s
       _safe_csv="$(IFS=,; echo "${SAFE_BATCH[*]}")"
       _filtered="$(apply_exclude "$_safe_csv")"
+      ev_plan "$_filtered"; ev_disk before
       step "Safe batch with --exclude: $_filtered"
       IFS=',' read -r -a _arr <<<"$_filtered"
       for s in "${_arr[@]+"${_arr[@]}"}"; do
@@ -3600,9 +3886,11 @@ main() {
         [[ "$s" =~ ^[0-9]+$ ]] && dispatch "$s"
       done
     else
+      ev_plan "$(IFS=,; echo "${SAFE_BATCH[*]}")"; ev_disk before
       run_all_safe
     fi
     _finish_run
+    (( JSON_EVENTS )) && (( ${#FAILED_SECTIONS[@]} > 0 )) && exit 1
     return 0
   fi
 

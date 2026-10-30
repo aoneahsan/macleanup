@@ -1,6 +1,6 @@
 {
   "name": "macleanup",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Safe-by-default macOS cleanup CLI — 28 sections, a real dry-run, zero install via npx.",
   "bin": "bin/macleanup.js",
   "files": [
