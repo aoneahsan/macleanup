@@ -7,6 +7,12 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.2.1] - 2026-10-30
+
+### Changed
+
+- README and package metadata only: the npm page shows the current version and package size, and links the website as the homepage. No change to what the script does.
+
 ## [5.2.0] - 2026-10-30
 
 ### Added

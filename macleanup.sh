@@ -57,7 +57,7 @@ fi
 # exports its version as MACLEANUP_VERSION. For a direct `./macleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MACLEANUP_VERSION:-5.2.0}"
+SCRIPT_VERSION="${MACLEANUP_VERSION:-5.2.1}"
 SCRIPT_NAME="macleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"

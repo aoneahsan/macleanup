@@ -1,6 +1,6 @@
 {
   "name": "macleanup",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "description": "Safe-by-default macOS cleanup CLI — 28 sections, a real dry-run, zero install via npx.",
   "bin": "bin/macleanup.js",
   "files": [
@@ -59,7 +59,7 @@
     "url": "https://github.com/aoneahsan/macleanup/issues",
     "email": "aoneahsan@gmail.com"
   },
-  "homepage": "https://github.com/aoneahsan/macleanup#readme",
+  "homepage": "https://macleanup.aoneahsan.com",
   "publishConfig": {
     "access": "public"
   },

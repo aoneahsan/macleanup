@@ -31,11 +31,11 @@ It is a terminal tool for macOS only, with no telemetry. `--check-update` contac
 
 | | |
 |---|---|
-| **Version** | `5.0.0` |
+| **Version** | `5.2.1` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
-| **Install size** | ~73 kB packed · ~227 kB unpacked (local 5.0.0 package preview) |
+| **Install size** | ~79 kB packed · ~246 kB unpacked (5.2.x, measured with `npm pack`) |
 | **Types** | None — this is a CLI, not a library |
 | **Status** | Stable · actively maintained |
 
@@ -406,7 +406,7 @@ Which document answers which question:
 <a id="changelog"></a>
 ## 🔄 Changelog&nbsp;[#](#changelog)
 
-Latest release: **`5.0.0`** — one name everywhere. The command is `macleanup`, data lives in `~/.macleanup/`, the config file is `~/.macleanuprc` and environment variables use `MACLEANUP_*`. Upgrading from 4.x moves nothing by hand: the first 5.x run copies your earlier logs and reports and leaves the originals in place. The changelog has the full rename table.
+Latest release: **`5.2.x`** — the [macleanup desktop app](https://macleanup.aoneahsan.com/download) ships beside the command line and runs this same script in a window. 5.1.0 added the `--json-events` stream and keep/archive paths; 5.2.0 added a toolchain inventory in section 0. Since 5.0.0 everything uses one name: the command is `macleanup`, data lives in `~/.macleanup/`, the config file is `~/.macleanuprc`. The changelog has the details.
 
 <a id="contributing"></a>
 ## 🤝 Contributing&nbsp;[#](#contributing)
