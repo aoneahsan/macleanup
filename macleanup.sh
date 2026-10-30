@@ -441,6 +441,47 @@ path_is_excluded() {
   return 1
 }
 
+# excl_top_args dir → sets EXCL_TOP to find predicates that skip every direct
+# child of dir which is a kept path (--exclude-path) or contains one. Used by the
+# bulk "wipe this folder's contents" sites so Keep holds there too; a folder
+# that holds a kept path is left whole rather than partly emptied.
+excl_top_args() {
+  local d="${1%/}" x rel
+  EXCL_TOP=()
+  for x in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    x="${x%/}"
+    [[ "$x" == "$d/"* ]] || continue
+    rel="${x#"$d"/}"
+    EXCL_TOP+=( ! -path "$d/${rel%%/*}" )
+  done
+}
+
+# excl_deep_args → sets EXCL_DEEP to find predicates that skip every kept path
+# and everything under it. Used by the age-based prune sites.
+excl_deep_args() {
+  local x
+  EXCL_DEEP=()
+  for x in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    x="${x%/}"
+    [[ -n "$x" ]] && EXCL_DEEP+=( ! -path "$x" ! -path "$x/*" )
+  done
+}
+
+# emit_kept_tops dir → under --json-events, one "skip" item per kept child of dir,
+# so a preview shows the same keep the real run honours.
+emit_kept_tops() {
+  (( JSON_EVENTS )) || return 0
+  local d="${1%/}" x rel seen=" "
+  for x in "${EXCLUDE_PATHS[@]+"${EXCLUDE_PATHS[@]}"}"; do
+    x="${x%/}"
+    [[ "$x" == "$d/"* ]] || continue
+    rel="${x#"$d"/}"; rel="${rel%%/*}"
+    [[ "$seen" == *" $rel "* ]] && continue
+    seen+="$rel "
+    [[ -e "$d/$rel" ]] && ev_item "$d/$rel" 0 skip
+  done
+}
+
 # archive_if_requested path → 0 when no archive was asked for, or the archive
 # was written; 1 when one was asked for and could not be written (the caller
 # must then leave the path in place). Archives are gzip tarballs, mode 600,
@@ -554,9 +595,16 @@ clean_dir_contents() {
   # would delete through to the link target) and close the TOCTOU window.
   [[ -d "$d" && ! -L "$d" ]] || { note "Skipping (symlink or not a real dir): $d"; return 0; }
   # Delete contents; never the directory itself. Use ${var:?} guard.
-  ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
-  # The directory was fully emptied; skip a second du and report `before`.
-  track_freed "$before" 0
+  excl_top_args "$d"
+  if (( ${#EXCL_TOP[@]} > 0 )); then
+    emit_kept_tops "$d"
+    find "$d" -mindepth 1 -maxdepth 1 "${EXCL_TOP[@]}" -exec rm -rf -- {} + 2>/dev/null || true
+    track_freed "$before" "$(size_kb "$d")"
+  else
+    ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
+    # The directory was fully emptied; skip a second du and report `before`.
+    track_freed "$before" 0
+  fi
   ok "Cleared $(human_kb "$before") from $d"
 }
 
@@ -589,10 +637,11 @@ clean_dir_old() {
     track_freed "$est" 0
     return 0
   fi
+  excl_deep_args
   if (( ${#name_args[@]} == 0 )); then
-    find "$d" -type f -mtime "+$days" -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
+    find "$d" -type f -mtime "+$days" ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
   else
-    find "$d" -type f -mtime "+$days" \( "${name_args[@]}" \) -print0 2>/dev/null \
+    find "$d" -type f -mtime "+$days" \( "${name_args[@]}" \) ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -print0 2>/dev/null \
       | xargs -0 rm -f 2>/dev/null || true
   fi
   after=$(size_kb "$d")
@@ -639,13 +688,21 @@ clean_dir_unused() {
   if (( days == 0 )); then
     # Revalidate immediately before the full wipe (reject symlinked $d).
     [[ -d "$d" && ! -L "$d" ]] || { note "Skipping (symlink or not a real dir): $d"; return 0; }
-    ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
-    after=0   # directory was fully emptied; avoid a second du
+    excl_top_args "$d"
+    if (( ${#EXCL_TOP[@]} > 0 )); then
+      emit_kept_tops "$d"
+      find "$d" -mindepth 1 -maxdepth 1 "${EXCL_TOP[@]}" -exec rm -rf -- {} + 2>/dev/null || true
+      after=$(size_kb "$d")
+    else
+      ( shopt -s dotglob nullglob; rm -rf -- "${d:?}"/* 2>/dev/null ) || true
+      after=0   # directory was fully emptied; avoid a second du
+    fi
   else
     # Files where BOTH atime > N days AND mtime > N days. Anything used
     # recently (read by a tool, or rewritten) keeps its atime/mtime fresh
     # and survives.
-    find "$d" -mindepth 1 -type f -atime "+$days" -mtime "+$days" \
+    excl_deep_args
+    find "$d" -mindepth 1 -type f -atime "+$days" -mtime "+$days" ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} \
       -print0 2>/dev/null | xargs -0 rm -f 2>/dev/null || true
     # Collapse newly-empty directories. Multiple passes handle nesting
     # (parent becomes empty after children are removed, etc.).
@@ -1974,7 +2031,8 @@ s05_user_caches() {
         _ekb=$(size_kb "$_entry")
         est=$(( est + _ekb ))
         (( JSON_EVENTS )) && ev_item "$_entry" "$_ekb" delete
-      done < <(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null)
+      done < <(excl_top_args "$cache_root"; find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" ${EXCL_TOP[@]+"${EXCL_TOP[@]}"} -print0 2>/dev/null)
+      emit_kept_tops "$cache_root"
       note "[dry-run] would prune ~$(human_kb "$est") of non-Apple/browser/password-manager caches"
       track_freed "$est" 0
     else
@@ -1983,10 +2041,12 @@ s05_user_caches() {
       if (( JSON_EVENTS )); then
         while IFS= read -r -d '' _entry; do
           ev_item "$_entry" "$(size_kb "$_entry")" delete
-        done < <(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null)
+        done < <(excl_top_args "$cache_root"; find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" ${EXCL_TOP[@]+"${EXCL_TOP[@]}"} -print0 2>/dev/null)
       fi
+      excl_top_args "$cache_root"
+      emit_kept_tops "$cache_root"
       find "$cache_root" -mindepth 1 -maxdepth 1 \
-        "${_preserve_args[@]}" \
+        "${_preserve_args[@]}" ${EXCL_TOP[@]+"${EXCL_TOP[@]}"} \
         -exec rm -rf -- {} + 2>/dev/null || true
       after=$(size_kb "$cache_root")
       track_freed "$before" "$after"
@@ -2020,7 +2080,8 @@ s06_system_caches() {
   else
     local before after
     before=$(sudo du -sk /Library/Caches 2>/dev/null | awk '{print $1}'); before=${before:-0}
-    sudo find /Library/Caches -mindepth 1 -maxdepth 1 ! -name 'com.apple.*' \
+    excl_top_args /Library/Caches
+    sudo find /Library/Caches -mindepth 1 -maxdepth 1 ! -name 'com.apple.*' ${EXCL_TOP[@]+"${EXCL_TOP[@]}"} \
       -exec rm -rf -- {} + 2>/dev/null || true
     after=$(sudo du -sk /Library/Caches 2>/dev/null | awk '{print $1}'); after=${after:-0}
     track_freed "$before" "$after"
@@ -2037,7 +2098,8 @@ s07_logs() {
     if (( DRY_RUN )); then
       note "[dry-run] would prune /Library/Logs >30d"
     else
-      sudo find /Library/Logs -type f -mtime +30 -delete 2>/dev/null || true
+      excl_deep_args
+      sudo find /Library/Logs -type f -mtime +30 ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -delete 2>/dev/null || true
       ok "Pruned old files from /Library/Logs"
     fi
   fi
@@ -2045,10 +2107,11 @@ s07_logs() {
     if (( DRY_RUN )); then
       note "[dry-run] would prune /private/var/log >14d"
     else
+      excl_deep_args
       sudo find /private/var/log -type f -mtime +14 \
         \( -name '*.log' -o -name '*.log.*' -o -name '*.out' -o -name '*.err' \
            -o -name '*.asl' -o -name '*.gz' -o -name '*.bz2' \) \
-        -delete 2>/dev/null || true
+        ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -delete 2>/dev/null || true
       ok "Pruned old files from /private/var/log"
     fi
   fi
@@ -2063,8 +2126,9 @@ s08_temp() {
     if (( DRY_RUN )); then
       note "[dry-run] would prune top-level files in $user_tmp (user-owned, at least 2d old)"
     else
+      excl_deep_args
       find "$user_tmp" -mindepth 1 -maxdepth 1 -type f -user "$(id -un)" -mtime +1 \
-        -delete 2>/dev/null || true
+        ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -delete 2>/dev/null || true
       ok "Pruned old user temp files"
     fi
   fi
@@ -2073,7 +2137,7 @@ s08_temp() {
       note "[dry-run] would prune top-level files in /tmp (user-owned, at least 2d old)"
     else
       find /private/tmp -mindepth 1 -maxdepth 1 -type f -user "$(id -un)" -mtime +1 \
-        -delete 2>/dev/null || true
+        ${EXCL_DEEP[@]+"${EXCL_DEEP[@]}"} -delete 2>/dev/null || true
       ok "Pruned old /tmp entries (user-owned)"
     fi
   fi
@@ -2088,7 +2152,8 @@ s09_update_caches() {
     if (( DRY_RUN )); then
       note "[dry-run] would clear /Library/Updates"
     else
-      sudo find /Library/Updates -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + 2>/dev/null || true
+      excl_top_args /Library/Updates
+      sudo find /Library/Updates -mindepth 1 -maxdepth 1 ${EXCL_TOP[@]+"${EXCL_TOP[@]}"} -exec rm -rf -- {} + 2>/dev/null || true
       ok "Cleared /Library/Updates"
     fi
   fi
