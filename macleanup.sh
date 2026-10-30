@@ -1967,13 +1967,24 @@ s05_user_caches() {
     local _preserve_args=() _pp
     for _pp in "${USER_CACHE_PRESERVE[@]}"; do _preserve_args+=( ! -name "$_pp" ); done
     if (( DRY_RUN )); then
-      local est
-      est=$(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null | _sum_kb_nul)
+      local est=0 _entry _ekb
+      # One du per top-level entry (the same set the real run removes), so the
+      # event stream can list each cache folder with its size.
+      while IFS= read -r -d '' _entry; do
+        _ekb=$(size_kb "$_entry")
+        est=$(( est + _ekb ))
+        (( JSON_EVENTS )) && ev_item "$_entry" "$_ekb" delete
+      done < <(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null)
       note "[dry-run] would prune ~$(human_kb "$est") of non-Apple/browser/password-manager caches"
       track_freed "$est" 0
     else
-      local before after
+      local before after _entry
       before=$(size_kb "$cache_root")
+      if (( JSON_EVENTS )); then
+        while IFS= read -r -d '' _entry; do
+          ev_item "$_entry" "$(size_kb "$_entry")" delete
+        done < <(find "$cache_root" -mindepth 1 -maxdepth 1 "${_preserve_args[@]}" -print0 2>/dev/null)
+      fi
       find "$cache_root" -mindepth 1 -maxdepth 1 \
         "${_preserve_args[@]}" \
         -exec rm -rf -- {} + 2>/dev/null || true
