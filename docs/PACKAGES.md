@@ -28,8 +28,8 @@ to collide. Confirmed clean at the same date.
 
 ## `macleanup` (root) — runtime dependencies
 
-**None.** This is deliberate and is a feature of the product: the published package is one bash script plus a
-~100-line Node launcher, so `npx macleanup` installs nothing transitively and there is no supply chain to
+**None.** This is deliberate and is a feature of the product: the published package is plain bash (an entry script and its `lib/` modules)
+plus a ~100-line Node launcher, so `npx macleanup` installs nothing transitively and there is no supply chain to
 audit beyond npm itself.
 
 ### devDependencies

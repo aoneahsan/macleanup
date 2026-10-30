@@ -7,6 +7,18 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.2.2] - 2026-10-30
+
+### Fixed
+
+- `--exclude-path` now keeps a path in every bulk wipe and age-based prune, not only in the per-item deletes. A folder that holds a kept path is left whole. In a preview, kept entries show as `skip`.
+- Section 18 (large files report) no longer walks into photo libraries, iCloud folders, Movies, Music, virtual machines or the Trash; it skips them, which makes the scan seconds instead of minutes on a large home folder. Its top files are listed as report items in `--json-events`.
+
+### Changed
+
+- The script is split into an entry file, `macleanup.sh`, and ordered modules in `lib/`, each under 500 lines. Behaviour is unchanged: `--help`, `--list`, `--version` and dry-run event streams were compared line for line against 5.2.1.
+- Logs, reports, `--contact` and the run footer name the macleanup team and its website, docs and issues page. Personal phone, address and profile links are removed.
+
 ## [5.2.1] - 2026-10-30
 
 ### Changed

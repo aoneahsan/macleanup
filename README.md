@@ -23,15 +23,16 @@
 > Read [what it removes, and whether you can get it back](#what-it-removes-and-whether-you-can-get-it-back)
 > before your first run, and use `--dry-run` first. Back up before any cleanup tool.
 
-macleanup is a single bash script that reclaims disk space on macOS across 28 targeted areas — developer
+macleanup is a plain bash tool that reclaims disk space on macOS across 28 targeted areas — developer
 caches, browser caches, system logs, stale build artefacts, unused apps, and more. It is built for people who
 want to see what a section would remove before running it: destructive sections confirm by default,
-`--dry-run` does not delete files, and the whole tool is two readable files you can inspect first.
+`--dry-run` does not delete files, and the whole tool is plain bash in short files (one entry script and a
+`lib/` folder of modules) that you can read before running it.
 It is a terminal tool for macOS only, with no telemetry. `--check-update` contacts npm only when requested.
 
 | | |
 |---|---|
-| **Version** | `5.2.1` |
+| **Version** | `5.2.2` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |
@@ -446,13 +447,14 @@ If macleanup saves you time, you can support its maintenance at
 
 MIT © Ahsan Mahmood — see
 [LICENSE.md](https://github.com/aoneahsan/macleanup/blob/main/LICENSE.md). Provided as-is, without warranty;
-the author is not liable for data loss arising from its use.
+the macleanup team is not liable for data loss arising from its use.
 
 <a id="author"></a>
-## 👤 Author&nbsp;[#](#author)
+## 👤 Made by&nbsp;[#](#author)
 
-**Ahsan Mahmood** — [aoneahsan.com](https://aoneahsan.com) · [GitHub](https://github.com/aoneahsan) ·
-[LinkedIn](https://linkedin.com/in/aoneahsan) · [aoneahsan@gmail.com](mailto:aoneahsan@gmail.com)
+Made by **the macleanup team** — [macleanup.aoneahsan.com](https://macleanup.aoneahsan.com) ·
+[docs](https://macleanup-docs.aoneahsan.com) · [issues](https://github.com/aoneahsan/macleanup/issues) ·
+[aoneahsan@gmail.com](mailto:aoneahsan@gmail.com)
 
 <a id="links"></a>
 ## 🔗 Links&nbsp;[#](#links)

@@ -9,7 +9,7 @@
  * just validates the host platform, locates the script, and execs bash
  * with the user's argv forwarded through.
  *
- * Author : Ahsan Mahmood <aoneahsan@gmail.com>
+ * Made by: the macleanup team <aoneahsan@gmail.com>
  * Repo   : https://github.com/aoneahsan/macleanup
  * License: MIT (see LICENSE.md). AS IS, no warranty.
  */

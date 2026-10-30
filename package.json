@@ -1,11 +1,12 @@
 {
   "name": "macleanup",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "description": "Safe-by-default macOS cleanup CLI — 28 sections, a real dry-run, zero install via npx.",
   "bin": "bin/macleanup.js",
   "files": [
     "bin/",
     "macleanup.sh",
+    "lib/",
     "README.md",
     "LICENSE.md",
     "CHANGELOG.md",
@@ -16,9 +17,9 @@
     "list": "node bin/macleanup.js --list",
     "version:print": "node bin/macleanup.js --version",
     "dry-run": "node bin/macleanup.js --dry-run --all",
-    "lint:bash": "bash -n macleanup.sh && node -c bin/macleanup.js",
-    "version:check": "node -e \"const fs=require('fs');const v=require('./package.json').version;if(!fs.readFileSync('macleanup.sh','utf8').includes('MACLEANUP_VERSION:-'+v+'}')){console.error('version mismatch: package.json '+v+' is not the SCRIPT_VERSION fallback in macleanup.sh');process.exit(1)}console.log('version parity OK: '+v)\"",
-    "prepublishOnly": "bash -n macleanup.sh && node -c bin/macleanup.js && test -x macleanup.sh && test -x bin/macleanup.js && npm run --silent version:check"
+    "lint:bash": "bash -n macleanup.sh && for f in lib/*.sh; do bash -n \"$f\" || exit 1; done && node -c bin/macleanup.js",
+    "version:check": "node -e \"const fs=require('fs');const v=require('./package.json').version;const src=[fs.readFileSync('macleanup.sh','utf8'),...fs.readdirSync('lib').filter(f=>f.endsWith('.sh')).map(f=>fs.readFileSync('lib/'+f,'utf8'))].join('');if(!src.includes('MACLEANUP_VERSION:-'+v+'}')){console.error('version mismatch: package.json '+v+' is not the SCRIPT_VERSION fallback in macleanup.sh or lib/');process.exit(1)}console.log('version parity OK: '+v)\"",
+    "prepublishOnly": "npm run --silent lint:bash && test -x macleanup.sh && test -x bin/macleanup.js && npm run --silent version:check"
   },
   "preferGlobal": true,
   "engines": {
