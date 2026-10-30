@@ -7,6 +7,14 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.2.0] - 2026-10-30
+
+### Added
+
+- Section 0 (system health, read-only) lists installed developer toolchains — Node versions under nvm, pyenv Pythons, rbenv Rubies, rustup toolchains, Java VMs, Xcode, the Android SDK and Studio, Docker Desktop, Flutter and Homebrew — with the space each takes. It changes nothing; each toolchain's own uninstaller removes it.
+- `--json-events`: each `item` carries `age_days` (days since it was last opened or changed), and toolchain items carry `tool` and `version`. Both are additive; the schema stays at version 1.
+- The macleanup desktop app for macOS ships with this release.
+
 ## [5.1.0] - 2026-10-30
 
 ### Added

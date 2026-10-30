@@ -1,6 +1,6 @@
 # `--json-events` — the macleanup event stream
 
-Last Updated: 2026-10-30 · Schema version: **1** · Since: macleanup 5.1.0
+Last Updated: 2026-10-30 · Schema version: **1** · Since: macleanup 5.1.0 (optional `item` fields added in 5.2.0)
 
 `--json-events` turns a run into a stream of newline-delimited JSON (NDJSON) on **stdout**, one event per line. Every human line, prompt and log line goes to stderr. The macleanup desktop app reads this stream. Scripts and CI can read it too.
 
@@ -30,7 +30,7 @@ Consumers must ignore fields they do not know, because additive fields do not bu
 | `plan` | once, first | `version` (CLI version), `dry_run` (bool), `profile` (string or null), `sections` — array of `{id, title, stamp, sudo, deep}` |
 | `disk` | after `plan`, and again before `summary` | `phase` (`"before"` or `"after"`), `total_kb`, `free_kb`, `purgeable_kb` (null when unknown), `snapshots` (count of local APFS snapshots), `snapshot_note` (bool: true when snapshots may hold freed space) |
 | `section_start` | each section | `id`, `title`, `stamp` |
-| `item` | each path a section would touch (dry run) or touched (real run) | `id` (section), `path`, `kb`, `action` (`"delete"`, `"trash"`, `"archive"`, `"report"`, `"skip"`), `unique` (bool: user data with no other copy, which needs a keep/archive/delete choice) |
+| `item` | each path a section would touch (dry run) or touched (real run) | `id` (section), `path`, `kb`, `action` (`"delete"`, `"trash"`, `"archive"`, `"report"`, `"skip"`), `unique` (bool: user data with no other copy, which needs a keep/archive/delete choice), `age_days` (5.2.0+: days since the path was last opened or changed, or null), and on section 0's toolchain inventory `tool` and `version` (5.2.0+) |
 | `progress` | while a section works through items | `id`, `done`, `total` (null when unknown) |
 | `section_result` | each section, after its last `item` | `id`, `status` (`"completed"`, `"skipped"`, `"failed"`), `freed_kb`, `items` (count), `reason` (string or null; required for `skipped` and `failed`) |
 | `error` | a non-fatal problem | `id` (section or null), `message` |

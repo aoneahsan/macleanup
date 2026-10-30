@@ -324,8 +324,8 @@ More recipes: [Recipes](https://macleanup-docs.aoneahsan.com/recipes).
 - **Toolchain allowlist** — section 23 refuses to enter `~/.bun`, `~/.pnpm-store`, `~/.volta` and similar
   manager directories regardless of file age.
 - **Config file** — `~/.macleanuprc` for persistent defaults.
-- **Desktop app** — a small native macOS GUI (Tauri) wrapping this same script lives in
-  [desktop/](https://github.com/aoneahsan/macleanup/tree/main/desktop). It reimplements no cleanup logic.
+- **Desktop app** — the macleanup app for macOS runs this same script in a window: a disk gauge that counts
+  snapshot-held space, a dry-run ledger, and a receipt for every run. [Download it](https://macleanup.aoneahsan.com/download).
 
 <a id="recovery-troubleshooting"></a>
 ## 🚑 Recovery & Troubleshooting&nbsp;[#](#recovery-troubleshooting)

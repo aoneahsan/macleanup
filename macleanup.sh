@@ -57,7 +57,7 @@ fi
 # exports its version as MACLEANUP_VERSION. For a direct `./macleanup.sh`
 # checkout the literal fallback is used; `yarn prepublishOnly` asserts the two
 # stay in sync so they can never drift on a publish.
-SCRIPT_VERSION="${MACLEANUP_VERSION:-5.1.0}"
+SCRIPT_VERSION="${MACLEANUP_VERSION:-5.2.0}"
 SCRIPT_NAME="macleanup"
 TODAY="$(date +%Y-%m-%d)"
 RUN_TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -1394,7 +1394,12 @@ ev_disk() {
 ev_item() {
   (( JSON_EVENTS )) && [[ -n "$CURRENT_SECTION" ]] || return 0
   SECTION_ITEMS=$(( SECTION_ITEMS + 1 ))
-  ev_emit item "\"id\":$CURRENT_SECTION,\"path\":\"$(json_escape "$1")\",\"kb\":${2:-0},\"action\":\"$3\",\"unique\":$(_ev_in "$CURRENT_SECTION" "$UNIQUE_DATA_SECTIONS")"
+  local _ts _age="null"
+  if [[ -e "$1" ]]; then
+    _ts=$(_path_newer_ts "$1")
+    (( _ts > 0 )) && _age=$(( ( $(date +%s) - _ts ) / 86400 ))
+  fi
+  ev_emit item "\"id\":$CURRENT_SECTION,\"path\":\"$(json_escape "$1")\",\"kb\":${2:-0},\"action\":\"$3\",\"unique\":$(_ev_in "$CURRENT_SECTION" "$UNIQUE_DATA_SECTIONS"),\"age_days\":$_age${4:+,$4}"
   ev_emit progress "\"id\":$CURRENT_SECTION,\"done\":$SECTION_ITEMS,\"total\":null"
 }
 
@@ -1667,6 +1672,40 @@ parse_args() {
 # ══════════════════════════════════════════════════════════════════════════
 
 # Section 0 — System Health Check & Process Monitor
+# s00_toolchains — read-only inventory of developer toolchains: what is
+# installed, which versions, and how much space each takes. Nothing is changed;
+# removing a toolchain is the toolchain's own uninstaller's job. Each entry is
+# reported as an `item` with action "report" and a "tool"/"version" pair.
+s00_toolchains() {
+  local found=0 d tool ver kb
+  _tc() {  # _tc tool version path
+    [[ -e "$3" ]] || return 0
+    kb=$(size_kb "$3")
+    if (( found == 0 )); then printf '\n%bDeveloper toolchains:%b\n' "$BOLD" "$NC"; found=1; fi
+    printf '   %-14s %-22s %10s  %s\n' "$1" "$2" "$(human_kb "$kb")" "$3"
+    (( JSON_EVENTS )) && ev_item "$3" "$kb" report "\"tool\":\"$(json_escape "$1")\",\"version\":\"$(json_escape "$2")\""
+    return 0
+  }
+  for d in "$HOME"/.nvm/versions/node/*/;        do [[ -d "$d" ]] && _tc node "$(basename "$d")" "${d%/}"; done
+  for d in "$HOME"/.pyenv/versions/*/;           do [[ -d "$d" ]] && _tc python "$(basename "$d")" "${d%/}"; done
+  for d in "$HOME"/.rbenv/versions/*/;           do [[ -d "$d" ]] && _tc ruby "$(basename "$d")" "${d%/}"; done
+  for d in "$HOME"/.rustup/toolchains/*/;        do [[ -d "$d" ]] && _tc rust "$(basename "$d")" "${d%/}"; done
+  for d in "$HOME"/.sdkman/candidates/java/*/;   do [[ -d "$d" && ! -L "${d%/}" ]] && _tc java "$(basename "$d")" "${d%/}"; done
+  for d in /Library/Java/JavaVirtualMachines/*/; do [[ -d "$d" ]] && _tc java "$(basename "$d")" "${d%/}"; done
+  for d in /Applications/Xcode*.app;             do [[ -d "$d" ]] && _tc xcode "$(defaults read "$d/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "?")" "$d"; done
+  [[ -d "$HOME/Library/Android/sdk" ]] && _tc android-sdk "sdk" "$HOME/Library/Android/sdk"
+  [[ -d "/Applications/Android Studio.app" ]] && _tc android-studio "app" "/Applications/Android Studio.app"
+  [[ -d "/Applications/Docker.app" ]] && _tc docker "$(defaults read /Applications/Docker.app/Contents/Info CFBundleShortVersionString 2>/dev/null || echo "?")" "/Applications/Docker.app"
+  [[ -d "$HOME/flutter" ]] && _tc flutter "sdk" "$HOME/flutter"
+  for d in /opt/homebrew/Cellar /usr/local/Cellar; do
+    [[ -d "$d" ]] && _tc homebrew "$(find "$d" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ') formulae" "$d"
+  done
+  if (( found )); then
+    note "Reported only. Remove a toolchain with its own uninstaller (nvm uninstall, rustup toolchain uninstall, brew uninstall, …)."
+  fi
+  return 0
+}
+
 s00_health() {
   header "[0] System Health Check"
   local mac_ver chip ram_b uptime
@@ -1710,6 +1749,8 @@ s00_health() {
     diskutil info disk0 2>/dev/null | awk '/SMART Status/ {print "   " $0}' \
       || note "   diskutil info unavailable"
   fi
+
+  s00_toolchains
 
   mark_done 0
   press_enter
