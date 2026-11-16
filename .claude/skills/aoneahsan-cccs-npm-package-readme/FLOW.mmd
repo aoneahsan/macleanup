@@ -1,0 +1,49 @@
+flowchart TD
+    A[Write or rewrite a package README] --> B[Copy assets/README.template.md]
+    B --> C[Resolve the docs target first]
+
+    C --> C1{"Docs site? repo?<br/>marketing site?"}
+    C1 -->|None| C2["Build one:<br/>&lt;npm-name&gt;-docs.aoneahsan.com"]
+    C1 -->|Found| C3[Probe it — curl status]
+    C2 --> C3
+    C3 --> C4{200 or 301?}
+    C4 -->|No| C5[Do NOT link it.<br/>Fix the source that named it]
+    C5 --> C1
+    C4 -->|Yes| H[Header block]
+
+    H --> H1["1 logo · 2 h1 · 3 one-line promise<br/>4 badges · 5 link row ≤6"]
+    H1 --> H2{"Must-know-before-install<br/>fact exists?"}
+    H2 -->|Yes| H3["6 &gt; [!IMPORTANT] callout"]
+    H2 -->|No| H4
+    H3 --> H4["7 summary 2–4 sentences<br/>8 at-a-glance table<br/>9 table of contents"]
+
+    H4 --> S[Walk the 27 sections IN ORDER]
+
+    S --> S1{"Does this package<br/>need this section?"}
+    S1 -->|No| S2[Skip it — never reorder<br/>what remains]
+    S1 -->|Yes| S3["Anchor contract:<br/>&lt;a id&gt; + EMOJI from the map<br/>+ [#] permalink"]
+    S2 --> S4
+    S3 --> S5{"Is this fact already<br/>in another section?"}
+
+    S5 -->|Yes| S6[🔴 Single-home rule —<br/>pick the home, link from<br/>the other]
+    S5 -->|No| S7[Write it: brief,<br/>structured, links out<br/>for depth]
+    S6 --> S7
+    S7 --> S4{More sections?}
+    S4 -->|Yes| S1
+    S4 -->|No| B2[Ban sweep]
+
+    B2 --> B3["Current State / Verified Package<br/>Architecture / Verification Commands<br/>→ CONTRIBUTING.md or delete"]
+    B3 --> B4[No duplicate headings]
+    B4 --> B5["No relative link or image —<br/>npm renders off-repo"]
+    B5 --> B6[No invented adopters,<br/>no fabricated stats]
+
+    B6 --> V[Verify]
+    V --> V1[TOC matches the heading set]
+    V1 --> V2[No duplicate anchor id]
+    V2 --> V3[Every link returns 200/301]
+    V3 --> V4["README agrees with package.json:<br/>description = tagline,<br/>keywords = Keywords line,<br/>version = at-a-glance"]
+    V4 --> D([Ready for the publish gate])
+
+    style S6 fill:#ffe0e0,stroke:#c00
+    style C5 fill:#fff4d6,stroke:#c90
+    style D fill:#e0f0e0,stroke:#0a0

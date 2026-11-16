@@ -1,0 +1,61 @@
+flowchart TD
+    A[Work on an npm package] --> B{New package<br/>or existing?}
+
+    B -->|New| N1[Scaffold: name, folder,<br/>README H1 all agree]
+    B -->|Existing| M0[Audit the metadata]
+
+    N1 --> M0
+    M0 --> M1{"repository URL<br/>resolves?"}
+    M1 -->|"404 / a docs URL /<br/>missing"| M2[FIX — npmjs.com's Repository<br/>and bugs links are dead]
+    M1 -->|Yes| M3
+    M2 --> M3{"Another manifest shares<br/>this package name?"}
+
+    M3 -->|Yes| M4[🔴 STOP — resolve to ONE.<br/>Publishing from the wrong dir<br/>ships the wrong tree]
+    M3 -->|No| M5[Fill the field contract:<br/>description = README tagline,<br/>funding, keywords, engines,<br/>license, author, homepage, bugs]
+    M4 --> M5
+
+    M5 --> F{"files array present?"}
+    F -->|"Only .npmignore"| F1[Replace with a files allowlist —<br/>a denylist leaks what it forgot]
+    F -->|Yes| F2
+    F1 --> F2[Build]
+
+    F2 --> B1[Dual ESM + CJS,<br/>real .d.ts per format,<br/>source maps OFF]
+    B1 --> B2[Walk every exports subpath:<br/>types/import/require target<br/>exists on disk]
+    B2 --> B3{All resolve?}
+    B3 -->|No| B4[Fix the map or the build]
+    B4 --> B2
+    B3 -->|Yes| D{Dependency review}
+
+    D --> D1{"Does the host app<br/>already own it?"}
+    D1 -->|Yes| D2[peerDependency, widest<br/>honest range + a devDep]
+    D1 -->|No| D3{"Could ten lines<br/>of our own do it?"}
+    D3 -->|Yes| D4[Write the ten lines]
+    D3 -->|No| D5[Runtime dependency —<br/>justify it in docs/PACKAGES.md]
+    D2 --> DOC
+    D4 --> DOC
+    D5 --> DOC{Where do the docs live?}
+
+    DOC -->|1| L1[Public docs site]
+    DOC -->|2| L2[Public GitHub repo]
+    DOC -->|3| L3[Marketing site with real docs]
+    DOC -->|4 none exist| L4["Build one:<br/>&lt;npm-name&gt;-docs.aoneahsan.com<br/>GitHub Pages · DNS → MANUAL-TASKS"]
+
+    L1 --> P[Probe the URL:<br/>curl -o /dev/null -w '%{http_code}']
+    L2 --> P
+    L3 --> P
+    L4 --> P
+    P --> P1{200 or 301?}
+    P1 -->|No| P2[Do NOT write it into the README.<br/>Fix the source that named it]
+    P2 --> DOC
+    P1 -->|Yes| T[Tarball review]
+
+    T --> T1[Ships: dist, README, LICENSE,<br/>CHANGELOG, AI guide]
+    T1 --> T2[Never: CLAUDE/AGENTS.md,<br/>internal records, .env, keys]
+    T2 --> T3[Verify against the EXTRACTED<br/>tarball, not the repo]
+    T3 --> V[Semver + CHANGELOG entry<br/>+ docs/PACKAGES.md]
+    V --> G([Hand to the publish gate:<br/>packages-up-to-date])
+
+    style M4 fill:#ffe0e0,stroke:#c00
+    style M2 fill:#fff4d6,stroke:#c90
+    style P2 fill:#fff4d6,stroke:#c90
+    style G fill:#e0f0e0,stroke:#0a0
