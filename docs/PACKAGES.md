@@ -2,7 +2,7 @@
 
 Inventory of every `package.json` unit in this repository, what each depends on, and why.
 
-**Last Updated:** 2026-07-25
+**Last Updated:** 2026-11-16
 
 ---
 
@@ -76,3 +76,8 @@ The desktop app (Tauri) moved to its own private repository in 5.2.0; its depend
 The root package's zero-dependency property is a documented promise in the README. Adding a runtime dependency
 to it is a product decision, not a routine one — it changes what `npx macleanup` pulls onto a user's machine.
 Prefer a bash or Node built-in.
+
+## Node toolchain (2026-11-16)
+
+Development runs on Node 26.13.1 LTS (`.nvmrc`, was `26`). The published `engines.node` stays `>=14`: it is the
+install promise to users, not the development pin, and raising it is a breaking change (see the manifest table).

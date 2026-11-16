@@ -1,5 +1,7 @@
 # macleanup — Project Rules
 
+<!-- fleet:node-26-13-1 v1 --> Node 26.13.1 LTS (.nvmrc), packages latest — 2026-11-16
+
 ## Sub-agents & Skills — Main-Context-First (IRON-SOLID)
 Default/built-in sub-agents (`general-purpose`, `Explore`, `Plan`, `claude`, `fork`, …) do NOT have
 access to `/skills`, so delegating to them silently SKIPS the skills RULE #0 requires — a confirmed
