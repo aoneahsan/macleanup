@@ -16,6 +16,17 @@
 
 </div>
 
+<a id="available-on"></a>
+## 📦 Available on&nbsp;[#](#available-on)
+
+| Where | Link |
+|---|---|
+| npm | [`macleanup`](https://www.npmjs.com/package/macleanup) |
+| Mac desktop app | [macleanup.dmg](https://github.com/aoneahsan/macleanup/releases/latest/download/macleanup.dmg) |
+| Website | [macleanup.aoneahsan.com](https://macleanup.aoneahsan.com) |
+| Docs | [macleanup-docs.aoneahsan.com](https://macleanup-docs.aoneahsan.com) |
+| Everything | [All apps](https://macleanup-docs.aoneahsan.com/apps) |
+
 > [!IMPORTANT]
 > **This tool deletes files, and some of what it deletes cannot be recovered.** Most sections remove caches
 > that rebuild themselves, some move items to the Trash, and a few delete permanently — including emptying
@@ -43,6 +54,7 @@ It is a terminal tool for macOS only, with no telemetry. `--check-update` contac
 <a id="table-of-contents"></a>
 ## 🧭 Table of Contents&nbsp;[#](#table-of-contents)
 
+- [📦 Available on](#available-on)
 - [💡 Why macleanup](#why-macleanup)
 - [✨ Features](#features)
 - [📋 Requirements](#requirements)
