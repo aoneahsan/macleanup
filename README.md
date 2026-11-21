@@ -43,7 +43,7 @@ It is a terminal tool for macOS only, with no telemetry. `--check-update` contac
 
 | | |
 |---|---|
-| **Version** | `5.3.0` |
+| **Version** | `5.3.1` |
 | **License** | MIT |
 | **Node** | `>=14` (only needed for the `npx` / `npm` install paths) |
 | **Platforms** | macOS 11 Big Sur or later · Apple Silicon + Intel |

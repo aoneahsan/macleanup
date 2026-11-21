@@ -7,6 +7,13 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [5.3.1] - 2026-11-21
+
+### Changed
+
+- README: an "Available on" table lists every place macleanup is released (npm, the website, the docs and the
+  desktop app), with a link to the Get macleanup page. No code changes.
+
 ## [5.3.0] - 2026-10-30
 
 ### Changed
